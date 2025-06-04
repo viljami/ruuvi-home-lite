@@ -102,18 +102,17 @@ echo "✅ Detected server IP: $SERVER_IP"
 
 # Save password and IP securely for PM2 environment
 echo "💾 Saving MQTT password and server IP to .env..."
+
+# Ensure .env file exists before modifying it
+if [ ! -f .env ]; then
+    echo "⚠️  .env file missing, creating from template..."
+    cp .env.example .env
+fi
+
 sed -i "s/MQTT_PASS=GENERATED_DURING_SETUP/MQTT_PASS=$MQTT_PASSWORD/" .env
 sed -i "s/SERVER_IP=DETECTED_DURING_SETUP/SERVER_IP=$SERVER_IP/" .env
 chmod 600 .env
 echo "export MQTT_PASS='$MQTT_PASSWORD'" >> ~/.bashrc
-</text>
-
-<old_text>
-echo "🌐 Network Access:"
-echo "- Dashboard: https://$SERVER_IP:3000"
-echo "- MQTT Broker: $SERVER_IP:8883"
-echo "- Accessible from any device on your local network"
-echo "- Self-signed certificate - browsers will show security warning (click 'Advanced' → 'Proceed')"
 
 # Copy configuration files
 echo "⚙️  Setting up configuration..."

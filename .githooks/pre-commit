@@ -76,7 +76,7 @@ if git diff --cached --name-only | grep -E "^\.env$" > /dev/null; then
     print_error "Attempting to commit .env file (use .env.example for templates)"
 fi
 
-sensitive_files=("*.key" "*.crt" "*.db" "logs/" "*.log")
+sensitive_files=(".*\.key$" ".*\.crt$" ".*\.db$" "logs/" ".*\.log$")
 for pattern in "${sensitive_files[@]}"; do
     if git diff --cached --name-only | grep -E "$pattern" > /dev/null; then
         print_error "Attempting to commit sensitive file matching pattern: $pattern"
@@ -84,7 +84,7 @@ for pattern in "${sensitive_files[@]}"; do
 done
 
 # 6. Check dist/ directory is not being committed
-if git diff --cached --name-only | grep "^dist/" > /dev/null; then
+if git diff --cached --name-only | grep -E "^dist/" > /dev/null; then
     print_error "Attempting to commit build artifacts (dist/ directory)"
 fi
 
@@ -95,7 +95,7 @@ fi
 
 required_ignores=(".env" "*.db" "dist/" "logs/" "*.key" "*.crt")
 for ignore in "${required_ignores[@]}"; do
-    if ! grep -q "$ignore" .gitignore; then
+    if ! grep -q -F "$ignore" .gitignore; then
         print_error ".gitignore missing protection for: $ignore"
     fi
 done
