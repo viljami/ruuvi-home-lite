@@ -1,9 +1,9 @@
-import * as WebSocket from 'ws';
-import { createServer } from 'https';
-import { readFileSync, existsSync } from 'fs';
-import { join } from 'path';
-import { EventEmitter } from 'events';
-import { Database } from './db';
+import * as WebSocket from "ws";
+import { createServer } from "https";
+import { readFileSync, existsSync } from "fs";
+import { join } from "path";
+import { EventEmitter } from "events";
+import { Database } from "./db";
 
 export interface ClientData {
   sensorMac: string;
@@ -26,55 +26,63 @@ export class WebServer extends EventEmitter {
 
   private setupHttpServer(): void {
     const options = {
-      key: readFileSync('/etc/mosquitto/certs/server.key'),
-      cert: readFileSync('/etc/mosquitto/certs/server.crt')
+      key: readFileSync("/etc/mosquitto/certs/server.key"),
+      cert: readFileSync("/etc/mosquitto/certs/server.crt"),
     };
-    
+
     this.httpServer = createServer(options, this.handleHttpRequest.bind(this));
-    this.httpServer.listen(3000, () => {
-      console.log('Server running on https://localhost:3000');
+    this.httpServer.listen(3000, "0.0.0.0", () => {
+      console.log("Server running on https://0.0.0.0:3000");
+      console.log(
+        `Access from local network: https://${process.env.SERVER_IP || 'localhost'}:3000`,
+      );
     });
   }
 
   private setupWebSocket(): void {
     this.wss = new WebSocket.Server({ server: this.httpServer });
 
-    this.wss.on('connection', (ws: WebSocket) => {
-      console.log('WebSocket client connected');
-      
-      ws.on('message', (message: string) => {
+    this.wss.on("connection", (ws: WebSocket) => {
+      console.log("WebSocket client connected");
+
+      ws.on("message", (message: string) => {
         try {
           const request = JSON.parse(message.toString());
-          if (request.type === 'getData') {
-            this.sendHistoricalData(ws, request.timeRange || 'day');
+          if (request.type === "getData") {
+            this.sendHistoricalData(ws, request.timeRange || "day");
           }
         } catch (error) {
-          console.error('WebSocket message error:', error);
+          console.error("WebSocket message error:", error);
         }
       });
 
-      ws.on('close', () => {
-        console.log('WebSocket client disconnected');
+      ws.on("close", () => {
+        console.log("WebSocket client disconnected");
       });
     });
   }
 
   private handleHttpRequest(req: any, res: any): void {
-    let filePath = req.url === '/' ? '/index.html' : req.url;
-    const fullPath = join(__dirname, '../public', filePath);
+    let filePath = req.url === "/" ? "/index.html" : req.url;
+    const fullPath = join(__dirname, "../public", filePath);
 
     if (existsSync(fullPath)) {
       const content = readFileSync(fullPath);
-      const ext = filePath.split('.').pop();
-      const contentType = ext === 'html' ? 'text/html' : 
-                         ext === 'js' ? 'application/javascript' : 
-                         ext === 'css' ? 'text/css' : 'text/plain';
-      
-      res.writeHead(200, { 'Content-Type': contentType });
+      const ext = filePath.split(".").pop();
+      const contentType =
+        ext === "html"
+          ? "text/html"
+          : ext === "js"
+            ? "application/javascript"
+            : ext === "css"
+              ? "text/css"
+              : "text/plain";
+
+      res.writeHead(200, { "Content-Type": contentType });
       res.end(content);
     } else {
       res.writeHead(404);
-      res.end('Not found');
+      res.end("Not found");
     }
   }
 
@@ -84,22 +92,25 @@ export class WebServer extends EventEmitter {
       sensorMac: data.sensorMac,
       temperature: data.temperature,
       humidity: data.humidity,
-      timestamp: data.timestamp
+      timestamp: data.timestamp,
     };
-    const message = JSON.stringify({ type: 'sensorData', data: clientData });
-    this.wss.clients.forEach(client => {
+    const message = JSON.stringify({ type: "sensorData", data: clientData });
+    this.wss.clients.forEach((client) => {
       if (client.readyState === WebSocket.OPEN) {
         client.send(message);
       }
     });
   }
 
-  private async sendHistoricalData(ws: WebSocket, timeRange: string): Promise<void> {
+  private async sendHistoricalData(
+    ws: WebSocket,
+    timeRange: string,
+  ): Promise<void> {
     try {
       const rows = await this.database.getHistoricalData(timeRange);
-      ws.send(JSON.stringify({ type: 'historicalData', data: rows }));
+      ws.send(JSON.stringify({ type: "historicalData", data: rows }));
     } catch (error) {
-      console.error('Error getting historical data:', error);
+      console.error("Error getting historical data:", error);
     }
   }
 
@@ -111,4 +122,6 @@ export class WebServer extends EventEmitter {
     this.wss.close();
     this.httpServer.close();
   }
+
+
 }

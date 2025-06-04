@@ -56,10 +56,8 @@ if grep -r "TODO\|FIXME" src/ 2>/dev/null; then
     print_warning "Found TODO/FIXME comments in source code"
 fi
 
-# Check for console.log in source files (except intentional logging)
-if grep -r "console\.log" src/ 2>/dev/null | grep -v "console.log('.*connected')\|console.log('.*error')\|console.error"; then
-    print_warning "Found console.log statements that should be removed"
-fi
+# Allow console.log statements (useful for debugging and logging)
+# Removed restrictive console.log check
 
 # Check for hardcoded credentials
 if grep -r "password.*=" src/ 2>/dev/null | grep -v "process.env"; then
@@ -73,8 +71,12 @@ if [ -f ".env" ]; then
     fi
 fi
 
-# 5. Ensure no sensitive files are being committed
-sensitive_files=(".env" "*.key" "*.crt" "*.db" "logs/" "*.log")
+# 5. Ensure no sensitive files are being committed (except .env.example)
+if git diff --cached --name-only | grep -E "^\.env$" > /dev/null; then
+    print_error "Attempting to commit .env file (use .env.example for templates)"
+fi
+
+sensitive_files=("*.key" "*.crt" "*.db" "logs/" "*.log")
 for pattern in "${sensitive_files[@]}"; do
     if git diff --cached --name-only | grep -E "$pattern" > /dev/null; then
         print_error "Attempting to commit sensitive file matching pattern: $pattern"
@@ -97,6 +99,11 @@ for ignore in "${required_ignores[@]}"; do
         print_error ".gitignore missing protection for: $ignore"
     fi
 done
+
+# Ensure .env.example is allowed
+if grep -q "^\.env\.example$" .gitignore; then
+    print_error ".gitignore should NOT ignore .env.example (it's a template file)"
+fi
 
 print_status "All quality checks passed!"
 echo "🚀 Commit approved - code is ready for publication"

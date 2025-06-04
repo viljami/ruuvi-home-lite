@@ -64,11 +64,56 @@ MQTT_PASSWORD=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-16 | tr -d '\n')
 echo "👤 Creating MQTT user..."
 sudo mosquitto_passwd -c -b /etc/mosquitto/passwd ruuvi "$MQTT_PASSWORD"
 
-# Save password securely for PM2 environment
-echo "💾 Saving MQTT password to .env..."
+# Detect local IP address for server binding
+echo "🔍 Detecting local network IP..."
+detect_local_ip() {
+    # Try to find the best local IP address
+    local ip_candidates=()
+    
+    # Get all IPv4 addresses, excluding loopback and docker interfaces
+    while IFS= read -r line; do
+        if [[ $line =~ inet[[:space:]]+([0-9.]+) ]]; then
+            local ip="${BASH_REMATCH[1]}"
+            local interface=$(echo "$line" | awk '{print $NF}')
+            
+            # Skip loopback and virtual interfaces
+            if [[ $ip != "127."* && $interface != docker* && $interface != br-* && $interface != veth* ]]; then
+                # Prioritize common local network ranges
+                if [[ $ip =~ ^192\.168\. ]]; then
+                    ip_candidates=("$ip" "${ip_candidates[@]}")  # Prepend (highest priority)
+                elif [[ $ip =~ ^10\. ]] || [[ $ip =~ ^172\.(1[6-9]|2[0-9]|3[01])\. ]]; then
+                    ip_candidates+=("$ip")  # Append (lower priority)
+                fi
+            fi
+        fi
+    done < <(ip addr show 2>/dev/null || ifconfig 2>/dev/null)
+    
+    # Return the best candidate or fallback
+    if [ ${#ip_candidates[@]} -gt 0 ]; then
+        echo "${ip_candidates[0]}"
+    else
+        # Fallback to hostname -I if our detection fails
+        hostname -I | awk '{print $1}'
+    fi
+}
+
+SERVER_IP=$(detect_local_ip)
+echo "✅ Detected server IP: $SERVER_IP"
+
+# Save password and IP securely for PM2 environment
+echo "💾 Saving MQTT password and server IP to .env..."
 sed -i "s/MQTT_PASS=GENERATED_DURING_SETUP/MQTT_PASS=$MQTT_PASSWORD/" .env
+sed -i "s/SERVER_IP=DETECTED_DURING_SETUP/SERVER_IP=$SERVER_IP/" .env
 chmod 600 .env
 echo "export MQTT_PASS='$MQTT_PASSWORD'" >> ~/.bashrc
+</text>
+
+<old_text>
+echo "🌐 Network Access:"
+echo "- Dashboard: https://$SERVER_IP:3000"
+echo "- MQTT Broker: $SERVER_IP:8883"
+echo "- Accessible from any device on your local network"
+echo "- Self-signed certificate - browsers will show security warning (click 'Advanced' → 'Proceed')"
 
 # Copy configuration files
 echo "⚙️  Setting up configuration..."
@@ -95,6 +140,26 @@ echo "🚀 Starting MQTT broker..."
 sudo systemctl enable mosquitto
 sudo systemctl restart mosquitto
 sudo systemctl status mosquitto --no-pager
+
+# Configure firewall for local network access
+echo "🔥 Configuring firewall for local network access..."
+if command -v ufw >/dev/null 2>&1; then
+    # Allow HTTPS web server (port 3000) from local network
+    sudo ufw allow from 192.168.0.0/16 to any port 3000 comment 'Ruuvi Home HTTPS'
+    sudo ufw allow from 10.0.0.0/8 to any port 3000 comment 'Ruuvi Home HTTPS'
+    sudo ufw allow from 172.16.0.0/12 to any port 3000 comment 'Ruuvi Home HTTPS'
+    
+    # Allow MQTT broker (port 8883) from local network  
+    sudo ufw allow from 192.168.0.0/16 to any port 8883 comment 'Ruuvi MQTT TLS'
+    sudo ufw allow from 10.0.0.0/8 to any port 8883 comment 'Ruuvi MQTT TLS'
+    sudo ufw allow from 172.16.0.0/12 to any port 8883 comment 'Ruuvi MQTT TLS'
+    
+    echo "✅ UFW firewall rules added for local network access"
+else
+    echo "⚠️  UFW not installed. Please manually configure firewall:"
+    echo "   - Allow port 3000 (HTTPS) from local network"
+    echo "   - Allow port 8883 (MQTT TLS) from local network"
+fi
 
 # Install PM2 globally
 echo "🔧 Installing PM2..."
@@ -133,6 +198,11 @@ echo ""
 echo "🔒 Security Notes:"
 echo "- .env file contains sensitive passwords (mode 600, user-only access)"
 echo "- Generated certificates are self-signed for local network use only"
+echo "- Firewall configured for local network access only"
 echo "- Monitor PM2 logs: pm2 logs ruuvi-home"
 echo ""
-echo "📊 Access dashboard: https://$(hostname -I | awk '{print $1}'):3000"
+echo "🌐 Network Access:"
+echo "- Dashboard: https://$(hostname -I | awk '{print $1}'):3000"
+echo "- MQTT Broker: $(hostname -I | awk '{print $1}'):8883"
+echo "- Accessible from any device on your local network"
+echo "- Self-signed certificate - browsers will show security warning (click 'Advanced' → 'Proceed')"
