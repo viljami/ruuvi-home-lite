@@ -1,6 +1,6 @@
-import * as mqtt from 'mqtt';
-import { EventEmitter } from 'events';
-import { RuuviDecoder } from './ruuvi-decoder';
+import * as mqtt from "mqtt";
+import { EventEmitter } from "events";
+import { RuuviDecoder } from "./ruuvi-decoder";
 
 export interface SensorDataEvent {
   sensorMac: string;
@@ -26,36 +26,44 @@ export class MQTTClient extends EventEmitter {
   }
 
   private setupMQTT(): void {
-    // Validate required environment variables
-    if (!process.env.MQTT_PASS || process.env.MQTT_PASS === 'GENERATED_DURING_SETUP') {
-      throw new Error('MQTT_PASS environment variable must be set to a secure password');
-    }
+    const port = parseInt(process.env.MQTT_PORT || "8883");
+    const isSecure = port === 8883 || process.env.MQTT_TLS === "true";
+    const username = process.env.MQTT_USER || "ruuvi";
+    const password = process.env.MQTT_PASS || "";
+
+    console.log(
+      `🔗 Connecting to MQTT broker: ${isSecure ? "secure" : "insecure"} mode`,
+    );
 
     const options: mqtt.IClientOptions = {
-      host: process.env.MQTT_HOST || 'localhost',
-      port: parseInt(process.env.MQTT_PORT || '8883'),
-      protocol: 'mqtts',
-      username: process.env.MQTT_USER || 'ruuvi',
-      password: process.env.MQTT_PASS,
-      rejectUnauthorized: false, // For self-signed certs
+      host: process.env.MQTT_HOST || "localhost",
+      port: port,
+      protocol: isSecure ? "mqtts" : "mqtt",
       connectTimeout: 30 * 1000,
       keepalive: 60,
       clean: true,
       reconnectPeriod: 5000,
-      clientId: `ruuvi-home-${Math.random().toString(16).substr(2, 8)}`
+      clientId: `ruuvi-home-${Math.random().toString(16).substr(2, 8)}`,
+      username,
+      password,
     };
 
+    // Add TLS options for secure connections
+    if (isSecure) {
+      options.rejectUnauthorized = false; // For self-signed certs
+    }
+
     this.mqttClient = mqtt.connect(options);
-    
-    this.mqttClient.on('connect', () => {
-      console.log('MQTT connected');
-      this.mqttClient.subscribe('ruuvi/+/+', { qos: 1 });
-      this.mqttClient.subscribe('gateway/+/+', { qos: 1 });
-      this.mqttClient.subscribe('ruuvi/+', { qos: 1 }); // Legacy single-level support
-      this.emit('connect');
+
+    this.mqttClient.on("connect", () => {
+      console.log("MQTT connected");
+      this.mqttClient.subscribe("ruuvi/+/+", { qos: 1 });
+      this.mqttClient.subscribe("gateway/+/+", { qos: 1 });
+      this.mqttClient.subscribe("ruuvi/+", { qos: 1 }); // Legacy single-level support
+      this.emit("connect");
     });
 
-    this.mqttClient.on('message', (topic: string, message: Buffer) => {
+    this.mqttClient.on("message", (topic: string, message: Buffer) => {
       try {
         // Security: Limit message size to prevent DoS attacks
         if (message.length > 8192) {
@@ -70,56 +78,63 @@ export class MQTTClient extends EventEmitter {
         }
 
         console.log(`MQTT topic: ${topic}, message length: ${message.length}`);
-        
+
         // Security: Parse JSON safely with size limit
-        const messageStr = message.toString('utf8');
+        const messageStr = message.toString("utf8");
         if (messageStr.length > 4096) {
-          console.warn('Message content too large, ignoring');
+          console.warn("Message content too large, ignoring");
           return;
         }
-        
+
         const gatewayData = JSON.parse(messageStr);
-        
+
         // Security: Validate gateway data structure
-        if (!gatewayData || typeof gatewayData !== 'object') {
-          console.warn('Invalid gateway data format');
+        if (!gatewayData || typeof gatewayData !== "object") {
+          console.warn("Invalid gateway data format");
           return;
         }
-        
+
         // Extract Ruuvi data from BLE advertisement
-        if (!gatewayData.data || typeof gatewayData.data !== 'string') {
-          console.log(`No valid data field in gateway payload on topic ${topic}`);
+        if (!gatewayData.data || typeof gatewayData.data !== "string") {
+          console.log(
+            `No valid data field in gateway payload on topic ${topic}`,
+          );
           return;
         }
-        
+
         // Security: Validate BLE data format and size
         if (gatewayData.data.length > 200) {
-          console.warn('BLE data too long, possible attack');
+          console.warn("BLE data too long, possible attack");
           return;
         }
-        
+
         const ruuviHex = this.extractRuuviFromBLE(gatewayData.data);
         if (!ruuviHex) {
-          console.log(`No Ruuvi data found in BLE advertisement on topic ${topic}`);
+          console.log(
+            `No Ruuvi data found in BLE advertisement on topic ${topic}`,
+          );
           return;
         }
-        
+
         const decoded = RuuviDecoder.decode(ruuviHex);
-        
+
         // Extract sensor MAC from topic or use decoded MAC
-        const topicParts = topic.split('/');
-        let sensorMac = decoded?.mac || 'unknown';
-        
+        const topicParts = topic.split("/");
+        let sensorMac = decoded?.mac || "unknown";
+
         // Handle different topic patterns:
         // ruuvi/gateway_id/sensor_mac
-        // gateway/gateway_id/sensor_mac  
+        // gateway/gateway_id/sensor_mac
         // ruuvi/sensor_mac (legacy)
-        if (topicParts.length >= 3 && (topicParts[0] === 'ruuvi' || topicParts[0] === 'gateway')) {
+        if (
+          topicParts.length >= 3 &&
+          (topicParts[0] === "ruuvi" || topicParts[0] === "gateway")
+        ) {
           sensorMac = topicParts[2]; // Use MAC from topic
-        } else if (topicParts.length === 2 && topicParts[0] === 'ruuvi') {
+        } else if (topicParts.length === 2 && topicParts[0] === "ruuvi") {
           sensorMac = topicParts[1]; // Legacy format
         }
-        
+
         if (decoded && decoded.temperature !== null) {
           const sensorData: SensorDataEvent = {
             sensorMac: sensorMac,
@@ -133,100 +148,106 @@ export class MQTTClient extends EventEmitter {
             measurementSequence: decoded.measurementSequence,
             accelerationX: decoded.accelerationX,
             accelerationY: decoded.accelerationY,
-            accelerationZ: decoded.accelerationZ
+            accelerationZ: decoded.accelerationZ,
           };
-          
-          console.log(`Decoded sensor data: ${sensorMac} - ${decoded.temperature}°C${decoded.humidity !== null ? `, ${decoded.humidity}%` : ' (no humidity)'}`);
-          this.emit('sensorData', sensorData);
+
+          console.log(
+            `Decoded sensor data: ${sensorMac} - ${decoded.temperature}°C${decoded.humidity !== null ? `, ${decoded.humidity}%` : " (no humidity)"}`,
+          );
+          this.emit("sensorData", sensorData);
         } else {
-          console.log(`Invalid or incomplete Ruuvi data on topic ${topic} (no temperature data)`);
+          console.log(
+            `Invalid or incomplete Ruuvi data on topic ${topic} (no temperature data)`,
+          );
         }
       } catch (error) {
-        console.error('MQTT message decode error:', error);
+        console.error("MQTT message decode error:", error);
       }
     });
 
-    this.mqttClient.on('error', (error) => {
-      console.error('MQTT connection error:', error);
-      this.emit('error', error);
+    this.mqttClient.on("error", (error) => {
+      console.error("MQTT connection error:", error);
+      this.emit("error", error);
     });
 
-    this.mqttClient.on('close', () => {
-      console.log('MQTT connection closed');
-      this.emit('disconnected');
+    this.mqttClient.on("close", () => {
+      console.log("MQTT connection closed");
+      this.emit("disconnected");
     });
   }
 
   private extractRuuviFromBLE(bleData: string): string | null {
     try {
       // Security: Validate input
-      if (!bleData || typeof bleData !== 'string') {
+      if (!bleData || typeof bleData !== "string") {
         return null;
       }
-      
+
       // Security: Only allow hex characters
       if (!/^[0-9A-Fa-f]*$/.test(bleData)) {
-        console.warn('BLE data contains non-hex characters');
+        console.warn("BLE data contains non-hex characters");
         return null;
       }
-      
+
       // Security: Limit BLE data length
       if (bleData.length > 200) {
-        console.warn('BLE data too long');
+        console.warn("BLE data too long");
         return null;
       }
-      
+
       // Look for Ruuvi manufacturer data in BLE advertisement
       // Format: ...FF9904[DATA_FORMAT][RUUVI_DATA]...
       // 9904 is manufacturer ID 0x0499 in little endian
-      const ruuviMarker = '9904';
-      const markerIndex = bleData.toUpperCase().indexOf(ruuviMarker.toUpperCase());
-      
+      const ruuviMarker = "9904";
+      const markerIndex = bleData
+        .toUpperCase()
+        .indexOf(ruuviMarker.toUpperCase());
+
       if (markerIndex === -1) {
         return null;
       }
-      
+
       // Extract Ruuvi payload starting from data format byte
       const ruuviStart = markerIndex + ruuviMarker.length;
       const ruuviPayload = bleData.slice(ruuviStart, ruuviStart + 48); // 24 bytes = 48 hex chars
-      
+
       if (ruuviPayload.length !== 48) {
         return null;
       }
-      
+
       return ruuviPayload.toUpperCase();
     } catch (error) {
-      console.error('Error extracting Ruuvi data from BLE:', error);
+      console.error("Error extracting Ruuvi data from BLE:", error);
       return null;
     }
   }
 
   private isValidTopic(topic: string): boolean {
     // Security: Validate topic format to prevent injection
-    if (!topic || typeof topic !== 'string') {
+    if (!topic || typeof topic !== "string") {
       return false;
     }
-    
+
     // Limit topic length
     if (topic.length > 256) {
       return false;
     }
-    
+
     // Only allow valid MQTT topic characters
     if (!/^[a-zA-Z0-9/_+-]+$/.test(topic)) {
       return false;
     }
-    
+
     // Check for valid topic patterns
     const validPatterns = [
-      /^ruuvi\/[^/]+\/[^/]+$/,  // ruuvi/gateway_id/sensor_mac
+      /^ruuvi\/[^/]+\/[^/]+$/, // ruuvi/gateway_id/sensor_mac
       /^gateway\/[^/]+\/[^/]+$/, // gateway/gateway_id/sensor_mac
-      /^ruuvi\/[^/]+$/,          // ruuvi/sensor_mac (legacy)
+      /^ruuvi\/[^/]+$/, // ruuvi/sensor_mac (legacy)
       /^ruuvi\/gateway\/status$/, // status topics
-      /^ruuvi\/gateway\/[^/]+\/status$/
+      /^ruuvi\/gateway\/[^/]+\/status$/,
     ];
-    
-    return validPatterns.some(pattern => pattern.test(topic));
+
+    return validPatterns.some((pattern) => pattern.test(topic));
   }
 
   disconnect(): void {

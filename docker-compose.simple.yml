@@ -1,0 +1,79 @@
+version: "3.8"
+
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: ruuvi-mosquitto-simple
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+    volumes:
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_logs:/mosquitto/log
+    networks:
+      - ruuvi-network
+    command: |
+      sh -c 'cat > /mosquitto/config/mosquitto.conf << EOF
+      listener 1883
+      allow_anonymous true
+      persistence true
+      persistence_location /mosquitto/data/
+      log_dest stdout
+      log_type all
+      connection_messages true
+      log_timestamp true
+      EOF
+      /usr/sbin/mosquitto -c /mosquitto/config/mosquitto.conf'
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mosquitto_pub -h localhost -p 1883 -t health -m check || exit 1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  ruuvi-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ruuvi-home-simple
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - app_data:/app/data
+      - app_logs:/app/logs
+    networks:
+      - ruuvi-network
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    environment:
+      - NODE_ENV=production
+      - MQTT_HOST=mosquitto
+      - MQTT_PORT=1883
+      - MQTT_USER=
+      - MQTT_PASS=
+      - SERVER_IP=0.0.0.0
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  ruuvi-network:
+    driver: bridge
+
+volumes:
+  mosquitto_data:
+    driver: local
+  mosquitto_logs:
+    driver: local
+  app_data:
+    driver: local
+  app_logs:
+    driver: local

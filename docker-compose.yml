@@ -7,38 +7,23 @@ services:
     ports:
       - "8883:8883"
     volumes:
-      - ./config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./config/mosquitto-docker.conf:/mosquitto/config/mosquitto.conf:ro
       - ./config/acl:/mosquitto/config/acl:ro
       - mosquitto_data:/mosquitto/data
       - mosquitto_logs:/mosquitto/log
-      - certs:/mosquitto/config/certs:ro
-      - ca_certs:/mosquitto/config/ca_certificates:ro
-      - passwd:/mosquitto/config/passwd:ro
+      - mosquitto_certs:/mosquitto/config/certs
+      - mosquitto_ca:/mosquitto/config/ca_certificates
+      - mosquitto_passwd:/mosquitto/config/passwd
+      - mosquitto_run:/var/run/mosquitto
     networks:
       - ruuvi-network
+
     healthcheck:
-      test:
-        [
-          "CMD",
-          "mosquitto_pub",
-          "-h",
-          "localhost",
-          "-p",
-          "8883",
-          "-t",
-          "health",
-          "-m",
-          "check",
-          "--cafile",
-          "/mosquitto/config/ca_certificates/ca.crt",
-          "-u",
-          "ruuvi",
-          "-P",
-          "$$MQTT_PASS",
-        ]
+      test: ["CMD-SHELL", "mosquitto_pub -h localhost -p 1883 -t health -m check || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 10s
     environment:
       - MQTT_PASS=${MQTT_PASS}
 
@@ -54,7 +39,7 @@ services:
     volumes:
       - app_data:/app/data
       - app_logs:/app/logs
-      - certs:/app/certs:ro
+      - web_certs:/app/certs
     networks:
       - ruuvi-network
     depends_on:
@@ -85,13 +70,17 @@ volumes:
     driver: local
   mosquitto_logs:
     driver: local
+  mosquitto_certs:
+    driver: local
+  mosquitto_ca:
+    driver: local
+  mosquitto_passwd:
+    driver: local
+  mosquitto_run:
+    driver: local
   app_data:
     driver: local
   app_logs:
     driver: local
-  certs:
-    driver: local
-  ca_certs:
-    driver: local
-  passwd:
+  web_certs:
     driver: local

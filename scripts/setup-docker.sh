@@ -45,6 +45,16 @@ if ! validate_env_vars ".env.docker"; then
     exit 1
 fi
 
+# Initialize Docker volumes with certificates and passwords
+echo "🐳 Initializing Docker volumes..."
+if [ -f "$SCRIPT_DIR/docker-init.sh" ]; then
+    chmod +x "$SCRIPT_DIR/docker-init.sh"
+    "$SCRIPT_DIR/docker-init.sh"
+else
+    echo "⚠️  Docker initialization script not found, skipping volume setup"
+    echo "💡 You may need to manually configure certificates and passwords"
+fi
+
 # Display configuration
 display_env_info ".env.docker"
 
