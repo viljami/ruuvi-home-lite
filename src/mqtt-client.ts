@@ -26,13 +26,23 @@ export class MQTTClient extends EventEmitter {
   }
 
   private setupMQTT(): void {
+    // Validate required environment variables
+    if (!process.env.MQTT_PASS || process.env.MQTT_PASS === 'GENERATED_DURING_SETUP') {
+      throw new Error('MQTT_PASS environment variable must be set to a secure password');
+    }
+
     const options: mqtt.IClientOptions = {
       host: process.env.MQTT_HOST || 'localhost',
       port: parseInt(process.env.MQTT_PORT || '8883'),
       protocol: 'mqtts',
       username: process.env.MQTT_USER || 'ruuvi',
-      password: process.env.MQTT_PASS || 'ruuvi123',
-      rejectUnauthorized: false // For self-signed certs
+      password: process.env.MQTT_PASS,
+      rejectUnauthorized: false, // For self-signed certs
+      connectTimeout: 30 * 1000,
+      keepalive: 60,
+      clean: true,
+      reconnectPeriod: 5000,
+      clientId: `ruuvi-home-${Math.random().toString(16).substr(2, 8)}`
     };
 
     this.mqttClient = mqtt.connect(options);
@@ -42,16 +52,49 @@ export class MQTTClient extends EventEmitter {
       this.mqttClient.subscribe('ruuvi/+/+', { qos: 1 });
       this.mqttClient.subscribe('gateway/+/+', { qos: 1 });
       this.mqttClient.subscribe('ruuvi/+', { qos: 1 }); // Legacy single-level support
+      this.emit('connect');
     });
 
     this.mqttClient.on('message', (topic: string, message: Buffer) => {
       try {
+        // Security: Limit message size to prevent DoS attacks
+        if (message.length > 8192) {
+          console.warn(`Message too large (${message.length} bytes), ignoring`);
+          return;
+        }
+
+        // Security: Validate topic format
+        if (!this.isValidTopic(topic)) {
+          console.warn(`Invalid topic format: ${topic}`);
+          return;
+        }
+
         console.log(`MQTT topic: ${topic}, message length: ${message.length}`);
-        const gatewayData = JSON.parse(message.toString());
+        
+        // Security: Parse JSON safely with size limit
+        const messageStr = message.toString('utf8');
+        if (messageStr.length > 4096) {
+          console.warn('Message content too large, ignoring');
+          return;
+        }
+        
+        const gatewayData = JSON.parse(messageStr);
+        
+        // Security: Validate gateway data structure
+        if (!gatewayData || typeof gatewayData !== 'object') {
+          console.warn('Invalid gateway data format');
+          return;
+        }
         
         // Extract Ruuvi data from BLE advertisement
-        if (!gatewayData.data) {
-          console.log(`No data field in gateway payload on topic ${topic}`);
+        if (!gatewayData.data || typeof gatewayData.data !== 'string') {
+          console.log(`No valid data field in gateway payload on topic ${topic}`);
+          return;
+        }
+        
+        // Security: Validate BLE data format and size
+        if (gatewayData.data.length > 200) {
+          console.warn('BLE data too long, possible attack');
           return;
         }
         
@@ -116,11 +159,28 @@ export class MQTTClient extends EventEmitter {
 
   private extractRuuviFromBLE(bleData: string): string | null {
     try {
+      // Security: Validate input
+      if (!bleData || typeof bleData !== 'string') {
+        return null;
+      }
+      
+      // Security: Only allow hex characters
+      if (!/^[0-9A-Fa-f]*$/.test(bleData)) {
+        console.warn('BLE data contains non-hex characters');
+        return null;
+      }
+      
+      // Security: Limit BLE data length
+      if (bleData.length > 200) {
+        console.warn('BLE data too long');
+        return null;
+      }
+      
       // Look for Ruuvi manufacturer data in BLE advertisement
       // Format: ...FF9904[DATA_FORMAT][RUUVI_DATA]...
       // 9904 is manufacturer ID 0x0499 in little endian
       const ruuviMarker = '9904';
-      const markerIndex = bleData.indexOf(ruuviMarker);
+      const markerIndex = bleData.toUpperCase().indexOf(ruuviMarker.toUpperCase());
       
       if (markerIndex === -1) {
         return null;
@@ -134,11 +194,39 @@ export class MQTTClient extends EventEmitter {
         return null;
       }
       
-      return ruuviPayload;
+      return ruuviPayload.toUpperCase();
     } catch (error) {
       console.error('Error extracting Ruuvi data from BLE:', error);
       return null;
     }
+  }
+
+  private isValidTopic(topic: string): boolean {
+    // Security: Validate topic format to prevent injection
+    if (!topic || typeof topic !== 'string') {
+      return false;
+    }
+    
+    // Limit topic length
+    if (topic.length > 256) {
+      return false;
+    }
+    
+    // Only allow valid MQTT topic characters
+    if (!/^[a-zA-Z0-9/_+-]+$/.test(topic)) {
+      return false;
+    }
+    
+    // Check for valid topic patterns
+    const validPatterns = [
+      /^ruuvi\/[^/]+\/[^/]+$/,  // ruuvi/gateway_id/sensor_mac
+      /^gateway\/[^/]+\/[^/]+$/, // gateway/gateway_id/sensor_mac
+      /^ruuvi\/[^/]+$/,          // ruuvi/sensor_mac (legacy)
+      /^ruuvi\/gateway\/status$/, // status topics
+      /^ruuvi\/gateway\/[^/]+\/status$/
+    ];
+    
+    return validPatterns.some(pattern => pattern.test(topic));
   }
 
   disconnect(): void {

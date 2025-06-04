@@ -2,7 +2,8 @@ import * as WebSocket from "ws";
 import { createServer as createHttpsServer } from "https";
 import { createServer as createHttpServer } from "http";
 import { readFileSync, existsSync } from "fs";
-import { join } from "path";
+import { join, resolve } from "path";
+import * as path from "path";
 import { EventEmitter } from "events";
 import { Database } from "./db";
 
@@ -64,12 +65,38 @@ export class WebServer extends EventEmitter {
 
       ws.on("message", (message: string) => {
         try {
+          // Limit message size to prevent DoS
+          if (message.length > 1024) {
+            console.warn("WebSocket message too large, ignoring");
+            return;
+          }
+          
           const request = JSON.parse(message.toString());
+          
+          // Validate request structure
+          if (!request || typeof request !== 'object') {
+            console.warn("Invalid WebSocket request format");
+            return;
+          }
+          
+          // Only allow specific request types
           if (request.type === "getData") {
-            this.sendHistoricalData(ws, request.timeRange || "day");
+            // Validate timeRange parameter
+            const allowedRanges = ['day', 'week', 'month', 'year'];
+            const timeRange = request.timeRange || "day";
+            
+            if (!allowedRanges.includes(timeRange)) {
+              console.warn("Invalid time range requested:", timeRange);
+              return;
+            }
+            
+            this.sendHistoricalData(ws, timeRange);
+          } else {
+            console.warn("Unknown WebSocket request type:", request.type);
           }
         } catch (error) {
           console.error("WebSocket message error:", error);
+          // Don't send error details to client for security
         }
       });
 
@@ -80,12 +107,19 @@ export class WebServer extends EventEmitter {
   }
 
   private handleHttpRequest(req: any, res: any): void {
-    // Add CORS headers for local network access
+    // Add CORS and security headers for local network access
     const corsHeaders = {
       "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+      "Access-Control-Allow-Methods": "GET, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      "Access-Control-Max-Age": "86400"
+      "Access-Control-Max-Age": "86400",
+      // Security headers
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "X-XSS-Protection": "1; mode=block",
+      "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' wss: ws:",
+      "Referrer-Policy": "strict-origin-when-cross-origin"
     };
 
     // Handle preflight requests
@@ -95,8 +129,44 @@ export class WebServer extends EventEmitter {
       return;
     }
 
+    // Only allow GET requests for security
+    if (req.method !== "GET") {
+      res.writeHead(405, { ...corsHeaders, "Allow": "GET, OPTIONS" });
+      res.end("Method Not Allowed");
+      return;
+    }
+
+    // Sanitize and validate file path to prevent directory traversal
     let filePath = req.url === "/" ? "/index.html" : req.url;
+    
+    // Remove query parameters and fragments for security
+    filePath = filePath.split('?')[0].split('#')[0];
+    
+    // Normalize path to prevent directory traversal
+    filePath = filePath.replace(/\.\./g, '').replace(/\/+/g, '/');
+    
+    // Only allow specific file extensions
+    const allowedExtensions = ['.html', '.js', '.css', '.json', '.ico', '.png', '.jpg', '.svg'];
+    const fileExtension = filePath.substring(filePath.lastIndexOf('.'));
+    
+    if (filePath !== '/index.html' && !allowedExtensions.includes(fileExtension)) {
+      res.writeHead(403, corsHeaders);
+      res.end("Forbidden file type");
+      return;
+    }
+    
     const fullPath = join(__dirname, "../public", filePath);
+    
+    // Ensure the resolved path stays within public directory
+    const publicDir = join(__dirname, "../public");
+    const resolvedPath = path.resolve(fullPath);
+    const resolvedPublicDir = path.resolve(publicDir);
+    
+    if (!resolvedPath.startsWith(resolvedPublicDir)) {
+      res.writeHead(403, corsHeaders);
+      res.end("Access denied");
+      return;
+    }
 
     if (existsSync(fullPath)) {
       const content = readFileSync(fullPath);
@@ -122,19 +192,43 @@ export class WebServer extends EventEmitter {
   }
 
   broadcastToClients(data: ClientData): void {
+    // Validate input data before broadcasting
+    if (!data || typeof data !== 'object') {
+      console.error("Invalid client data provided");
+      return;
+    }
+    
+    // Sanitize and validate data fields
+    const sanitizedMac = (data.sensorMac || '').replace(/[^a-f0-9:-]/gi, '');
+    const temperature = typeof data.temperature === 'number' && !isNaN(data.temperature) ? 
+      Math.round(data.temperature * 100) / 100 : null;
+    const humidity = typeof data.humidity === 'number' && !isNaN(data.humidity) ? 
+      Math.round(data.humidity * 100) / 100 : null;
+    const timestamp = typeof data.timestamp === 'number' && data.timestamp > 0 ? 
+      data.timestamp : Date.now();
+    
     // Only send minimal data to clients (temperature, humidity, timestamp, sensorMac)
     const clientData = {
-      sensorMac: data.sensorMac,
-      temperature: data.temperature,
-      humidity: data.humidity,
-      timestamp: data.timestamp,
+      sensorMac: sanitizedMac,
+      temperature: temperature,
+      humidity: humidity,
+      timestamp: timestamp,
     };
-    const message = JSON.stringify({ type: "sensorData", data: clientData });
-    this.wss.clients.forEach((client) => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(message);
-      }
-    });
+    
+    try {
+      const message = JSON.stringify({ type: "sensorData", data: clientData });
+      this.wss.clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+          try {
+            client.send(message);
+          } catch (error) {
+            console.error("Error sending message to client:", error);
+          }
+        }
+      });
+    } catch (error) {
+      console.error("Error broadcasting to clients:", error);
+    }
   }
 
   private async sendHistoricalData(
@@ -142,10 +236,36 @@ export class WebServer extends EventEmitter {
     timeRange: string,
   ): Promise<void> {
     try {
+      // Rate limiting: prevent rapid requests
+      const now = Date.now();
+      const lastRequest = (ws as any).lastHistoricalRequest || 0;
+      if (now - lastRequest < 1000) { // 1 second minimum between requests
+        console.warn("Rate limiting historical data request");
+        return;
+      }
+      (ws as any).lastHistoricalRequest = now;
+      
       const rows = await this.database.getHistoricalData(timeRange);
-      ws.send(JSON.stringify({ type: "historicalData", data: rows }));
+      
+      // Limit response size
+      const maxRows = 1000;
+      const limitedRows = rows.slice(0, maxRows);
+      
+      const response = JSON.stringify({ 
+        type: "historicalData", 
+        data: limitedRows,
+        truncated: rows.length > maxRows
+      });
+      
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(response);
+      }
     } catch (error) {
       console.error("Error getting historical data:", error);
+      // Send generic error to client without details
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: "error", message: "Failed to retrieve data" }));
+      }
     }
   }
 
