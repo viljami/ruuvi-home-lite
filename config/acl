@@ -1,0 +1,13 @@
+# MQTT Access Control List for Ruuvi Gateway
+# Defines topic permissions for users
+
+# Ruuvi user - can publish sensor data
+user ruuvi
+topic write ruuvi/+/data
+topic write ruuvi/gateway/status
+
+# Allow all authenticated users to subscribe to ruuvi data
+pattern read ruuvi/+/data
+pattern read ruuvi/gateway/status
+
+# Deny everything else by default

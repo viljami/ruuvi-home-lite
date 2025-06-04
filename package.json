@@ -1,0 +1,26 @@
+{
+  "name": "ruuvi-home-lite",
+  "version": "1.0.0",
+  "description": "Minimal Ruuvi sensor data visualization",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "tsc && node dist/server.js",
+    "pm2": "pm2 start ecosystem.config.js",
+    "test": "tsc && node test-decoder.js"
+  },
+  "dependencies": {
+    "mqtt": "^5.3.4",
+    "sqlite3": "^5.1.6",
+    "ws": "^8.16.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "@types/node": "^20.10.6",
+    "@types/ws": "^8.5.10"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

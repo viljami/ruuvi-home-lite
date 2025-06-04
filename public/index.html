@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1a1a1a">
+    <title>Ruuvi Home</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            background: #1a1a1a; color: #e0e0e0; font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            overflow: hidden; height: 100vh; display: flex; flex-direction: column;
+        }
+        .header { 
+            padding: 10px 20px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; 
+            align-items: center; background: #222; z-index: 1;
+        }
+        .controls { display: flex; gap: 10px; }
+        .btn { 
+            background: #333; border: 1px solid #555; color: #e0e0e0; padding: 5px 12px; 
+            border-radius: 4px; cursor: pointer; font-size: 12px;
+        }
+        .btn.active { background: #4a9eff; border-color: #4a9eff; }
+        .chart-container { flex: 1; position: relative; padding: 20px; }
+        #chart { width: 100%; height: 100%; display: block; }
+        .status { 
+            position: absolute; top: 30px; right: 30px; font-size: 12px; opacity: 0.7;
+            padding: 4px 8px; background: #333; border-radius: 3px;
+        }
+        .legend { 
+            position: absolute; top: 30px; left: 30px; font-size: 12px;
+            background: rgba(34, 34, 34, 0.9); padding: 8px; border-radius: 4px;
+        }
+        .legend-item { display: flex; align-items: center; margin-bottom: 4px; }
+        .legend-color { width: 12px; height: 12px; margin-right: 6px; border-radius: 2px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Ruuvi Home</h1>
+        <div class="controls">
+            <button class="btn active" data-range="day">Day</button>
+            <button class="btn" data-range="week">Week</button>
+            <button class="btn" data-range="month">Month</button>
+            <button class="btn" data-range="year">Year</button>
+        </div>
+    </div>
+    <div class="chart-container">
+        <canvas id="chart"></canvas>
+        <div class="status" id="status">Connecting...</div>
+        <div class="legend" id="legend"></div>
+    </div>
+
+    <script>
+        class RuuviChart {
+            constructor() {
+                this.canvas = document.getElementById('chart');
+                this.ctx = this.canvas.getContext('2d');
+                this.data = new Map();
+                this.colors = ['#4a9eff', '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7'];
+                this.range = 'day';
+                this.ws = null;
+                this.setupWebSocket();
+                this.setupControls();
+                this.setupCanvas();
+                this.render();
+                window.addEventListener('resize', () => this.setupCanvas());
+            }
+
+            setupWebSocket() {
+                const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+                this.ws = new WebSocket(`${protocol}//${location.host}`);
+                
+                this.ws.onopen = () => {
+                    document.getElementById('status').textContent = 'Connected';
+                    this.ws.send(JSON.stringify({ type: 'getData', timeRange: this.range }));
+                };
+                
+                this.ws.onmessage = (event) => {
+                    const msg = JSON.parse(event.data);
+                    if (msg.type === 'historicalData') {
+                        this.loadData(msg.data);
+                    } else if (msg.type === 'sensorData') {
+                        this.addRealTimeData(msg.data);
+                    }
+                };
+                
+                this.ws.onclose = () => {
+                    document.getElementById('status').textContent = 'Disconnected';
+                    setTimeout(() => this.setupWebSocket(), 3000);
+                };
+            }
+
+            setupControls() {
+                document.querySelectorAll('.btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        document.querySelector('.btn.active')?.classList.remove('active');
+                        btn.classList.add('active');
+                        this.range = btn.dataset.range;
+                        if (this.ws?.readyState === WebSocket.OPEN) {
+                            this.ws.send(JSON.stringify({ type: 'getData', timeRange: this.range }));
+                        }
+                    });
+                });
+            }
+
+            setupCanvas() {
+                const rect = this.canvas.getBoundingClientRect();
+                this.canvas.width = rect.width * devicePixelRatio;
+                this.canvas.height = rect.height * devicePixelRatio;
+                this.ctx.scale(devicePixelRatio, devicePixelRatio);
+                this.canvas.style.width = rect.width + 'px';
+                this.canvas.style.height = rect.height + 'px';
+            }
+
+            loadData(rows) {
+                this.data.clear();
+                rows.forEach(row => {
+                    if (!this.data.has(row.sensorMac)) {
+                        this.data.set(row.sensorMac, []);
+                    }
+                    this.data.get(row.sensorMac).push({
+                        timestamp: row.timestamp,
+                        temperature: row.temperature,
+                        humidity: row.humidity
+                    });
+                });
+                this.render();
+                this.updateLegend();
+            }
+
+            addRealTimeData(data) {
+                if (!this.data.has(data.sensorMac)) {
+                    this.data.set(data.sensorMac, []);
+                }
+                // Ensure humidity is properly handled even if null
+                const dataPoint = {
+                    ...data,
+                    humidity: data.humidity === null ? null : data.humidity
+                };
+                this.data.get(data.sensorMac).push(dataPoint);
+                this.render();
+                this.updateLegend();
+            }
+
+            updateLegend() {
+                const legend = document.getElementById('legend');
+                legend.innerHTML = '';
+                let colorIndex = 0;
+                this.data.forEach((_, sensorMac) => {
+                    const item = document.createElement('div');
+                    item.className = 'legend-item';
+                    item.innerHTML = `
+                        <div class="legend-color" style="background:${this.colors[colorIndex % this.colors.length]}"></div>
+                        ${sensorMac.slice(-6)}
+                    `;
+                    legend.appendChild(item);
+                    colorIndex++;
+                });
+            }
+
+            render() {
+                const rect = this.canvas.getBoundingClientRect();
+                const width = rect.width;
+                const height = rect.height;
+                
+                this.ctx.clearRect(0, 0, width, height);
+                
+                if (this.data.size === 0) return;
+
+                const now = Date.now();
+                const ranges = { day: 24, week: 168, month: 720, year: 8760 };
+                const timeWindow = ranges[this.range] * 60 * 60 * 1000;
+                const startTime = now - timeWindow;
+
+                // Calculate bounds
+                let minTemp = Infinity, maxTemp = -Infinity;
+                let minHum = Infinity, maxHum = -Infinity;
+                
+                this.data.forEach(points => {
+                    points.forEach(p => {
+                        if (p.timestamp >= startTime) {
+                            minTemp = Math.min(minTemp, p.temperature);
+                            maxTemp = Math.max(maxTemp, p.temperature);
+                            if (p.humidity !== null && p.humidity !== undefined) {
+                                minHum = Math.min(minHum, p.humidity);
+                                maxHum = Math.max(maxHum, p.humidity);
+                            }
+                        }
+                    });
+                });
+
+                const padding = 60;
+                const chartWidth = width - padding * 2;
+                const chartHeight = height - padding * 2;
+
+                // Draw axes
+                this.ctx.strokeStyle = '#444';
+                this.ctx.lineWidth = 1;
+                this.ctx.beginPath();
+                this.ctx.moveTo(padding, padding);
+                this.ctx.lineTo(padding, height - padding);
+                this.ctx.lineTo(width - padding, height - padding);
+                this.ctx.stroke();
+
+                // Draw temperature lines (left axis)
+                this.ctx.strokeStyle = '#4a9eff';
+                this.ctx.fillStyle = '#4a9eff';
+                this.ctx.font = '10px sans-serif';
+                for (let i = 0; i <= 5; i++) {
+                    const temp = minTemp + (maxTemp - minTemp) * i / 5;
+                    const y = height - padding - (chartHeight * i / 5);
+                    this.ctx.fillText(`${temp.toFixed(1)}°C`, 5, y + 3);
+                }
+
+                // Draw humidity lines (right axis) - only if humidity data exists
+                if (minHum !== Infinity && maxHum !== -Infinity) {
+                    this.ctx.fillStyle = '#ff6b6b';
+                    for (let i = 0; i <= 5; i++) {
+                        const hum = minHum + (maxHum - minHum) * i / 5;
+                        const y = height - padding - (chartHeight * i / 5);
+                        this.ctx.fillText(`${hum.toFixed(1)}%`, width - 50, y + 3);
+                    }
+                }
+
+                // Draw data
+                let colorIndex = 0;
+                this.data.forEach(points => {
+                    const color = this.colors[colorIndex % this.colors.length];
+                    
+                    // Temperature line
+                    this.ctx.strokeStyle = color;
+                    this.ctx.lineWidth = 2;
+                    this.ctx.beginPath();
+                    let first = true;
+                    
+                    points.forEach(p => {
+                        if (p.timestamp >= startTime) {
+                            const x = padding + ((p.timestamp - startTime) / timeWindow) * chartWidth;
+                            const y = height - padding - ((p.temperature - minTemp) / (maxTemp - minTemp)) * chartHeight;
+                            if (first) {
+                                this.ctx.moveTo(x, y);
+                                first = false;
+                            } else {
+                                this.ctx.lineTo(x, y);
+                            }
+                        }
+                    });
+                    this.ctx.stroke();
+
+                    // Humidity line (dashed) - only if humidity data exists
+                    if (minHum !== Infinity && maxHum !== -Infinity) {
+                        this.ctx.setLineDash([5, 5]);
+                        this.ctx.beginPath();
+                        first = true;
+                        
+                        points.forEach(p => {
+                            if (p.timestamp >= startTime && p.humidity !== null && p.humidity !== undefined) {
+                                const x = padding + ((p.timestamp - startTime) / timeWindow) * chartWidth;
+                                const y = height - padding - ((p.humidity - minHum) / (maxHum - minHum)) * chartHeight;
+                                if (first) {
+                                    this.ctx.moveTo(x, y);
+                                    first = false;
+                                } else {
+                                    this.ctx.lineTo(x, y);
+                                }
+                            }
+                        });
+                        this.ctx.stroke();
+                        this.ctx.setLineDash([]);
+                    }
+                    
+                    colorIndex++;
+                });
+            }
+        }
+
+        // PWA Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(console.error);
+        }
+
+        // Initialize app
+        new RuuviChart();
+    </script>
+</body>
+</html>
