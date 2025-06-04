@@ -61,13 +61,20 @@ if ! id mosquitto >/dev/null 2>&1; then
     exit 1
 fi
 
-# Create directories
-echo "📁 Creating directories..."
+# Create system directories (need root)
+echo "📁 Creating system directories..."
 sudo mkdir -p /etc/mosquitto/ca_certificates
 sudo mkdir -p /etc/mosquitto/certs
+sudo mkdir -p /etc/ruuvi-home/certs
 sudo mkdir -p /var/lib/mosquitto
 sudo mkdir -p /var/log/mosquitto
-sudo mkdir -p logs
+
+# Create project directories (user-owned)
+echo "📁 Creating project directories..."
+mkdir -p logs
+chmod 755 logs
+mkdir -p certs
+chmod 755 certs
 
 # Setup environment file
 echo "⚙️  Setting up environment configuration..."
@@ -156,23 +163,33 @@ cd "$CERT_TEMP"
 openssl genrsa -out ca.key 2048
 openssl req -new -x509 -days 3650 -key ca.key -out ca.crt -subj "/C=FI/ST=Helsinki/L=Helsinki/O=RuuviHome/CN=ruuvi-ca"
 
-# Server key and certificate with correct CN
-openssl genrsa -out server.key 2048
-openssl req -new -key server.key -out server.csr -subj "/C=FI/ST=Helsinki/L=Helsinki/O=RuuviHome/CN=$SERVER_IP"
-openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out server.crt -days 3650
+# MQTT server key and certificate with correct CN
+openssl genrsa -out mqtt-server.key 2048
+openssl req -new -key mqtt-server.key -out mqtt-server.csr -subj "/C=FI/ST=Helsinki/L=Helsinki/O=RuuviHome/CN=$SERVER_IP"
+openssl x509 -req -in mqtt-server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out mqtt-server.crt -days 3650
+
+# Web server key and certificate with correct CN
+openssl genrsa -out web-server.key 2048
+openssl req -new -key web-server.key -out web-server.csr -subj "/C=FI/ST=Helsinki/L=Helsinki/O=RuuviHome/CN=$SERVER_IP"
+openssl x509 -req -in web-server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out web-server.crt -days 3650
 
 # Verify certificates were created
-if [ ! -f ca.crt ] || [ ! -f server.crt ] || [ ! -f server.key ]; then
+if [ ! -f ca.crt ] || [ ! -f mqtt-server.crt ] || [ ! -f mqtt-server.key ] || [ ! -f web-server.crt ] || [ ! -f web-server.key ]; then
     echo "❌ Failed to generate certificates"
     cd "$ORIGINAL_DIR"
     rm -rf "$CERT_TEMP"
     exit 1
 fi
 
-# Copy certificates
+# Copy MQTT certificates
 sudo cp ca.crt /etc/mosquitto/ca_certificates/
-sudo cp server.crt /etc/mosquitto/certs/
-sudo cp server.key /etc/mosquitto/certs/
+sudo cp mqtt-server.crt /etc/mosquitto/certs/server.crt
+sudo cp mqtt-server.key /etc/mosquitto/certs/server.key
+
+# Copy web server certificates  
+sudo cp web-server.crt /etc/ruuvi-home/certs/server.crt
+sudo cp web-server.key /etc/ruuvi-home/certs/server.key
+sudo cp ca.crt /etc/ruuvi-home/certs/ca.crt
 
 # Cleanup temporary directory
 cd "$ORIGINAL_DIR"
@@ -184,6 +201,46 @@ sudo chown mosquitto:mosquitto /etc/mosquitto/ca_certificates/*
 sudo chmod 600 /etc/mosquitto/certs/server.key
 sudo chmod 644 /etc/mosquitto/certs/server.crt
 sudo chmod 644 /etc/mosquitto/ca_certificates/ca.crt
+
+# Generate separate web server certificates in project directory
+echo "🔐 Generating web server certificates..."
+WEB_CERT_TEMP=$(mktemp -d)
+if [ ! -d "$WEB_CERT_TEMP" ]; then
+    echo "❌ Failed to create temporary directory for web certificates"
+    exit 1
+fi
+
+chmod 700 "$WEB_CERT_TEMP"
+cd "$WEB_CERT_TEMP"
+
+# Generate web server CA
+openssl genrsa -out web-ca.key 2048
+openssl req -new -x509 -days 3650 -key web-ca.key -out web-ca.crt -subj "/C=FI/ST=Helsinki/L=Helsinki/O=RuuviHome/CN=ruuvi-web-ca"
+
+# Generate web server certificate with proper CN
+openssl genrsa -out web-server.key 2048
+openssl req -new -key web-server.key -out web-server.csr -subj "/C=FI/ST=Helsinki/L=Helsinki/O=RuuviHome/CN=$SERVER_IP"
+openssl x509 -req -in web-server.csr -CA web-ca.crt -CAkey web-ca.key -CAcreateserial -out web-server.crt -days 3650
+
+# Verify web certificates were created
+if [ ! -f web-server.crt ] || [ ! -f web-server.key ]; then
+    echo "❌ Failed to generate web server certificates"
+    cd "$ORIGINAL_DIR"
+    rm -rf "$WEB_CERT_TEMP"
+    exit 1
+fi
+
+# Copy web certificates to project directory (user-owned)
+cp web-server.crt "$ORIGINAL_DIR/certs/"
+cp web-server.key "$ORIGINAL_DIR/certs/"
+
+# Cleanup web certificate temporary directory
+cd "$ORIGINAL_DIR"
+rm -rf "$WEB_CERT_TEMP"
+
+# Set web certificate permissions (user-owned)
+chmod 644 certs/web-server.crt
+chmod 600 certs/web-server.key
 
 # Verify certificate permissions
 if [ "$(stat -c %a /etc/mosquitto/certs/server.key)" != "600" ]; then

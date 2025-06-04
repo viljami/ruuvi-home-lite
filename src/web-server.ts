@@ -1,5 +1,6 @@
 import * as WebSocket from "ws";
-import { createServer } from "https";
+import { createServer as createHttpsServer } from "https";
+import { createServer as createHttpServer } from "http";
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 import { EventEmitter } from "events";
@@ -25,18 +26,34 @@ export class WebServer extends EventEmitter {
   }
 
   private setupHttpServer(): void {
-    const options = {
-      key: readFileSync("/etc/mosquitto/certs/server.key"),
-      cert: readFileSync("/etc/mosquitto/certs/server.crt"),
-    };
+    const webCertPath = join(__dirname, "../certs/web-server.crt");
+    const webKeyPath = join(__dirname, "../certs/web-server.key");
+    
+    // Try to use HTTPS with separate web certificates
+    if (existsSync(webCertPath) && existsSync(webKeyPath)) {
+      const options = {
+        key: readFileSync(webKeyPath),
+        cert: readFileSync(webCertPath),
+      };
 
-    this.httpServer = createServer(options, this.handleHttpRequest.bind(this));
-    this.httpServer.listen(3000, "0.0.0.0", () => {
-      console.log("Server running on https://0.0.0.0:3000");
-      console.log(
-        `Access from local network: https://${process.env.SERVER_IP || 'localhost'}:3000`,
-      );
-    });
+      this.httpServer = createHttpsServer(options, this.handleHttpRequest.bind(this));
+      this.httpServer.listen(3000, "0.0.0.0", () => {
+        console.log("Server running on https://0.0.0.0:3000");
+        console.log(
+          `Access from local network: https://${process.env.SERVER_IP || 'localhost'}:3000`,
+        );
+      });
+    } else {
+      // Fallback to HTTP if certificates don't exist
+      console.log("⚠️  Web server certificates not found, falling back to HTTP");
+      this.httpServer = createHttpServer(this.handleHttpRequest.bind(this));
+      this.httpServer.listen(3000, "0.0.0.0", () => {
+        console.log("Server running on http://0.0.0.0:3000");
+        console.log(
+          `Access from local network: http://${process.env.SERVER_IP || 'localhost'}:3000`,
+        );
+      });
+    }
   }
 
   private setupWebSocket(): void {
@@ -63,6 +80,21 @@ export class WebServer extends EventEmitter {
   }
 
   private handleHttpRequest(req: any, res: any): void {
+    // Add CORS headers for local network access
+    const corsHeaders = {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      "Access-Control-Max-Age": "86400"
+    };
+
+    // Handle preflight requests
+    if (req.method === "OPTIONS") {
+      res.writeHead(200, corsHeaders);
+      res.end();
+      return;
+    }
+
     let filePath = req.url === "/" ? "/index.html" : req.url;
     const fullPath = join(__dirname, "../public", filePath);
 
@@ -78,10 +110,13 @@ export class WebServer extends EventEmitter {
               ? "text/css"
               : "text/plain";
 
-      res.writeHead(200, { "Content-Type": contentType });
+      res.writeHead(200, { 
+        "Content-Type": contentType,
+        ...corsHeaders
+      });
       res.end(content);
     } else {
-      res.writeHead(404);
+      res.writeHead(404, corsHeaders);
       res.end("Not found");
     }
   }
