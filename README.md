@@ -9,24 +9,32 @@ Minimal Ruuvi sensor data visualization with real-time graphs. A lightweight, se
 
 **This project is designed for local network deployment only. Never expose to the internet without proper security hardening.**
 
-## Quick Setup
+## 🚀 Production Setup (Raspberry Pi)
 
 ```bash
-# Clone repository
+# Clone and setup for production deployment
 git clone https://github.com/your-username/ruuvi-home-lite.git
 cd ruuvi-home-lite
-
-# Run secure setup (automatically creates .env and generates certificates)
-./setup.sh
-
-# Start application
-make start
+./setup.sh    # Creates .env, certificates, MQTT broker
+make start    # Deploy with PM2
 ```
 
-## 🔒 Security First Setup
+## 💻 Development Setup (Local Machine)
 
-The setup script automatically:
-- Creates `.env` configuration file from template
+```bash
+# Clone and setup for development
+git clone https://github.com/your-username/ruuvi-home-lite.git
+cd ruuvi-home-lite
+npm install         # Install all dependencies (including dev tools)
+npm run build       # Build TypeScript
+npm run dev         # Start in development mode
+```
+
+## 🔒 Production Security Features
+
+The `./setup.sh` script automatically:
+
+- Creates `.env` configuration from template
 - Generates strong random MQTT passwords (16 characters)
 - Creates TLS certificates for encrypted communication
 - Sets proper file permissions (`.env` mode 600)
@@ -64,6 +72,7 @@ After running setup, configure your Ruuvi Gateway with the displayed credentials
 ### Expected Payload Format
 
 Gateway sends JSON with BLE advertisement data:
+
 ```json
 {
   "gw_mac": "A1:B2:C3:D4:E5:F6",
@@ -87,11 +96,16 @@ Gateway sends JSON with BLE advertisement data:
 
 ## 🧪 Testing
 
-The project includes comprehensive tests with obfuscated test data:
-
 ```bash
+# Production testing (via Makefile)
 make test-unit       # Fast unit tests (decoder validation)
 make test-integration # Integration tests (requires MQTT broker)
+
+# Development testing (via npm scripts)
+npm run test:unit         # Unit tests
+npm run test:integration  # Integration tests
+npm run format           # Format code with Prettier
+npm run lint             # Lint TypeScript code
 ```
 
 All test data uses obfuscated MAC addresses for security while maintaining valid data formats.
@@ -127,7 +141,7 @@ Please read [SECURITY.md](SECURITY.md) for security considerations.
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+**MIT License** - You are free to use, modify, and distribute this software for any purpose, including commercial use. See the [LICENSE](LICENSE) file for full details.
 
 ## 🙏 Acknowledgments
 
@@ -140,6 +154,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ### Common Issues
 
 **MQTT Connection Fails**
+
 ```bash
 # Check if Mosquitto is running
 sudo systemctl status mosquitto
@@ -149,6 +164,7 @@ sudo journalctl -u mosquitto -f
 ```
 
 **Certificate Issues**
+
 ```bash
 # Regenerate certificates
 sudo rm -rf /etc/mosquitto/certs/*
@@ -156,6 +172,7 @@ sudo rm -rf /etc/mosquitto/certs/*
 ```
 
 **Permission Issues**
+
 ```bash
 # Check .env permissions
 ls -la .env  # Should show -rw------- (600)
@@ -168,23 +185,26 @@ For more issues, check the [Issues](https://github.com/your-username/ruuvi-home-
 
 ## 🔗 Access Points
 
-## 🛠️ Development Commands
+## 🛠️ Available Commands
+
+### Production (Makefile - for Raspberry Pi)
 
 ```bash
-# Build and test
-make build           # Build TypeScript
-make test-unit       # Run unit tests
-make test-integration # Run integration tests (requires MQTT broker)
-make test            # Run all available tests
+make setup     # Setup production environment
+make start     # Start with PM2
+make stop      # Stop PM2 processes
+make logs      # View PM2 logs
+make test      # Run all tests
+```
 
-# Run application
-make start           # Start with PM2 (loads .env automatically)
-make stop            # Stop PM2 processes
-make logs            # View PM2 logs
+### Development (npm scripts - for local development)
 
-# Development
-make dev             # Start in development mode
-make clean           # Clean build artifacts
+```bash
+npm run build        # Build TypeScript
+npm run dev          # Start in development mode
+npm run format       # Format code with Prettier
+npm run lint         # Lint TypeScript code
+npm run test:unit    # Unit tests only
 ```
 
 ## 🔒 Security Features
