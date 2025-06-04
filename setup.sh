@@ -149,6 +149,7 @@ fi
 
 # Secure the temporary directory
 chmod 700 "$CERT_TEMP"
+ORIGINAL_DIR=$(pwd)
 cd "$CERT_TEMP"
 
 # CA key and certificate
@@ -163,7 +164,7 @@ openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out s
 # Verify certificates were created
 if [ ! -f ca.crt ] || [ ! -f server.crt ] || [ ! -f server.key ]; then
     echo "❌ Failed to generate certificates"
-    cd /
+    cd "$ORIGINAL_DIR"
     rm -rf "$CERT_TEMP"
     exit 1
 fi
@@ -174,7 +175,7 @@ sudo cp server.crt /etc/mosquitto/certs/
 sudo cp server.key /etc/mosquitto/certs/
 
 # Cleanup temporary directory
-cd /
+cd "$ORIGINAL_DIR"
 rm -rf "$CERT_TEMP"
 
 # Set certificate permissions
