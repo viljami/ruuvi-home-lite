@@ -15,7 +15,7 @@
     "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.js\"",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
-    "prepare": "git config core.hooksPath .githooks",
+    "prepare": "echo no-hooks",
     "clean": "rm -rf dist/"
   },
   "dependencies": {

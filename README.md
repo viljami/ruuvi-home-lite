@@ -9,15 +9,48 @@ Minimal Ruuvi sensor data visualization with real-time graphs. A lightweight, se
 
 **This project is designed for local network deployment only. Never expose to the internet without proper security hardening.**
 
-## 🚀 Production Setup (Raspberry Pi)
+## 🚀 Production Setup
+
+### Native Deployment (Raspberry Pi)
 
 ```bash
-# Clone and setup for production deployment
+# Clone and setup for native deployment
 git clone https://github.com/your-username/ruuvi-home-lite.git
 cd ruuvi-home-lite
 ./setup.sh    # Creates .env, certificates, MQTT broker
 make start    # Deploy with PM2
 ```
+
+### Docker Deployment
+
+```bash
+# Clone and setup for Docker deployment
+git clone https://github.com/your-username/ruuvi-home-lite.git
+cd ruuvi-home-lite
+./setup-docker.sh              # Creates .env.docker with credentials
+docker-compose up --build -d   # Deploy with Docker
+```
+</edits>
+
+<old_text>
+## 🔒 Production Security Features
+
+Both setup scripts automatically:
+
+- Create environment configuration (`.env` or `.env.docker`)
+- Generate strong random MQTT passwords (16 characters)
+- Detect local network IP addresses
+- Set proper file permissions (environment files mode 600)
+
+**Native deployment** (`./setup.sh`) additionally:
+- Creates TLS certificates for encrypted communication
+- Configures secure MQTT broker with authentication
+- Sets up firewall rules for local network access
+
+**Docker deployment** (`./setup-docker.sh`) relies on:
+- Docker container isolation for security
+- Docker Compose managed MQTT broker
+- Volume-mounted certificates and configuration
 
 ## 💻 Development Setup (Local Machine)
 
@@ -48,6 +81,52 @@ The `./setup.sh` script automatically:
 - 📱 **Progressive Web App** with offline support
 - 🌙 **Dark mode interface** (non-distracting design)
 - ⏰ **Flexible time ranges** (day/week/month/year)
+- 🐳 **Docker support** for containerized deployment
+- 🛠️ **Comprehensive scripts** for setup, maintenance, and troubleshooting
+
+## 📁 Script Organization
+
+All setup and maintenance scripts are located in the `scripts/` directory:
+
+- **`setup.sh`** - Complete native installation (Raspberry Pi)
+- **`setup-docker.sh`** - Environment setup for Docker deployment
+- **`cleanup.sh`** - Interactive removal and cleanup
+- **`fix-certificates.sh`** - TLS certificate troubleshooting
+- **`troubleshoot-mosquitto.sh`** - MQTT broker diagnostics
+
+See `scripts/README.md` for detailed documentation of all available scripts.
+- 🐳 **Docker support** for containerized deployment
+- 🛠️ **Comprehensive scripts** for setup, maintenance, and troubleshooting
+
+## 📁 Script Organization
+
+All setup and maintenance scripts are located in the `scripts/` directory:
+
+- **`setup.sh`** - Complete native installation (Raspberry Pi)
+- **`setup-docker.sh`** - Environment setup for Docker deployment
+- **`cleanup.sh`** - Interactive removal and cleanup
+- **`fix-certificates.sh`** - TLS certificate troubleshooting
+- **`troubleshoot-mosquitto.sh`** - MQTT broker diagnostics
+
+See `scripts/README.md` for detailed documentation of all available scripts.
+</edits>
+
+</thinking>
+
+Looking at the README file, I need to update it to reflect the new script structure and add Docker setup instructions. Let me make the necessary edits:
+
+<edits>
+
+<old_text>
+## 🚀 Production Setup (Raspberry Pi)
+
+```bash
+# Clone and setup for production deployment
+git clone https://github.com/your-username/ruuvi-home-lite.git
+cd ruuvi-home-lite
+./setup.sh    # Creates .env, certificates, MQTT broker
+make start    # Deploy with PM2
+```
 - 🏠 **Privacy-focused** (all data stays local)
 - 🔋 **Temperature-only sensors** supported (humidity optional)
 

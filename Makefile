@@ -1,18 +1,20 @@
-.PHONY: help build clean install setup dev start stop logs lint test
+.PHONY: help build clean install setup setup-docker dev start stop logs lint test cleanup
 
 # Default target
 help:
 	@echo "Ruuvi Home Lite - Available targets:"
 	@echo "  install  - Install dependencies"
 	@echo "  build    - Build TypeScript"
-	@echo "  setup    - Setup MQTT broker and certificates"
-	@echo "  dev      - Start in development mode"
-	@echo "  start    - Start with PM2"
-	@echo "  stop     - Stop PM2 processes"
-	@echo "  logs     - View PM2 logs"
-	@echo "  clean    - Clean build artifacts"
-	@echo "  lint     - Run linting (placeholder)"
-	@echo "  test     - Run tests (placeholder)"
+	@echo "  setup         - Setup MQTT broker and certificates (native)"
+	@echo "  setup-docker  - Setup environment for Docker deployment"
+	@echo "  dev           - Start in development mode"
+	@echo "  start         - Start with PM2"
+	@echo "  stop          - Stop PM2 processes"
+	@echo "  logs          - View PM2 logs"
+	@echo "  clean         - Clean build artifacts"
+	@echo "  cleanup       - Remove installation (interactive)"
+	@echo "  lint          - Run linting (placeholder)"
+	@echo "  test          - Run tests (placeholder)"
 
 install:
 	npm install
@@ -22,6 +24,9 @@ build: install
 
 setup: build
 	./setup.sh
+
+setup-docker:
+	./setup-docker.sh
 
 dev: build
 	npm run dev
@@ -59,3 +64,11 @@ test: test-unit
 	@echo "Running integration tests (may fail if infrastructure not ready)..."
 	@-node tests/test-mqtt.js 2>/dev/null && echo "✅ Integration tests passed" || echo "⚠️  Integration tests skipped (infrastructure not ready)"
 	@echo "All available tests completed!"
+
+cleanup:
+	chmod +x scripts/cleanup.sh
+	./scripts/cleanup.sh
+
+cleanup-force:
+	chmod +x scripts/remove.sh
+	./scripts/remove.sh

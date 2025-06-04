@@ -13,7 +13,11 @@ build/
 .env.local
 .env.production
 .env.test
+.env.docker
+.env.backup.*
+.env.tmp
 *.env
+*.env.backup
 
 # Database files
 *.db
@@ -67,6 +71,9 @@ Thumbs.db
 .tmp/
 temp/
 tmp/
+*_backup_*
+ruuvi_config_*.tar.gz
+ruuvi_*.db.gz
 
 # Package lock files (choose one)
 package-lock.json
