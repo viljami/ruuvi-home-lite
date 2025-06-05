@@ -56,6 +56,7 @@ services:
       - MQTT_USER=ruuvi
       - MQTT_PASS=placeholder
       - SERVER_IP=0.0.0.0
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:3000/ || exit 1"]
       interval: 30s
