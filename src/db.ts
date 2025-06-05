@@ -164,7 +164,7 @@ export class Database {
   getHistoricalData(timeRange: string): Promise<HistoricalDataRow[]> {
     return new Promise((resolve, reject) => {
       // Validate timeRange input to prevent injection
-      const allowedRanges = { day: 24, week: 168, month: 720, year: 8760 };
+      const allowedRanges = { hour: 1, day: 24, week: 168, month: 720, year: 8760 };
       const sanitizedRange = timeRange.toLowerCase().replace(/[^a-z]/g, '');
       
       if (!Object.keys(allowedRanges).includes(sanitizedRange)) {

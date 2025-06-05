@@ -126,13 +126,15 @@
             loadData(rows) {
                 this.data.clear();
                 rows.forEach(row => {
-                    if (!this.data.has(row.sensorMac)) {
-                        this.data.set(row.sensorMac, []);
+                    // Normalize MAC address to lowercase
+                    const normalizedMac = row.sensorMac.toLowerCase();
+                    if (!this.data.has(normalizedMac)) {
+                        this.data.set(normalizedMac, []);
                     }
                     
                     if (this.aggregated) {
                         // Handle aggregated data
-                        this.data.get(row.sensorMac).push({
+                        this.data.get(normalizedMac).push({
                             timestamp: row.timestamp,
                             temperature: row.avgTemperature,
                             minTemperature: row.minTemperature,
@@ -145,7 +147,7 @@
                         });
                     } else {
                         // Handle raw data
-                        this.data.get(row.sensorMac).push({
+                        this.data.get(normalizedMac).push({
                             timestamp: row.timestamp,
                             temperature: row.temperature,
                             humidity: row.humidity,
@@ -158,11 +160,13 @@
             }
 
             addRealTimeData(data) {
-                if (!this.data.has(data.sensorMac)) {
-                    this.data.set(data.sensorMac, []);
+                // Normalize MAC address to lowercase
+                const normalizedMac = data.sensorMac.toLowerCase();
+                if (!this.data.has(normalizedMac)) {
+                    this.data.set(normalizedMac, []);
                 }
                 
-                const sensorData = this.data.get(data.sensorMac);
+                const sensorData = this.data.get(normalizedMac);
                 const now = Math.floor(Date.now() / 1000);
                 const timeWindow = this.getTimeWindow();
                 
@@ -271,7 +275,9 @@
                 
                 this.ctx.clearRect(0, 0, width, height);
                 
-                if (this.data.size === 0) return;
+                if (this.data.size === 0) {
+                    return;
+                }
 
                 const now = Math.floor(Date.now() / 1000);
                 const timeWindow = this.getTimeWindow();
@@ -280,10 +286,13 @@
                 // Calculate bounds
                 let minTemp = Infinity, maxTemp = -Infinity;
                 let minHum = Infinity, maxHum = -Infinity;
+                let pointsInWindow = 0;
                 
-                this.data.forEach(points => {
+                this.data.forEach((points, sensorMac) => {
                     points.forEach(p => {
-                        if (p.timestamp >= startTime) {
+                        // For aggregated data, always show all points since server already filtered by time range
+                        if (this.aggregated || p.timestamp >= startTime) {
+                            pointsInWindow++;
                             if (p.isAggregated) {
                                 minTemp = Math.min(minTemp, p.minTemperature || p.temperature);
                                 maxTemp = Math.max(maxTemp, p.maxTemperature || p.temperature);
@@ -302,6 +311,10 @@
                         }
                     });
                 });
+                
+                if (pointsInWindow === 0) {
+                    return;
+                }
 
                 const padding = 80;
                 const chartWidth = width - padding * 2;
@@ -320,9 +333,11 @@
                 this.ctx.fillStyle = '#888';
                 this.ctx.font = '10px sans-serif';
                 const timeSteps = 6;
+                const dataStart = this.aggregated ? this.getOldestTimestamp() : startTime;
+                const dataSpan = this.aggregated ? this.getDataTimeSpan() : timeWindow;
                 for (let i = 0; i <= timeSteps; i++) {
                     const timeProgress = i / timeSteps;
-                    const timestamp = startTime + (timeWindow * timeProgress);
+                    const timestamp = dataStart + (dataSpan * timeProgress);
                     const x = padding + (chartWidth * timeProgress);
                     const label = this.formatTimeLabel(timestamp, this.range);
                     
@@ -386,8 +401,10 @@
                         
                         // Top edge (max values)
                         points.forEach(p => {
-                            if (p.timestamp >= startTime && p.maxTemperature !== undefined) {
-                                const x = padding + ((p.timestamp - startTime) / timeWindow) * chartWidth;
+                            if ((this.aggregated || p.timestamp >= startTime) && p.maxTemperature !== undefined) {
+                                const dataStart = this.aggregated ? this.getOldestTimestamp() : startTime;
+                                const dataSpan = this.aggregated ? this.getDataTimeSpan() : timeWindow;
+                                const x = padding + ((p.timestamp - dataStart) / dataSpan) * chartWidth;
                                 const y = height - padding - ((p.maxTemperature - minTemp) / (maxTemp - minTemp)) * chartHeight;
                                 if (firstMax) {
                                     this.ctx.moveTo(x, y);
@@ -401,8 +418,10 @@
                         // Bottom edge (min values, reversed)
                         const reversedPoints = [...points].reverse();
                         reversedPoints.forEach(p => {
-                            if (p.timestamp >= startTime && p.minTemperature !== undefined) {
-                                const x = padding + ((p.timestamp - startTime) / timeWindow) * chartWidth;
+                            if ((this.aggregated || p.timestamp >= startTime) && p.minTemperature !== undefined) {
+                                const dataStart = this.aggregated ? this.getOldestTimestamp() : startTime;
+                                const dataSpan = this.aggregated ? this.getDataTimeSpan() : timeWindow;
+                                const x = padding + ((p.timestamp - dataStart) / dataSpan) * chartWidth;
                                 const y = height - padding - ((p.minTemperature - minTemp) / (maxTemp - minTemp)) * chartHeight;
                                 this.ctx.lineTo(x, y);
                             }
@@ -417,8 +436,10 @@
                     let first = true;
                     
                     points.forEach(p => {
-                        if (p.timestamp >= startTime) {
-                            const x = padding + ((p.timestamp - startTime) / timeWindow) * chartWidth;
+                        if (this.aggregated || p.timestamp >= startTime) {
+                            const dataStart = this.aggregated ? this.getOldestTimestamp() : startTime;
+                            const dataSpan = this.aggregated ? this.getDataTimeSpan() : timeWindow;
+                            const x = padding + ((p.timestamp - dataStart) / dataSpan) * chartWidth;
                             const y = height - padding - ((p.temperature - minTemp) / (maxTemp - minTemp)) * chartHeight;
                             if (first) {
                                 this.ctx.moveTo(x, y);
@@ -438,8 +459,10 @@
                         
                         points.forEach(p => {
                             const humidity = p.humidity;
-                            if (p.timestamp >= startTime && humidity !== null && humidity !== undefined) {
-                                const x = padding + ((p.timestamp - startTime) / timeWindow) * chartWidth;
+                            if ((this.aggregated || p.timestamp >= startTime) && humidity !== null && humidity !== undefined) {
+                                const dataStart = this.aggregated ? this.getOldestTimestamp() : startTime;
+                                const dataSpan = this.aggregated ? this.getDataTimeSpan() : timeWindow;
+                                const x = padding + ((p.timestamp - dataStart) / dataSpan) * chartWidth;
                                 const y = height - padding - ((humidity - minHum) / (maxHum - minHum)) * chartHeight;
                                 if (first) {
                                     this.ctx.moveTo(x, y);
@@ -455,6 +478,27 @@
                     
                     colorIndex++;
                 });
+            }
+
+            getOldestTimestamp() {
+                let oldest = Infinity;
+                this.data.forEach(points => {
+                    points.forEach(p => {
+                        oldest = Math.min(oldest, p.timestamp);
+                    });
+                });
+                return oldest;
+            }
+
+            getDataTimeSpan() {
+                let oldest = Infinity, newest = -Infinity;
+                this.data.forEach(points => {
+                    points.forEach(p => {
+                        oldest = Math.min(oldest, p.timestamp);
+                        newest = Math.max(newest, p.timestamp);
+                    });
+                });
+                return Math.max(newest - oldest, this.bucketSize); // Minimum bucket size span
             }
         }
 

@@ -124,7 +124,7 @@ export class MQTTClient extends EventEmitter {
 
         // Extract sensor MAC from topic or use decoded MAC
         const topicParts = topic.split("/");
-        let sensorMac = decoded?.mac || "unknown";
+        let sensorMac = (decoded?.mac || "unknown").toLowerCase();
 
         // Handle different topic patterns:
         // ruuvi/gateway_id/sensor_mac
@@ -134,9 +134,9 @@ export class MQTTClient extends EventEmitter {
           topicParts.length >= 3 &&
           (topicParts[0] === "ruuvi" || topicParts[0] === "gateway")
         ) {
-          sensorMac = topicParts[2]; // Use MAC from topic
+          sensorMac = topicParts[2].toLowerCase(); // Use MAC from topic, normalize to lowercase
         } else if (topicParts.length === 2 && topicParts[0] === "ruuvi") {
-          sensorMac = topicParts[1]; // Legacy format
+          sensorMac = topicParts[1].toLowerCase(); // Legacy format, normalize to lowercase
         }
 
         if (decoded && decoded.temperature !== null) {
