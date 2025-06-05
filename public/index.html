@@ -1,881 +1,1119 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#1a1a1a">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#1a1a1a" />
     <title>Ruuvi Home</title>
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
-    <link rel="apple-touch-icon" href="favicon.svg">
+    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="favicon.svg" />
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            background: #1a1a1a; color: #e0e0e0; font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            overflow: hidden; height: 100vh; display: flex; flex-direction: column;
-        }
-        .header { 
-            padding: 10px 20px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; 
-            align-items: center; background: #222; z-index: 1;
-        }
-        .controls { display: flex; gap: 10px; }
-        .btn { 
-            background: #333; border: 1px solid #555; color: #e0e0e0; padding: 5px 12px; 
-            border-radius: 4px; cursor: pointer; font-size: 12px;
-        }
-        .btn.active { background: #4a9eff; border-color: #4a9eff; }
-        .main-content { flex: 1; display: flex; }
-        .chart-container { flex: 1; position: relative; padding: 20px; }
-        .sidebar { width: 280px; background: #2a2a2a; border-left: 1px solid #444; padding: 15px; overflow-y: auto; }
-        #chart { width: 100%; height: 100%; display: block; }
-        .sidebar h3 { margin: 0 0 10px 0; color: #e0e0e0; font-size: 16px; }
-        .sensor-item { background: #333; margin-bottom: 6px; padding: 8px 10px; border-radius: 4px; border-left: 3px solid #4a9eff; display: flex; align-items: center; justify-content: space-between; font-size: 12px; cursor: pointer; transition: all 0.2s ease; }
-        .sensor-item:hover { background: #404040; transform: translateX(2px); box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
-        .sensor-left { display: flex; align-items: center; gap: 8px; }
-        .sensor-mac { font-family: monospace; color: #888; font-size: 11px; }
-        .sensor-temp { font-weight: bold; color: #4a9eff; }
-        .sensor-humidity { color: #ff6b6b; }
-        .sensor-age { color: #666; font-size: 10px; }
-        .sensor-offline { border-left-color: #666; opacity: 0.6; }
-        .sensor-offline .sensor-temp { color: #666; }
-        .status { 
-            position: absolute; top: 30px; right: 30px; font-size: 12px; opacity: 0.7;
-            padding: 4px 8px; background: #333; border-radius: 3px;
-        }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        background: #1a1a1a;
+        color: #e0e0e0;
+        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        overflow: hidden;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      .header {
+        padding: 10px 20px;
+        border-bottom: 1px solid #333;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #222;
+        z-index: 1;
+      }
+      .controls {
+        display: flex;
+        gap: 10px;
+      }
+      .btn {
+        background: #333;
+        border: 1px solid #555;
+        color: #e0e0e0;
+        padding: 5px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+      }
+      .btn.active {
+        background: #4a9eff;
+        border-color: #4a9eff;
+      }
+      .main-content {
+        flex: 1;
+        display: flex;
+      }
+      .chart-container {
+        flex: 1;
+        position: relative;
+        padding: 20px;
+      }
+      .sidebar {
+        width: 280px;
+        background: #2a2a2a;
+        border-left: 1px solid #444;
+        padding: 15px;
+        overflow-y: auto;
+      }
+      #chart {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      .sidebar h3 {
+        margin: 0 0 10px 0;
+        color: #e0e0e0;
+        font-size: 16px;
+      }
+      .sensor-item {
+        background: #333;
+        margin-bottom: 6px;
+        padding: 8px 10px;
+        border-radius: 4px;
+        border-left: 3px solid #4a9eff;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .sensor-item:hover {
+        background: #404040;
+        transform: translateX(2px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      }
+      .sensor-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .sensor-mac {
+        font-family: monospace;
+        color: #888;
+        font-size: 11px;
+      }
+      .sensor-temp {
+        font-weight: bold;
+        color: #4a9eff;
+      }
+      .sensor-humidity {
+        color: #ff6b6b;
+      }
+      .sensor-age {
+        color: #666;
+        font-size: 10px;
+      }
+      .sensor-offline {
+        border-left-color: #666;
+        opacity: 0.6;
+      }
+      .sensor-offline .sensor-temp {
+        color: #666;
+      }
+      .status {
+        position: absolute;
+        top: 30px;
+        right: 30px;
+        font-size: 12px;
+        opacity: 0.7;
+        padding: 4px 8px;
+        background: #333;
+        border-radius: 3px;
+      }
 
-        .axis-label { position: absolute; font-size: 10px; color: #888; }
+      .axis-label {
+        position: absolute;
+        font-size: 10px;
+        color: #888;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="header">
-        <div class="controls">
-            <button class="btn" data-range="hour">Hour</button>
-            <button class="btn active" data-range="day">Day</button>
-            <button class="btn" data-range="week">Week</button>
-            <button class="btn" data-range="month">Month</button>
-            <button class="btn" data-range="year">Year</button>
-        </div>
+      <div class="controls">
+        <button class="btn" data-range="hour">Hour</button>
+        <button class="btn active" data-range="day">Day</button>
+        <button class="btn" data-range="week">Week</button>
+        <button class="btn" data-range="month">Month</button>
+        <button class="btn" data-range="year">Year</button>
+      </div>
     </div>
     <div class="main-content">
-        <div class="chart-container">
-            <canvas id="chart"></canvas>
-            <div class="status" id="status">Connecting...</div>
+      <div class="chart-container">
+        <canvas id="chart"></canvas>
+        <div class="status" id="status">Connecting...</div>
+      </div>
+      <div class="sidebar">
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+          "
+        >
+          <h3 style="margin: 0">Latest Readings</h3>
+          <button
+            id="admin-btn"
+            class="btn"
+            style="padding: 4px 8px; font-size: 10px"
+          >
+            Admin
+          </button>
         </div>
-        <div class="sidebar">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <h3 style="margin: 0;">Latest Readings</h3>
-                <button id="admin-btn" class="btn" style="padding: 4px 8px; font-size: 10px;">Admin</button>
-            </div>
-            <div id="latest-readings"></div>
-        </div>
+        <div id="latest-readings"></div>
+      </div>
     </div>
 
     <script>
-        class RuuviChart {
-            constructor() {
-                this.canvas = document.getElementById('chart');
-                this.ctx = this.canvas.getContext('2d');
-                this.data = new Map();
-                this.colors = ['#4a9eff', '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7'];
-                this.range = 'day';
-                this.bucketSize = 3600; // 1 hour in seconds default
-                this.aggregated = false;
-                this.ws = null;
-                this.latestReadings = new Map();
-                this.hoveredSensor = null;
-                this.isAdmin = false;
-                this.adminToken = null;
-                this.sensorNames = new Map();
-                
-                // Performance optimization flags
-                this.needsRender = false;
-                this.isRendering = false;
-                this.lastRenderTime = 0;
-                this.renderThrottleMs = 16; // ~60fps
-                
-                // Debounced methods
-                this.debouncedRender = this.debounce(() => this.performRender(), 100);
-                this.throttledLatestUpdate = this.throttle((data) => this.performLatestUpdate(data), 1000);
-                
-                this.setupWebSocket();
-                this.setupControls();
-                this.setupCanvas();
-                this.scheduleRender();
-                
-                // Request latest readings every 30 seconds
-                setInterval(() => {
-                    if (this.ws?.readyState === WebSocket.OPEN) {
-                        this.ws.send(JSON.stringify({ type: 'getLatestReadings' }));
-                    }
-                }, 30000);
-                
-                // Optimized resize handler
-                window.addEventListener('resize', this.debounce(() => {
-                    this.setupCanvas();
-                    this.scheduleRender();
-                }, 250));
-                
-                // Request latest readings every 30 seconds
-                setInterval(() => {
-                    if (this.ws?.readyState === WebSocket.OPEN) {
-                        this.ws.send(JSON.stringify({ type: 'getLatestReadings' }));
-                    }
-                }, 30000);
-            }
+      class RuuviChart {
+          constructor() {
+              this.canvas = document.getElementById('chart');
+              this.ctx = this.canvas.getContext('2d');
+              this.data = new Map();
+              this.colors = ['#4a9eff', '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7'];
+              this.range = 'day';
+              this.bucketSize = 3600; // 1 hour in seconds default
+              this.aggregated = false;
+              this.ws = null;
+              this.latestReadings = new Map();
+              this.hoveredSensor = null;
+              this.isAdmin = false;
+              this.adminToken = null;
+              this.sensorNames = new Map();
 
-            setupWebSocket() {
-                const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-                this.ws = new WebSocket(`${protocol}//${location.host}`);
-                
-                this.ws.onopen = () => {
-                    document.getElementById('status').textContent = 'Connected';
-                    this.ws.send(JSON.stringify({ type: 'getData', timeRange: this.range }));
-                    this.ws.send(JSON.stringify({ type: 'getLatestReadings' }));
-                    this.ws.send(JSON.stringify({ type: 'getSensorNames' }));
-                };
-                
-                this.ws.onmessage = (event) => {
-                    const msg = JSON.parse(event.data);
-                    if (msg.type === 'historicalData') {
-                        this.bucketSize = msg.bucketSize || 3600;
-                        this.aggregated = msg.aggregated || false;
-                        this.loadData(msg.data);
-                    } else if (msg.type === 'sensorData') {
-                        this.addRealTimeData(msg.data);
-                        this.updateLatestReading(msg.data);
-                    } else if (msg.type === 'latestReadings') {
-                        this.loadLatestReadings(msg.data);
-                    } else if (msg.type === 'adminAuthResult') {
-                        this.handleAdminAuthResult(msg);
-                    } else if (msg.type === 'sensorNames') {
-                        this.loadSensorNames(msg.data);
-                    } else if (msg.type === 'sensorNameSet' || msg.type === 'sensorNameDeleted') {
-                        this.renderLatestReadings();
-                    }
-                };
-                
-                this.ws.onclose = () => {
-                    document.getElementById('status').textContent = 'Disconnected';
-                    setTimeout(() => this.setupWebSocket(), 3000);
-                };
-            }
+              // Performance optimization flags
+              this.needsRender = false;
+              this.isRendering = false;
+              this.lastRenderTime = 0;
+              this.renderThrottleMs = 16; // ~60fps
 
-            setupControls() {
-                document.querySelectorAll('.btn[data-range]').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        document.querySelector('.btn.active')?.classList.remove('active');
-                        btn.classList.add('active');
-                        this.range = btn.dataset.range;
-                        if (this.ws?.readyState === WebSocket.OPEN) {
-                            this.ws.send(JSON.stringify({ type: 'getData', timeRange: this.range }));
-                        }
-                    });
-                });
-                
-                // Setup admin button
-                document.getElementById('admin-btn').addEventListener('click', () => {
-                    if (this.isAdmin) {
-                        this.logout();
-                    } else {
-                        this.promptAdminAuth();
-                    }
-                });
-            }
+              // Debounced methods
+              this.debouncedRender = this.debounce(() => this.performRender(), 100);
+              this.throttledLatestUpdate = this.throttle((data) => this.performLatestUpdate(data), 1000);
 
-            setupCanvas() {
-                const rect = this.canvas.getBoundingClientRect();
-                this.canvas.width = rect.width * devicePixelRatio;
-                this.canvas.height = rect.height * devicePixelRatio;
-                this.ctx.scale(devicePixelRatio, devicePixelRatio);
-                this.canvas.style.width = rect.width + 'px';
-                this.canvas.style.height = rect.height + 'px';
-            }
+              this.setupWebSocket();
+              this.setupControls();
+              this.setupCanvas();
+              this.scheduleRender();
 
-            loadData(rows) {
-                this.data.clear();
-                rows.forEach(row => {
-                    // Normalize MAC address to lowercase
-                    const normalizedMac = row.sensorMac.toLowerCase();
-                    if (!this.data.has(normalizedMac)) {
-                        this.data.set(normalizedMac, []);
-                    }
-                    
-                    if (this.aggregated) {
-                        // Handle aggregated data
-                        this.data.get(normalizedMac).push({
-                            timestamp: row.timestamp,
-                            temperature: row.avgTemperature,
-                            minTemperature: row.minTemperature,
-                            maxTemperature: row.maxTemperature,
-                            humidity: row.avgHumidity,
-                            minHumidity: row.minHumidity,
-                            maxHumidity: row.maxHumidity,
-                            dataPoints: row.dataPoints,
-                            isAggregated: true
-                        });
-                    } else {
-                        // Handle raw data
-                        this.data.get(normalizedMac).push({
-                            timestamp: row.timestamp,
-                            temperature: row.temperature,
-                            humidity: row.humidity,
-                            isAggregated: false
-                        });
-                    }
-                });
-                this.scheduleRender();
-            }
+              // ZERO POLLING: All updates are event-driven from server
+              // Latest readings are pushed immediately when new data arrives
+              this.connectionAttempts = 0;
+              
+              console.log('🚀 ZERO POLLING CLIENT INITIALIZED');
+              console.log('📡 Real-time updates: MQTT → Server → WebSocket → Chart');
+              console.log('🚫 No timers, no polling, pure event-driven architecture');
 
-            addRealTimeData(data) {
-                // Normalize MAC address to lowercase
-                const normalizedMac = data.sensorMac.toLowerCase();
-                if (!this.data.has(normalizedMac)) {
-                    this.data.set(normalizedMac, []);
-                }
-                
-                const sensorData = this.data.get(normalizedMac);
-                const now = Math.floor(Date.now() / 1000);
-                const timeWindow = this.getTimeWindow();
-                
-                if (this.aggregated && sensorData.length > 0) {
-                    // Find the current bucket
-                    const bucketStart = Math.floor(data.timestamp / this.bucketSize) * this.bucketSize;
-                    const lastBucket = sensorData[sensorData.length - 1];
-                    
-                    if (lastBucket && lastBucket.timestamp === bucketStart) {
-                        // Update existing bucket with running average
-                        const totalPoints = lastBucket.dataPoints + 1;
-                        lastBucket.temperature = ((lastBucket.temperature * lastBucket.dataPoints) + data.temperature) / totalPoints;
-                        if (data.humidity !== null && lastBucket.humidity !== null) {
-                            lastBucket.humidity = ((lastBucket.humidity * lastBucket.dataPoints) + data.humidity) / totalPoints;
-                        }
-                        lastBucket.dataPoints = totalPoints;
-                        lastBucket.maxTemperature = Math.max(lastBucket.maxTemperature || data.temperature, data.temperature);
-                        lastBucket.minTemperature = Math.min(lastBucket.minTemperature || data.temperature, data.temperature);
-                    } else {
-                        // Create new bucket
-                        const newBucket = {
-                            timestamp: bucketStart,
-                            temperature: data.temperature,
-                            minTemperature: data.temperature,
-                            maxTemperature: data.temperature,
-                            humidity: data.humidity,
-                            minHumidity: data.humidity,
-                            maxHumidity: data.humidity,
-                            dataPoints: 1,
-                            isAggregated: true
-                        };
-                        sensorData.push(newBucket);
-                        
-                        // Remove old data points outside time window
-                        const cutoff = now - timeWindow;
-                        while (sensorData.length > 0 && sensorData[0].timestamp < cutoff) {
-                            sensorData.shift();
-                        }
-                    }
-                } else {
-                    // Raw data mode or first data point
-                    const dataPoint = {
-                        timestamp: data.timestamp,
-                        temperature: data.temperature,
-                        humidity: data.humidity === null ? null : data.humidity,
-                        isAggregated: false
-                    };
-                    sensorData.push(dataPoint);
-                    
-                    // Remove old data points outside time window
-                    const cutoff = now - timeWindow;
-                    while (sensorData.length > 0 && sensorData[0].timestamp < cutoff) {
-                        sensorData.shift();
-                    }
-                }
-                
-                this.debouncedRender();
-            }
+              // Optimized resize handler
+              window.addEventListener('resize', this.debounce(() => {
+                  this.setupCanvas();
+                  this.scheduleRender();
+              }, 250));
+          }
+
+          setupWebSocket() {
+              const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+              this.ws = new WebSocket(`${protocol}//${location.host}`);
+              this.connectionAttempts = (this.connectionAttempts || 0) + 1;
+
+              this.ws.onopen = () => {
+                  console.log('🟢 ZERO POLLING: WebSocket connected - pure event-driven updates');
+                  document.getElementById('status').textContent = 'Connected';
+                  this.connectionAttempts = 0;
+                  
+                  // Initial data load only - no periodic requests
+                  this.ws.send(JSON.stringify({ type: 'getData', timeRange: this.range }));
+                  this.ws.send(JSON.stringify({ type: 'getSensorNames' }));
+                  // Note: Latest readings will be pushed automatically when data arrives
+              };
+
+              this.ws.onmessage = (event) => {
+                  try {
+                      const msg = JSON.parse(event.data);
+                      this.handleServerMessage(msg);
+                  } catch (error) {
+                      console.error('Failed to parse WebSocket message:', error);
+                  }
+              };
+
+              this.ws.onerror = (error) => {
+                  console.error('WebSocket error:', error);
+                  document.getElementById('status').textContent = 'Connection Error';
+              };
+
+              this.ws.onclose = (event) => {
+                  console.log('🔴 WebSocket disconnected');
+                  document.getElementById('status').textContent = 'Disconnected';
+                  
+                  // Smart reconnection with exponential backoff
+                  const delay = Math.min(1000 * Math.pow(2, this.connectionAttempts), 30000);
+                  console.log(`🔄 Reconnecting in ${delay}ms (attempt ${this.connectionAttempts})`);
+                  setTimeout(() => this.setupWebSocket(), delay);
+              };
+          }
+
+          handleServerMessage(msg) {
+              // ZERO POLLING: Handle all server-driven messages
+              switch (msg.type) {
+                  case 'historicalData':
+                      this.bucketSize = msg.bucketSize || 3600;
+                      this.aggregated = msg.aggregated || false;
+                      this.loadData(msg.data);
+                      console.log(`📊 Loaded ${msg.data.length} historical data points (${msg.timeRange})`);
+                      break;
+                      
+                  case 'sensorData':
+                      this.handleRealTimeUpdate(msg.data);
+                      break;
+                      
+                  case 'latestReadings':
+                      this.loadLatestReadings(msg.data);
+                      console.log(`📋 Updated latest readings for ${msg.data.length} sensors`);
+                      break;
+                      
+                  case 'bucketUpdate':
+                      this.handleBucketUpdate(msg.data);
+                      break;
+                      
+                  case 'adminAuthResult':
+                      this.handleAdminAuthResult(msg);
+                      break;
+                      
+                  case 'sensorNames':
+                      this.loadSensorNames(msg.data);
+                      break;
+                      
+                  case 'sensorNameSet':
+                  case 'sensorNameDeleted':
+                      this.renderLatestReadings();
+                      break;
+                      
+                  default:
+                      console.warn('Unknown message type:', msg.type);
+              }
+          }
+
+          setupControls() {
+              document.querySelectorAll('.btn[data-range]').forEach(btn => {
+                  btn.addEventListener('click', () => {
+                      const newRange = btn.dataset.range;
+                      if (newRange === this.range) return; // No change needed
+                      
+                      document.querySelector('.btn.active')?.classList.remove('active');
+                      btn.classList.add('active');
+                      this.range = newRange;
+                      
+                      console.log(`📅 Time range changed to: ${this.range}`);
+                      
+                      if (this.ws?.readyState === WebSocket.OPEN) {
+                          // ZERO POLLING: Only request data when range changes
+                          this.ws.send(JSON.stringify({ type: 'getData', timeRange: this.range }));
+                      }
+                  });
+              });
+
+              // Setup admin button
+              document.getElementById('admin-btn').addEventListener('click', () => {
+                  if (this.isAdmin) {
+                      this.logout();
+                  } else {
+                      this.promptAdminAuth();
+                  }
+              });
+          }
+
+          setupCanvas() {
+              const rect = this.canvas.getBoundingClientRect();
+              this.canvas.width = rect.width * devicePixelRatio;
+              this.canvas.height = rect.height * devicePixelRatio;
+              this.ctx.scale(devicePixelRatio, devicePixelRatio);
+              this.canvas.style.width = rect.width + 'px';
+              this.canvas.style.height = rect.height + 'px';
+          }
+
+          loadData(rows) {
+              this.data.clear();
+              rows.forEach(row => {
+                  // Normalize MAC address to lowercase
+                  const normalizedMac = row.sensorMac.toLowerCase();
+                  if (!this.data.has(normalizedMac)) {
+                      this.data.set(normalizedMac, []);
+                  }
+
+                  if (this.aggregated) {
+                      // Handle aggregated data
+                      this.data.get(normalizedMac).push({
+                          timestamp: row.timestamp,
+                          temperature: row.avgTemperature,
+                          minTemperature: row.minTemperature,
+                          maxTemperature: row.maxTemperature,
+                          humidity: row.avgHumidity,
+                          minHumidity: row.minHumidity,
+                          maxHumidity: row.maxHumidity,
+                          dataPoints: row.dataPoints,
+                          isAggregated: true
+                      });
+                  } else {
+                      // Handle raw data
+                      this.data.get(normalizedMac).push({
+                          timestamp: row.timestamp,
+                          temperature: row.temperature,
+                          humidity: row.humidity,
+                          isAggregated: false
+                      });
+                  }
+              });
+              this.scheduleRender();
+          }
+
+          handleRealTimeUpdate(data) {
+              // ZERO POLLING: Handle real-time updates with fixed time window
+              const normalizedMac = data.sensorMac.toLowerCase();
+              const now = Math.floor(Date.now() / 1000);
+              const timeWindow = this.getTimeWindow();
+              const windowStart = now - timeWindow;
+
+              console.log(`📊 Real-time update: ${normalizedMac} ${data.temperature}°C (${this.range} view)`);
+
+              // Only update chart if data point affects current time window
+              if (data.timestamp >= windowStart) {
+                  this.addRealTimeDataPoint(data);
+                  this.scheduleRender();
+              }
+
+              // Always update latest reading for sidebar (regardless of time window)
+              this.updateLatestReading(data);
+          }
+
+          addRealTimeDataPoint(data) {
+              // Normalize MAC address to lowercase
+              const normalizedMac = data.sensorMac.toLowerCase();
+              if (!this.data.has(normalizedMac)) {
+                  this.data.set(normalizedMac, []);
+              }
+
+              const sensorData = this.data.get(normalizedMac);
+              const now = Math.floor(Date.now() / 1000);
+              const timeWindow = this.getTimeWindow();
+
+              if (this.aggregated && sensorData.length > 0) {
+                  // Find the current bucket for real-time updates
+                  const bucketStart = Math.floor(data.timestamp / this.bucketSize) * this.bucketSize;
+                  const lastBucket = sensorData[sensorData.length - 1];
+
+                  if (lastBucket && lastBucket.timestamp === bucketStart) {
+                      // Update existing current bucket with running average
+                      const totalPoints = lastBucket.dataPoints + 1;
+                      lastBucket.temperature = ((lastBucket.temperature * lastBucket.dataPoints) + data.temperature) / totalPoints;
+                      if (data.humidity !== null && lastBucket.humidity !== null) {
+                          lastBucket.humidity = ((lastBucket.humidity * lastBucket.dataPoints) + data.humidity) / totalPoints;
+                      }
+                      lastBucket.dataPoints = totalPoints;
+                      lastBucket.maxTemperature = Math.max(lastBucket.maxTemperature || data.temperature, data.temperature);
+                      lastBucket.minTemperature = Math.min(lastBucket.minTemperature || data.temperature, data.temperature);
+                  } else if (bucketStart >= lastBucket?.timestamp) {
+                      // Only add new bucket if it's newer than the last one (edge of time window)
+                      const newBucket = {
+                          timestamp: bucketStart,
+                          temperature: data.temperature,
+                          minTemperature: data.temperature,
+                          maxTemperature: data.temperature,
+                          humidity: data.humidity,
+                          minHumidity: data.humidity,
+                          maxHumidity: data.humidity,
+                          dataPoints: 1,
+                          isAggregated: true
+                      };
+                      sensorData.push(newBucket);
+
+                      // Keep only data within time window (maintain fixed window)
+                      const cutoff = now - timeWindow;
+                      while (sensorData.length > 0 && sensorData[0].timestamp < cutoff) {
+                          sensorData.shift();
+                      }
+                  }
+              } else {
+                  // Raw data mode - only add if it's at the edge of our time window
+                  const dataPoint = {
+                      timestamp: data.timestamp,
+                      temperature: data.temperature,
+                      humidity: data.humidity === null ? null : data.humidity,
+                      isAggregated: false
+                  };
+                  
+                  // Insert at correct position (usually at the end for real-time data)
+                  const insertIndex = sensorData.findIndex(p => p.timestamp > data.timestamp);
+                  if (insertIndex === -1) {
+                      sensorData.push(dataPoint);
+                  } else {
+                      sensorData.splice(insertIndex, 0, dataPoint);
+                  }
+
+                  // Maintain fixed time window
+                  const cutoff = now - timeWindow;
+                  while (sensorData.length > 0 && sensorData[0].timestamp < cutoff) {
+                      sensorData.shift();
+                  }
+                  
+                  // Limit total points to prevent memory bloat
+                  const maxPoints = this.getMaxPointsForRange();
+                  if (sensorData.length > maxPoints) {
+                      sensorData.splice(0, sensorData.length - maxPoints);
+                  }
+              }
+          }
+
+          handleBucketUpdate(bucketData) {
+              // ZERO POLLING: Handle bucket updates from server
+              if (bucketData.timeRange !== this.range) {
+                  return; // Ignore updates for different time ranges
+              }
+
+              const normalizedMac = bucketData.sensorMac.toLowerCase();
+              console.log(`🪣 Bucket update: ${normalizedMac} (${bucketData.timeRange}) bucket ${new Date(bucketData.timestamp * 1000).toLocaleTimeString()}`);
+              
+              if (!this.data.has(normalizedMac)) {
+                  this.data.set(normalizedMac, []);
+              }
+
+              const sensorData = this.data.get(normalizedMac);
+              const bucket = bucketData.bucketData;
+
+              // Find and update the existing bucket or add new one
+              const bucketIndex = sensorData.findIndex(p => p.timestamp === bucket.timestamp);
+              
+              const bucketPoint = {
+                  timestamp: bucket.timestamp,
+                  temperature: bucket.avgTemperature,
+                  minTemperature: bucket.minTemperature,
+                  maxTemperature: bucket.maxTemperature,
+                  humidity: bucket.avgHumidity,
+                  minHumidity: bucket.minHumidity,
+                  maxHumidity: bucket.maxHumidity,
+                  dataPoints: bucket.dataPoints,
+                  isAggregated: true
+              };
+              
+              if (bucketIndex !== -1) {
+                  // Update existing bucket
+                  sensorData[bucketIndex] = bucketPoint;
+              } else {
+                  // Add new bucket at correct position
+                  const insertIndex = sensorData.findIndex(p => p.timestamp > bucket.timestamp);
+                  if (insertIndex === -1) {
+                      sensorData.push(bucketPoint);
+                  } else {
+                      sensorData.splice(insertIndex, 0, bucketPoint);
+                  }
+              }
+
+              this.scheduleRender();
+          }
+
+          getMaxPointsForRange() {
+              // Prevent memory bloat by limiting points per time range
+              const limits = {
+                  hour: 200,    // 5-min buckets = 12 per hour, raw data = ~200 points
+                  day: 500,     // 1-hour buckets = 24 per day, raw data = ~500 points  
+                  week: 300,    // 6-hour buckets = 28 per week
+                  month: 200,   // 1-day buckets = ~30 per month
+                  year: 400     // 30-day buckets = 12 per year
+              };
+              return limits[this.range] || 500;
+          }
 
 
 
-            getTimeWindow() {
-                const ranges = { hour: 1, day: 24, week: 168, month: 720, year: 8760 };
-                return ranges[this.range] * 60 * 60;
-            }
+          getTimeWindow() {
+              const ranges = { hour: 1, day: 24, week: 168, month: 720, year: 8760 };
+              return ranges[this.range] * 60 * 60;
+          }
 
-            formatTimeLabel(timestamp, range) {
-                const date = new Date(timestamp * 1000);
-                
-                switch(range) {
-                    case 'hour':
-                        return date.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
-                    case 'day':
-                        return date.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
-                    case 'week':
-                        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' + 
-                               date.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit' });
-                    case 'month':
-                        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                    case 'year':
-                        return date.toLocaleDateString('en-US', { month: 'short' });
-                    default:
-                        return date.toLocaleTimeString('en-US', { hour12: false });
-                }
-            }
+          formatTimeLabel(timestamp, range) {
+              const date = new Date(timestamp * 1000);
 
-            scheduleRender() {
-                if (!this.needsRender) {
-                    this.needsRender = true;
-                    requestAnimationFrame(() => this.performRender());
-                }
-            }
+              switch(range) {
+                  case 'hour':
+                      return date.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+                  case 'day':
+                      return date.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+                  case 'week':
+                      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' +
+                             date.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit' });
+                  case 'month':
+                      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                  case 'year':
+                      return date.toLocaleDateString('en-US', { month: 'short' });
+                  default:
+                      return date.toLocaleTimeString('en-US', { hour12: false });
+              }
+          }
 
-            performRender() {
-                if (!this.needsRender || this.isRendering) return;
-                
-                const now = performance.now();
-                if (now - this.lastRenderTime < this.renderThrottleMs) {
-                    requestAnimationFrame(() => this.performRender());
-                    return;
-                }
-                
-                this.isRendering = true;
-                this.needsRender = false;
-                this.lastRenderTime = now;
-                
-                this.render();
-                this.isRendering = false;
-            }
+          scheduleRender() {
+              if (!this.needsRender) {
+                  this.needsRender = true;
+                  requestAnimationFrame(() => this.performRender());
+              }
+          }
 
-            render() {
-                const rect = this.canvas.getBoundingClientRect();
-                const width = rect.width;
-                const height = rect.height;
-                
-                this.ctx.clearRect(0, 0, width, height);
-                
-                if (this.data.size === 0) {
-                    return;
-                }
+          performRender() {
+              if (!this.needsRender || this.isRendering) return;
 
-                const now = Math.floor(Date.now() / 1000);
-                const timeWindow = this.getTimeWindow();
-                const startTime = now - timeWindow;
+              const now = performance.now();
+              if (now - this.lastRenderTime < this.renderThrottleMs) {
+                  requestAnimationFrame(() => this.performRender());
+                  return;
+              }
 
-                // Calculate bounds with fixed temperature range (-20 to +40 minimum)
-                let dataMinTemp = Infinity, dataMaxTemp = -Infinity;
-                let minHum = Infinity, maxHum = -Infinity;
-                let pointsInWindow = 0;
-                
-                this.data.forEach((points, sensorMac) => {
-                    points.forEach(p => {
-                        // For aggregated data, show all points; for raw data, filter by time window
-                        if (this.aggregated || p.timestamp >= startTime) {
-                            pointsInWindow++;
-                            if (p.isAggregated) {
-                                dataMinTemp = Math.min(dataMinTemp, p.minTemperature || p.temperature);
-                                dataMaxTemp = Math.max(dataMaxTemp, p.maxTemperature || p.temperature);
-                                if (p.minHumidity !== null && p.maxHumidity !== null) {
-                                    minHum = Math.min(minHum, p.minHumidity);
-                                    maxHum = Math.max(maxHum, p.maxHumidity);
-                                }
-                            } else {
-                                dataMinTemp = Math.min(dataMinTemp, p.temperature);
-                                dataMaxTemp = Math.max(dataMaxTemp, p.temperature);
-                                if (p.humidity !== null && p.humidity !== undefined) {
-                                    minHum = Math.min(minHum, p.humidity);
-                                    maxHum = Math.max(maxHum, p.humidity);
-                                }
-                            }
-                        }
-                    });
-                });
-                
-                // Set fixed temperature range (-20 to +40) but expand if data exceeds
-                const minTemp = Math.min(-20, dataMinTemp !== Infinity ? dataMinTemp : -20);
-                const maxTemp = Math.max(40, dataMaxTemp !== -Infinity ? dataMaxTemp : 40);
-                
-                // Fixed humidity range (0 to 100)
-                if (minHum === Infinity) minHum = 0;
-                if (maxHum === -Infinity) maxHum = 100;
-                minHum = 0;
-                maxHum = 100;
-                
-                if (pointsInWindow === 0) {
-                    return;
-                }
+              this.isRendering = true;
+              this.needsRender = false;
+              this.lastRenderTime = now;
 
-                const padding = 80;
-                const chartWidth = width - padding * 2;
-                const chartHeight = height - padding * 2;
-                
-                // Split chart area: temperature (top 2/3) and humidity (bottom 1/3)
-                const tempChartHeight = Math.floor(chartHeight * 0.67);
-                const humChartHeight = Math.floor(chartHeight * 0.33);
-                const humChartTop = padding + tempChartHeight;
+              try {
+                  this.render();
+              } catch (error) {
+                  console.error('Render error:', error);
+              } finally {
+                  this.isRendering = false;
+              }
+          }
 
-                // Draw axes
-                this.ctx.strokeStyle = '#444';
-                this.ctx.lineWidth = 1;
-                this.ctx.beginPath();
-                this.ctx.moveTo(padding, padding);
-                this.ctx.lineTo(padding, height - padding);
-                this.ctx.lineTo(width - padding, height - padding);
-                this.ctx.stroke();
+          render() {
+              const rect = this.canvas.getBoundingClientRect();
+              const width = rect.width;
+              const height = rect.height;
 
-                // Draw time axis labels
-                this.ctx.fillStyle = '#888';
-                this.ctx.font = '10px sans-serif';
-                const timeSteps = 6;
-                
-                // For aggregated data, use actual data range; for real-time, use time window
-                let axisStartTime, axisEndTime;
-                if (this.aggregated && this.data.size > 0) {
-                    axisStartTime = this.getOldestTimestamp();
-                    axisEndTime = this.getNewestTimestamp();
-                } else {
-                    axisStartTime = startTime;
-                    axisEndTime = now;
-                }
-                
-                for (let i = 0; i <= timeSteps; i++) {
-                    const timeProgress = i / timeSteps;
-                    const timestamp = axisStartTime + ((axisEndTime - axisStartTime) * timeProgress);
-                    const x = padding + (chartWidth * timeProgress);
-                    const label = this.formatTimeLabel(timestamp, this.range);
-</text>
+              this.ctx.clearRect(0, 0, width, height);
 
-<old_text>
-                        points.forEach(p => {
-                            if ((this.aggregated || p.timestamp >= startTime) && p.maxTemperature !== undefined) {
-                                const dataStart = this.aggregated ? this.getOldestTimestamp() : startTime;
-                                const dataSpan = this.aggregated ? this.getDataTimeSpan() : timeWindow;
-                                const x = padding + ((p.timestamp - dataStart) / dataSpan) * chartWidth;
-                    
-                    // Rotate text for better readability
-                    this.ctx.save();
-                    this.ctx.translate(x, height - padding + 15);
-                    this.ctx.rotate(-Math.PI / 4);
-                    this.ctx.fillText(label, 0, 0);
-                    this.ctx.restore();
-                    
-                    // Draw tick marks
-                    this.ctx.strokeStyle = '#444';
-                    this.ctx.beginPath();
-                    this.ctx.moveTo(x, height - padding);
-                    this.ctx.lineTo(x, height - padding + 5);
-                    this.ctx.stroke();
-                }
+              if (this.data.size === 0) {
+                  return;
+              }
 
-                // Draw temperature grid and labels (top 2/3)
-                this.ctx.fillStyle = '#4a9eff';
-                this.ctx.font = '10px sans-serif';
-                for (let i = 0; i <= 5; i++) {
-                    const temp = minTemp + (maxTemp - minTemp) * i / 5;
-                    const y = padding + tempChartHeight - (tempChartHeight * i / 5);
-                    this.ctx.fillText(`${temp.toFixed(1)}°C`, 5, y + 3);
-                    
-                    // Draw horizontal grid lines for temperature
-                    this.ctx.strokeStyle = '#333';
-                    this.ctx.setLineDash([2, 2]);
-                    this.ctx.beginPath();
-                    this.ctx.moveTo(padding, y);
-                    this.ctx.lineTo(width - padding, y);
-                    this.ctx.stroke();
-                    this.ctx.setLineDash([]);
-                }
-                
-                // Draw separator line between temperature and humidity
-                this.ctx.strokeStyle = '#555';
-                this.ctx.setLineDash([]);
-                this.ctx.lineWidth = 1;
-                this.ctx.beginPath();
-                this.ctx.moveTo(padding, humChartTop);
-                this.ctx.lineTo(width - padding, humChartTop);
-                this.ctx.stroke();
+              const now = Math.floor(Date.now() / 1000);
+              const timeWindow = this.getTimeWindow();
+              const startTime = now - timeWindow;
 
-                // Draw humidity grid and labels (bottom 1/3) - only if humidity data exists
-                if (minHum !== Infinity && maxHum !== -Infinity) {
-                    this.ctx.fillStyle = '#ff6b6b';
-                    this.ctx.globalAlpha = 0.6; // Reduced opacity for humidity
-                    for (let i = 0; i <= 3; i++) {
-                        const hum = minHum + (maxHum - minHum) * i / 3;
-                        const y = humChartTop + humChartHeight - (humChartHeight * i / 3);
-                        this.ctx.fillText(`${hum.toFixed(0)}%`, width - 40, y + 3);
-                        
-                        // Draw horizontal grid lines for humidity
-                        this.ctx.strokeStyle = '#333';
-                        this.ctx.setLineDash([1, 3]);
-                        this.ctx.beginPath();
-                        this.ctx.moveTo(padding, y);
-                        this.ctx.lineTo(width - padding, y);
-                        this.ctx.stroke();
-                        this.ctx.setLineDash([]);
-                    }
-                    this.ctx.globalAlpha = 1.0; // Reset opacity
-                }
+              // Calculate bounds with fixed temperature range (-20 to +40 minimum)
+              let dataMinTemp = Infinity, dataMaxTemp = -Infinity;
+              let minHum = Infinity, maxHum = -Infinity;
+              let pointsInWindow = 0;
 
-                // Draw temperature data in top area
-                let colorIndex = 0;
-                this.data.forEach((points, sensorMac) => {
-                    const baseColor = this.colors[colorIndex % this.colors.length];
-                    const isHovered = this.hoveredSensor === sensorMac;
-                    const isOtherHovered = this.hoveredSensor && this.hoveredSensor !== sensorMac;
-                    
-                    // Adjust color based on hover state
-                    let color = baseColor;
-                    let opacity = 1.0;
-                    if (isOtherHovered) {
-                        // Fade non-hovered sensors to gray
-                        color = '#666';
-                        opacity = 0.3;
-                    } else if (isHovered) {
-                        // Brighten hovered sensor
-                        opacity = 1.0;
-                    }
-                    
-                    if (this.aggregated) {
-                        // Draw min/max temperature band (filled area)
-                        this.ctx.globalAlpha = isOtherHovered ? 0.1 : 0.3;
-                        this.ctx.fillStyle = color;
-                        this.ctx.beginPath();
-                        let firstPoint = true;
-                        
-                        // Top edge (max values)
-                        points.forEach(p => {
-                            if ((this.aggregated || p.timestamp >= startTime) && p.maxTemperature !== undefined) {
-                                let x;
-                                if (this.aggregated) {
-                                    const dataStart = this.getOldestTimestamp();
-                                    const dataSpan = this.getNewestTimestamp() - dataStart;
-                                    x = padding + ((p.timestamp - dataStart) / Math.max(dataSpan, 3600)) * chartWidth;
-                                } else {
-                                    x = padding + ((p.timestamp - startTime) / timeWindow) * chartWidth;
-                                }
-                                const y = padding + tempChartHeight - ((p.maxTemperature - minTemp) / (maxTemp - minTemp)) * tempChartHeight;
-                                if (firstPoint) {
-                                    this.ctx.moveTo(x, y);
-                                    firstPoint = false;
-                                } else {
-                                    this.ctx.lineTo(x, y);
-                                }
-                            }
-                        });
-                        
-                        // Bottom edge (min values, reversed)
-                        const reversedPoints = [...points].reverse();
-                        reversedPoints.forEach(p => {
-                            if ((this.aggregated || p.timestamp >= startTime) && p.minTemperature !== undefined) {
-                                let x;
-                                if (this.aggregated) {
-                                    const dataStart = this.getOldestTimestamp();
-                                    const dataSpan = this.getNewestTimestamp() - dataStart;
-                                    x = padding + ((p.timestamp - dataStart) / Math.max(dataSpan, 3600)) * chartWidth;
-                                } else {
-                                    x = padding + ((p.timestamp - startTime) / timeWindow) * chartWidth;
-                                }
-                                const y = padding + tempChartHeight - ((p.minTemperature - minTemp) / (maxTemp - minTemp)) * tempChartHeight;
-                                this.ctx.lineTo(x, y);
-                            }
-                        });
-                        
-                        this.ctx.closePath();
-                        this.ctx.fill();
-                        this.ctx.globalAlpha = 1.0;
-                    }
-                    
-                    // Add glow effect for hovered sensor
-                    if (isHovered) {
-                        this.ctx.shadowColor = color;
-                        this.ctx.shadowBlur = 8;
-                        this.ctx.shadowOffsetX = 0;
-                        this.ctx.shadowOffsetY = 0;
-                    }
-                    
-                    // Draw prominent average temperature line
-                    this.ctx.strokeStyle = color;
-                    this.ctx.lineWidth = isHovered ? 4 : 3; // Thicker line for hovered sensor
-                    this.ctx.globalAlpha = opacity;
-                    this.ctx.beginPath();
-                    let first = true;
-                    
-                    points.forEach(p => {
-                        if (this.aggregated || p.timestamp >= startTime) {
-                            let x;
-                            if (this.aggregated) {
-                                const dataStart = this.getOldestTimestamp();
-                                const dataSpan = this.getNewestTimestamp() - dataStart;
-                                x = padding + ((p.timestamp - dataStart) / Math.max(dataSpan, 3600)) * chartWidth;
-                            } else {
-                                x = padding + ((p.timestamp - startTime) / timeWindow) * chartWidth;
-                            }
-                            const y = padding + tempChartHeight - ((p.temperature - minTemp) / (maxTemp - minTemp)) * tempChartHeight;
-                            if (first) {
-                                this.ctx.moveTo(x, y);
-                                first = false;
-                            } else {
-                                this.ctx.lineTo(x, y);
-                            }
-                        }
-                    });
-                    this.ctx.stroke();
-                    
-                    // Reset shadow for other elements
-                    if (isHovered) {
-                        this.ctx.shadowBlur = 0;
-                    }
+              this.data.forEach((points, sensorMac) => {
+                  points.forEach(p => {
+                      // For aggregated data, show all points; for raw data, filter by time window
+                      if (this.aggregated || p.timestamp >= startTime) {
+                          pointsInWindow++;
+                          if (p.isAggregated) {
+                              dataMinTemp = Math.min(dataMinTemp, p.minTemperature || p.temperature);
+                              dataMaxTemp = Math.max(dataMaxTemp, p.maxTemperature || p.temperature);
+                              if (p.minHumidity !== null && p.maxHumidity !== null) {
+                                  minHum = Math.min(minHum, p.minHumidity);
+                                  maxHum = Math.max(maxHum, p.maxHumidity);
+                              }
+                          } else {
+                              dataMinTemp = Math.min(dataMinTemp, p.temperature);
+                              dataMaxTemp = Math.max(dataMaxTemp, p.temperature);
+                              if (p.humidity !== null && p.humidity !== undefined) {
+                                  minHum = Math.min(minHum, p.humidity);
+                                  maxHum = Math.max(maxHum, p.humidity);
+                              }
+                          }
+                      }
+                  });
+              });
 
-                    // Draw humidity in bottom area with same color but reduced opacity
-                    if (minHum !== Infinity && maxHum !== -Infinity) {
-                        // Add subtle glow for humidity on hovered sensor
-                        if (isHovered) {
-                            this.ctx.shadowColor = color;
-                            this.ctx.shadowBlur = 4;
-                        }
-                        
-                        this.ctx.globalAlpha = isOtherHovered ? 0.1 : 0.3; // Reduced opacity for humidity
-                        this.ctx.strokeStyle = color; // Same color as temperature
-                        this.ctx.lineWidth = isHovered ? 3 : 2;
-                        this.ctx.setLineDash([3, 3]); // Dashed line to distinguish from temperature
-                        this.ctx.beginPath();
-                        first = true;
-                        
-                        points.forEach(p => {
-                            const humidity = p.humidity;
-                            if ((this.aggregated || p.timestamp >= startTime) && humidity !== null && humidity !== undefined) {
-                                let x;
-                                if (this.aggregated) {
-                                    const dataStart = this.getOldestTimestamp();
-                                    const dataSpan = this.getNewestTimestamp() - dataStart;
-                                    x = padding + ((p.timestamp - dataStart) / Math.max(dataSpan, 3600)) * chartWidth;
-                                } else {
-                                    x = padding + ((p.timestamp - startTime) / timeWindow) * chartWidth;
-                                }
-                                const y = humChartTop + humChartHeight - ((humidity - minHum) / (maxHum - minHum)) * humChartHeight;
-                                if (first) {
-                                    this.ctx.moveTo(x, y);
-                                    first = false;
-                                } else {
-                                    this.ctx.lineTo(x, y);
-                                }
-                            }
-                        });
-                        this.ctx.stroke();
-                        this.ctx.setLineDash([]);
-                        
-                        // Reset shadow and opacity
-                        if (isHovered) {
-                            this.ctx.shadowBlur = 0;
-                        }
-                        this.ctx.globalAlpha = 1.0; // Reset opacity
-                    }
-                    
-                    colorIndex++;
-                });
-            }
+              // Set fixed temperature range (-20 to +40) but expand if data exceeds
+              const minTemp = Math.min(-20, dataMinTemp !== Infinity ? dataMinTemp : -20);
+              const maxTemp = Math.max(40, dataMaxTemp !== -Infinity ? dataMaxTemp : 40);
 
-            getOldestTimestamp() {
-                let oldest = Infinity;
-                this.data.forEach(points => {
-                    points.forEach(p => {
-                        oldest = Math.min(oldest, p.timestamp);
-                    });
-                });
-                return oldest;
-            }
+              // Fixed humidity range (0 to 100)
+              if (minHum === Infinity) minHum = 0;
+              if (maxHum === -Infinity) maxHum = 100;
+              minHum = 0;
+              maxHum = 100;
 
-            getDataTimeSpan() {
-                let oldest = Infinity, newest = -Infinity;
-                this.data.forEach(points => {
-                    points.forEach(p => {
-                        oldest = Math.min(oldest, p.timestamp);
-                        newest = Math.max(newest, p.timestamp);
-                    });
-                });
-                return Math.max(newest - oldest, this.bucketSize); // Minimum bucket size span
-            }
+              if (pointsInWindow === 0) {
+                  return;
+              }
 
-            getNewestTimestamp() {
-                let newest = -Infinity;
-                this.data.forEach(points => {
-                    points.forEach(p => {
-                        newest = Math.max(newest, p.timestamp);
-                    });
-                });
-                return newest !== -Infinity ? newest : Math.floor(Date.now() / 1000);
-            }
+              const padding = 80;
+              const chartWidth = width - padding * 2;
+              const chartHeight = height - padding * 2;
 
-            loadLatestReadings(readings) {
-                this.latestReadings.clear();
-                readings.forEach(reading => {
-                    this.latestReadings.set(reading.sensorMac.toLowerCase(), reading);
-                });
-                this.renderLatestReadings();
-            }
+              // Split chart area: temperature (top 2/3) and humidity (bottom 1/3)
+              const tempChartHeight = Math.floor(chartHeight * 0.67);
+              const humChartHeight = Math.floor(chartHeight * 0.33);
+              const humChartTop = padding + tempChartHeight;
 
-            loadSensorNames(names) {
-                this.sensorNames.clear();
-                names.forEach(item => {
-                    this.sensorNames.set(item.sensorMac.toLowerCase(), item.customName);
-                });
-                this.renderLatestReadings();
-            }
+              // Draw axes
+              this.ctx.strokeStyle = '#444';
+              this.ctx.lineWidth = 1;
+              this.ctx.beginPath();
+              this.ctx.moveTo(padding, padding);
+              this.ctx.lineTo(padding, height - padding);
+              this.ctx.lineTo(width - padding, height - padding);
+              this.ctx.stroke();
 
-            promptAdminAuth() {
-                const password = prompt('Enter admin password:');
-                if (password) {
-                    this.ws.send(JSON.stringify({
-                        type: 'adminAuth',
-                        password: password
-                    }));
-                }
-            }
+              // Draw time axis labels
+              this.ctx.fillStyle = '#888';
+              this.ctx.font = '10px sans-serif';
+              const timeSteps = 6;
 
-            handleAdminAuthResult(msg) {
-                if (msg.success) {
-                    this.isAdmin = true;
-                    this.adminToken = msg.token;
-                    document.getElementById('admin-btn').textContent = 'Logout';
-                    document.getElementById('admin-btn').style.background = '#ff6b6b';
-                    this.renderLatestReadings();
-                } else {
-                    alert(msg.message || 'Authentication failed');
-                }
-            }
+              // For aggregated data, use actual data range; for real-time, use time window
+              let axisStartTime, axisEndTime;
+              if (this.aggregated && this.data.size > 0) {
+                  axisStartTime = this.getOldestTimestamp();
+                  axisEndTime = this.getNewestTimestamp();
+              } else {
+                  axisStartTime = startTime;
+                  axisEndTime = now;
+              }
 
-            logout() {
-                this.isAdmin = false;
-                this.adminToken = null;
-                document.getElementById('admin-btn').textContent = 'Admin';
-                document.getElementById('admin-btn').style.background = '#333';
-                this.renderLatestReadings();
-            }
+              for (let i = 0; i <= timeSteps; i++) {
+                  const timeProgress = i / timeSteps;
+                  const timestamp = axisStartTime + ((axisEndTime - axisStartTime) * timeProgress);
+                  const x = padding + (chartWidth * timeProgress);
+                  const label = this.formatTimeLabel(timestamp, this.range);
 
-            editSensorName(sensorMac) {
-                const currentName = this.sensorNames.get(sensorMac) || sensorMac.slice(-8).toUpperCase();
-                const newName = prompt(`Enter name for sensor ${sensorMac.slice(-8).toUpperCase()}:`, currentName);
-                
-                if (newName && newName.trim() !== currentName) {
-                    this.ws.send(JSON.stringify({
-                        type: 'setSensorName',
-                        sensorMac: sensorMac,
-                        customName: newName.trim(),
-                        adminToken: this.adminToken
-                    }));
-                }
-            }
+                  // Rotate text for better readability
+                  this.ctx.save();
+                  this.ctx.translate(x, height - padding + 15);
+                  this.ctx.rotate(-Math.PI / 4);
+                  this.ctx.fillText(label, 0, 0);
+                  this.ctx.restore();
 
-            updateLatestReading(data) {
-                this.throttledLatestUpdate(data);
-            }
+                  // Draw tick marks
+                  this.ctx.strokeStyle = '#444';
+                  this.ctx.beginPath();
+                  this.ctx.moveTo(x, height - padding);
+                  this.ctx.lineTo(x, height - padding + 5);
+                  this.ctx.stroke();
+              }
 
-            performLatestUpdate(data) {
-                const normalizedMac = data.sensorMac.toLowerCase();
-                this.latestReadings.set(normalizedMac, {
-                    sensorMac: normalizedMac,
-                    temperature: data.temperature,
-                    humidity: data.humidity,
-                    timestamp: data.timestamp,
-                    secondsAgo: 0
-                });
-                this.renderLatestReadings();
-            }
+              // Draw temperature grid and labels (top 2/3)
+              this.ctx.fillStyle = '#4a9eff';
+              this.ctx.font = '10px sans-serif';
+              for (let i = 0; i <= 5; i++) {
+                  const temp = minTemp + (maxTemp - minTemp) * i / 5;
+                  const y = padding + tempChartHeight - (tempChartHeight * i / 5);
+                  this.ctx.fillText(`${temp.toFixed(1)}°C`, 5, y + 3);
 
-            renderLatestReadings() {
-                const container = document.getElementById('latest-readings');
-                container.innerHTML = '';
-                
-                if (this.latestReadings.size === 0) {
-                    container.innerHTML = '<div style="color: #666; text-align: center; padding: 20px;">No sensor data</div>';
-                    return;
-                }
+                  // Draw horizontal grid lines for temperature
+                  this.ctx.strokeStyle = '#333';
+                  this.ctx.setLineDash([2, 2]);
+                  this.ctx.beginPath();
+                  this.ctx.moveTo(padding, y);
+                  this.ctx.lineTo(width - padding, y);
+                  this.ctx.stroke();
+                  this.ctx.setLineDash([]);
+              }
 
-                const now = Math.floor(Date.now() / 1000);
-                const sortedReadings = Array.from(this.latestReadings.values())
-                    .sort((a, b) => a.sensorMac.localeCompare(b.sensorMac));
+              // Draw separator line between temperature and humidity
+              this.ctx.strokeStyle = '#555';
+              this.ctx.setLineDash([]);
+              this.ctx.lineWidth = 1;
+              this.ctx.beginPath();
+              this.ctx.moveTo(padding, humChartTop);
+              this.ctx.lineTo(width - padding, humChartTop);
+              this.ctx.stroke();
 
-                sortedReadings.forEach((reading, index) => {
-                    const secondsAgo = now - reading.timestamp;
-                    const isOffline = secondsAgo > 300; // 5 minutes
-                    const sensorColor = this.colors[index % this.colors.length];
-                    const customName = this.sensorNames.get(reading.sensorMac);
-                    const displayName = customName || reading.sensorMac.slice(-8).toUpperCase();
-                    
-                    const item = document.createElement('div');
-                    item.className = `sensor-item ${isOffline ? 'sensor-offline' : ''}`;
-                    item.style.borderLeftColor = sensorColor;
-                    
-                    const ageText = this.formatAge(secondsAgo);
-                    
-                    item.innerHTML = `
-                        <div class="sensor-left">
-                            <div class="sensor-mac" ${this.isAdmin ? 'style="cursor: pointer; text-decoration: underline;"' : ''}>${displayName}</div>
-                            <div class="sensor-temp">${reading.temperature.toFixed(1)}°C</div>
-                            ${reading.humidity !== null ? `<div class="sensor-humidity">${reading.humidity.toFixed(1)}%</div>` : ''}
-                        </div>
-                        <div class="sensor-age">${ageText}</div>
-                    `;
-                    
-                    // Add hover event listeners for graph highlighting
-                    item.addEventListener('mouseenter', () => {
-                        this.hoveredSensor = reading.sensorMac;
-                        this.scheduleRender();
-                    });
-                    
-                    item.addEventListener('mouseleave', () => {
-                        this.hoveredSensor = null;
-                        this.scheduleRender();
-                    });
-                    
-                    // Add click handler for admin name editing
-                    if (this.isAdmin) {
-                        const macElement = item.querySelector('.sensor-mac');
-                        macElement.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            this.editSensorName(reading.sensorMac);
-                        });
-                    }
-                    
-                    container.appendChild(item);
-                });
-            }
+              // Draw humidity grid and labels (bottom 1/3) - only if humidity data exists
+              if (minHum !== Infinity && maxHum !== -Infinity) {
+                  this.ctx.fillStyle = '#ff6b6b';
+                  this.ctx.globalAlpha = 0.6; // Reduced opacity for humidity
+                  for (let i = 0; i <= 3; i++) {
+                      const hum = minHum + (maxHum - minHum) * i / 3;
+                      const y = humChartTop + humChartHeight - (humChartHeight * i / 3);
+                      this.ctx.fillText(`${hum.toFixed(0)}%`, width - 40, y + 3);
 
-            formatAge(seconds) {
-                if (seconds < 60) return `${seconds}s ago`;
-                if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-                if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-                return `${Math.floor(seconds / 86400)}d ago`;
-            }
+                      // Draw horizontal grid lines for humidity
+                      this.ctx.strokeStyle = '#333';
+                      this.ctx.setLineDash([1, 3]);
+                      this.ctx.beginPath();
+                      this.ctx.moveTo(padding, y);
+                      this.ctx.lineTo(width - padding, y);
+                      this.ctx.stroke();
+                      this.ctx.setLineDash([]);
+                  }
+                  this.ctx.globalAlpha = 1.0; // Reset opacity
+              }
 
-            debounce(func, wait) {
-                let timeout;
-                return function executedFunction(...args) {
-                    const later = () => {
-                        clearTimeout(timeout);
-                        func(...args);
-                    };
-                    clearTimeout(timeout);
-                    timeout = setTimeout(later, wait);
-                };
-            }
+              // Draw temperature data in top area
+              let colorIndex = 0;
+              this.data.forEach((points, sensorMac) => {
+                  const baseColor = this.colors[colorIndex % this.colors.length];
+                  const isHovered = this.hoveredSensor === sensorMac;
+                  const isOtherHovered = this.hoveredSensor && this.hoveredSensor !== sensorMac;
 
-            throttle(func, limit) {
-                let inThrottle;
-                return function(...args) {
-                    if (!inThrottle) {
-                        func.apply(this, args);
-                        inThrottle = true;
-                        setTimeout(() => inThrottle = false, limit);
-                    }
-                };
-            }
-        }
+                  // Adjust color based on hover state
+                  let color = baseColor;
+                  let opacity = 1.0;
+                  if (isOtherHovered) {
+                      // Fade non-hovered sensors to gray
+                      color = '#666';
+                      opacity = 0.3;
+                  } else if (isHovered) {
+                      // Brighten hovered sensor
+                      opacity = 1.0;
+                  }
 
-        // PWA Service Worker
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js').catch(console.error);
-        }
+                  if (this.aggregated) {
+                      // Draw min/max temperature band (filled area)
+                      this.ctx.globalAlpha = isOtherHovered ? 0.1 : 0.3;
+                      this.ctx.fillStyle = color;
+                      this.ctx.beginPath();
+                      let firstPoint = true;
 
-        // Initialize app
-        new RuuviChart();
+                      // Top edge (max values)
+                      points.forEach(p => {
+                          if ((this.aggregated || p.timestamp >= startTime) && p.maxTemperature !== undefined) {
+                              let x;
+                              if (this.aggregated) {
+                                  const dataStart = this.getOldestTimestamp();
+                                  const dataSpan = this.getNewestTimestamp() - dataStart;
+                                  x = padding + ((p.timestamp - dataStart) / Math.max(dataSpan, 3600)) * chartWidth;
+                              } else {
+                                  x = padding + ((p.timestamp - startTime) / timeWindow) * chartWidth;
+                              }
+                              const y = padding + tempChartHeight - ((p.maxTemperature - minTemp) / (maxTemp - minTemp)) * tempChartHeight;
+                              if (firstPoint) {
+                                  this.ctx.moveTo(x, y);
+                                  firstPoint = false;
+                              } else {
+                                  this.ctx.lineTo(x, y);
+                              }
+                          }
+                      });
+
+                      // Bottom edge (min values, reversed)
+                      const reversedPoints = [...points].reverse();
+                      reversedPoints.forEach(p => {
+                          if ((this.aggregated || p.timestamp >= startTime) && p.minTemperature !== undefined) {
+                              let x;
+                              if (this.aggregated) {
+                                  const dataStart = this.getOldestTimestamp();
+                                  const dataSpan = this.getNewestTimestamp() - dataStart;
+                                  x = padding + ((p.timestamp - dataStart) / Math.max(dataSpan, 3600)) * chartWidth;
+                              } else {
+                                  x = padding + ((p.timestamp - startTime) / timeWindow) * chartWidth;
+                              }
+                              const y = padding + tempChartHeight - ((p.minTemperature - minTemp) / (maxTemp - minTemp)) * tempChartHeight;
+                              this.ctx.lineTo(x, y);
+                          }
+                      });
+
+                      this.ctx.closePath();
+                      this.ctx.fill();
+                      this.ctx.globalAlpha = 1.0;
+                  }
+
+                  // Add glow effect for hovered sensor
+                  if (isHovered) {
+                      this.ctx.shadowColor = color;
+                      this.ctx.shadowBlur = 8;
+                      this.ctx.shadowOffsetX = 0;
+                      this.ctx.shadowOffsetY = 0;
+                  }
+
+                  // Draw prominent average temperature line
+                  this.ctx.strokeStyle = color;
+                  this.ctx.lineWidth = isHovered ? 4 : 3; // Thicker line for hovered sensor
+                  this.ctx.globalAlpha = opacity;
+                  this.ctx.beginPath();
+                  let first = true;
+
+                  points.forEach(p => {
+                      if (this.aggregated || p.timestamp >= startTime) {
+                          let x;
+                          if (this.aggregated) {
+                              const dataStart = this.getOldestTimestamp();
+                              const dataSpan = this.getNewestTimestamp() - dataStart;
+                              x = padding + ((p.timestamp - dataStart) / Math.max(dataSpan, 3600)) * chartWidth;
+                          } else {
+                              x = padding + ((p.timestamp - startTime) / timeWindow) * chartWidth;
+                          }
+                          const y = padding + tempChartHeight - ((p.temperature - minTemp) / (maxTemp - minTemp)) * tempChartHeight;
+                          if (first) {
+                              this.ctx.moveTo(x, y);
+                              first = false;
+                          } else {
+                              this.ctx.lineTo(x, y);
+                          }
+                      }
+                  });
+                  this.ctx.stroke();
+
+                  // Reset shadow for other elements
+                  if (isHovered) {
+                      this.ctx.shadowBlur = 0;
+                  }
+
+                  // Draw humidity in bottom area with same color but reduced opacity
+                  if (minHum !== Infinity && maxHum !== -Infinity) {
+                      // Add subtle glow for humidity on hovered sensor
+                      if (isHovered) {
+                          this.ctx.shadowColor = color;
+                          this.ctx.shadowBlur = 4;
+                      }
+
+                      this.ctx.globalAlpha = isOtherHovered ? 0.1 : 0.3; // Reduced opacity for humidity
+                      this.ctx.strokeStyle = color; // Same color as temperature
+                      this.ctx.lineWidth = isHovered ? 3 : 2;
+                      this.ctx.setLineDash([3, 3]); // Dashed line to distinguish from temperature
+                      this.ctx.beginPath();
+                      first = true;
+
+                      points.forEach(p => {
+                          const humidity = p.humidity;
+                          if ((this.aggregated || p.timestamp >= startTime) && humidity !== null && humidity !== undefined) {
+                              let x;
+                              if (this.aggregated) {
+                                  const dataStart = this.getOldestTimestamp();
+                                  const dataSpan = this.getNewestTimestamp() - dataStart;
+                                  x = padding + ((p.timestamp - dataStart) / Math.max(dataSpan, 3600)) * chartWidth;
+                              } else {
+                                  x = padding + ((p.timestamp - startTime) / timeWindow) * chartWidth;
+                              }
+                              const y = humChartTop + humChartHeight - ((humidity - minHum) / (maxHum - minHum)) * humChartHeight;
+                              if (first) {
+                                  this.ctx.moveTo(x, y);
+                                  first = false;
+                              } else {
+                                  this.ctx.lineTo(x, y);
+                              }
+                          }
+                      });
+                      this.ctx.stroke();
+                      this.ctx.setLineDash([]);
+
+                      // Reset shadow and opacity
+                      if (isHovered) {
+                          this.ctx.shadowBlur = 0;
+                      }
+                      this.ctx.globalAlpha = 1.0; // Reset opacity
+                  }
+
+                  colorIndex++;
+              });
+          }
+
+          getOldestTimestamp() {
+              let oldest = Infinity;
+              this.data.forEach(points => {
+                  points.forEach(p => {
+                      oldest = Math.min(oldest, p.timestamp);
+                  });
+              });
+              return oldest;
+          }
+
+          getDataTimeSpan() {
+              let oldest = Infinity, newest = -Infinity;
+              this.data.forEach(points => {
+                  points.forEach(p => {
+                      oldest = Math.min(oldest, p.timestamp);
+                      newest = Math.max(newest, p.timestamp);
+                  });
+              });
+              return Math.max(newest - oldest, this.bucketSize); // Minimum bucket size span
+          }
+
+          getNewestTimestamp() {
+              let newest = -Infinity;
+              this.data.forEach(points => {
+                  points.forEach(p => {
+                      newest = Math.max(newest, p.timestamp);
+                  });
+              });
+              return newest !== -Infinity ? newest : Math.floor(Date.now() / 1000);
+          }
+
+          loadLatestReadings(readings) {
+              this.latestReadings.clear();
+              readings.forEach(reading => {
+                  this.latestReadings.set(reading.sensorMac.toLowerCase(), reading);
+              });
+              this.renderLatestReadings();
+          }
+
+          loadSensorNames(names) {
+              this.sensorNames.clear();
+              names.forEach(item => {
+                  this.sensorNames.set(item.sensorMac.toLowerCase(), item.customName);
+              });
+              this.renderLatestReadings();
+          }
+
+          promptAdminAuth() {
+              const password = prompt('Enter admin password:');
+              if (password) {
+                  this.ws.send(JSON.stringify({
+                      type: 'adminAuth',
+                      password: password
+                  }));
+              }
+          }
+
+          handleAdminAuthResult(msg) {
+              if (msg.success) {
+                  this.isAdmin = true;
+                  this.adminToken = msg.token;
+                  document.getElementById('admin-btn').textContent = 'Logout';
+                  document.getElementById('admin-btn').style.background = '#ff6b6b';
+                  this.renderLatestReadings();
+              } else {
+                  alert(msg.message || 'Authentication failed');
+              }
+          }
+
+          logout() {
+              this.isAdmin = false;
+              this.adminToken = null;
+              document.getElementById('admin-btn').textContent = 'Admin';
+              document.getElementById('admin-btn').style.background = '#333';
+              this.renderLatestReadings();
+          }
+
+          editSensorName(sensorMac) {
+              const currentName = this.sensorNames.get(sensorMac) || sensorMac.slice(-8).toUpperCase();
+              const newName = prompt(`Enter name for sensor ${sensorMac.slice(-8).toUpperCase()}:`, currentName);
+
+              if (newName && newName.trim() !== currentName) {
+                  this.ws.send(JSON.stringify({
+                      type: 'setSensorName',
+                      sensorMac: sensorMac,
+                      customName: newName.trim(),
+                      adminToken: this.adminToken
+                  }));
+              }
+          }
+
+          updateLatestReading(data) {
+              this.throttledLatestUpdate(data);
+          }
+
+          performLatestUpdate(data) {
+              const normalizedMac = data.sensorMac.toLowerCase();
+              this.latestReadings.set(normalizedMac, {
+                  sensorMac: normalizedMac,
+                  temperature: data.temperature,
+                  humidity: data.humidity,
+                  timestamp: data.timestamp,
+                  secondsAgo: 0
+              });
+              this.renderLatestReadings();
+          }
+
+          renderLatestReadings() {
+              const container = document.getElementById('latest-readings');
+              container.innerHTML = '';
+
+              if (this.latestReadings.size === 0) {
+                  container.innerHTML = '<div style="color: #666; text-align: center; padding: 20px;">No sensor data</div>';
+                  return;
+              }
+
+              const now = Math.floor(Date.now() / 1000);
+              const sortedReadings = Array.from(this.latestReadings.values())
+                  .sort((a, b) => a.sensorMac.localeCompare(b.sensorMac));
+
+              sortedReadings.forEach((reading, index) => {
+                  const secondsAgo = now - reading.timestamp;
+                  const isOffline = secondsAgo > 300; // 5 minutes
+                  const sensorColor = this.colors[index % this.colors.length];
+                  const customName = this.sensorNames.get(reading.sensorMac);
+                  const displayName = customName || reading.sensorMac.slice(-8).toUpperCase();
+
+                  const item = document.createElement('div');
+                  item.className = `sensor-item ${isOffline ? 'sensor-offline' : ''}`;
+                  item.style.borderLeftColor = sensorColor;
+
+                  const ageText = this.formatAge(secondsAgo);
+
+                  item.innerHTML = `
+                      <div class="sensor-left">
+                          <div class="sensor-mac" ${this.isAdmin ? 'style="cursor: pointer; text-decoration: underline;"' : ''}>${displayName}</div>
+                          <div class="sensor-temp">${reading.temperature.toFixed(1)}°C</div>
+                          ${reading.humidity !== null ? `<div class="sensor-humidity">${reading.humidity.toFixed(1)}%</div>` : ''}
+                      </div>
+                      <div class="sensor-age">${ageText}</div>
+                  `;
+
+                  // Add hover event listeners for graph highlighting
+                  item.addEventListener('mouseenter', () => {
+                      this.hoveredSensor = reading.sensorMac;
+                      this.scheduleRender();
+                  });
+
+                  item.addEventListener('mouseleave', () => {
+                      this.hoveredSensor = null;
+                      this.scheduleRender();
+                  });
+
+                  // Add click handler for admin name editing
+                  if (this.isAdmin) {
+                      const macElement = item.querySelector('.sensor-mac');
+                      macElement.addEventListener('click', (e) => {
+                          e.stopPropagation();
+                          this.editSensorName(reading.sensorMac);
+                      });
+                  }
+
+                  container.appendChild(item);
+              });
+          }
+
+          formatAge(seconds) {
+              if (seconds < 60) return `${seconds}s ago`;
+              if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+              if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+              return `${Math.floor(seconds / 86400)}d ago`;
+          }
+
+          debounce(func, wait) {
+              let timeout;
+              return function executedFunction(...args) {
+                  const later = () => {
+                      clearTimeout(timeout);
+                      func(...args);
+                  };
+                  clearTimeout(timeout);
+                  timeout = setTimeout(later, wait);
+              };
+          }
+
+          throttle(func, limit) {
+              let inThrottle;
+              return function(...args) {
+                  if (!inThrottle) {
+                      func.apply(this, args);
+                      inThrottle = true;
+                      setTimeout(() => inThrottle = false, limit);
+                  }
+              };
+          }
+      }
+
+      // PWA Service Worker
+      if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.register('/sw.js').catch(console.error);
+      }
+
+      // Initialize app
+      new RuuviChart();
     </script>
-</body>
+  </body>
 </html>

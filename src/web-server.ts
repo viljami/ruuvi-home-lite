@@ -15,11 +15,18 @@ export interface ClientData {
   timestamp: number;
 }
 
+interface ClientState {
+  ws: WebSocket;
+  timeRange: string;
+  lastActivity: number;
+}
+
 export class WebServer extends EventEmitter {
   private database: Database;
   private sensorService: SensorService;
   private wss!: WebSocket.Server;
   private httpServer: any;
+  private clientStates: Map<WebSocket, ClientState> = new Map();
 
   constructor(database: Database) {
     super();
@@ -70,6 +77,13 @@ export class WebServer extends EventEmitter {
 
     this.wss.on("connection", (ws: WebSocket) => {
       console.log("WebSocket client connected");
+      
+      // Initialize client state
+      this.clientStates.set(ws, {
+        ws: ws,
+        timeRange: "day", // default
+        lastActivity: Date.now()
+      });
 
       ws.on("message", (message: string) => {
         try {
@@ -98,6 +112,13 @@ export class WebServer extends EventEmitter {
               return;
             }
 
+            // Update client state with current time range
+            const clientState = this.clientStates.get(ws);
+            if (clientState) {
+              clientState.timeRange = timeRange;
+              clientState.lastActivity = Date.now();
+            }
+
             this.sendHistoricalData(ws, timeRange);
           } else if (request.type === "getLatestReadings") {
             this.sendLatestReadings(ws);
@@ -120,6 +141,8 @@ export class WebServer extends EventEmitter {
 
       ws.on("close", () => {
         console.log("WebSocket client disconnected");
+        // Clean up client state
+        this.clientStates.delete(ws);
       });
     });
   }
@@ -252,16 +275,14 @@ export class WebServer extends EventEmitter {
     };
 
     try {
-      const message = JSON.stringify({ type: "sensorData", data: clientData });
-      this.wss.clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
-          try {
-            client.send(message);
-          } catch (error) {
-            console.error("Error sending message to client:", error);
-          }
-        }
-      });
+      // ZERO POLLING: Smart broadcasting based on client time ranges
+      this.smartBroadcastRealTimeData(clientData);
+      
+      // ZERO POLLING: Immediately broadcast latest readings when new data arrives
+      this.broadcastLatestReadings();
+      
+      // ZERO POLLING: Send bucket updates to relevant clients
+      this.smartBroadcastBucketUpdates(sanitizedMac, timestamp);
     } catch (error) {
       console.error("Error broadcasting to clients:", error);
     }
@@ -458,11 +479,119 @@ export class WebServer extends EventEmitter {
     }
   }
 
+  private async broadcastLatestReadings(): Promise<void> {
+    try {
+      const readings = await this.database.getLatestSensorReadings();
+      const message = JSON.stringify({
+        type: "latestReadings",
+        data: readings,
+        timestamp: Math.floor(Date.now() / 1000)
+      });
+
+      this.wss.clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+          try {
+            client.send(message);
+          } catch (error) {
+            console.error("Error broadcasting latest readings:", error);
+          }
+        }
+      });
+    } catch (error) {
+      console.error("Error broadcasting latest readings:", error);
+    }
+  }
+
+  private smartBroadcastRealTimeData(clientData: any): void {
+    const message = JSON.stringify({ type: "sensorData", data: clientData });
+    
+    this.clientStates.forEach((clientState, client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        try {
+          // Always send real-time data - client will decide if it affects current view
+          client.send(message);
+        } catch (error) {
+          console.error("Error sending real-time data to client:", error);
+        }
+      }
+    });
+  }
+
+  private smartBroadcastBucketUpdates(sensorMac: string, timestamp: number): void {
+    // Group clients by time range for efficient bucket updates
+    const clientsByTimeRange = new Map<string, WebSocket[]>();
+    
+    this.clientStates.forEach((clientState, client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        const timeRange = clientState.timeRange;
+        if (!clientsByTimeRange.has(timeRange)) {
+          clientsByTimeRange.set(timeRange, []);
+        }
+        clientsByTimeRange.get(timeRange)!.push(client);
+      }
+    });
+
+    // Send bucket updates per time range
+    clientsByTimeRange.forEach((clients, timeRange) => {
+      this.sendBucketUpdateToClients(clients, sensorMac, timeRange, timestamp);
+    });
+  }
+
+  private async sendBucketUpdateToClients(clients: WebSocket[], sensorMac: string, timeRange: string, timestamp: number): Promise<void> {
+    try {
+      const bucketConfigs = {
+        hour: 300,        // 5 minutes in seconds
+        day: 3600,        // 1 hour in seconds
+        week: 21600,      // 6 hours in seconds
+        month: 86400,     // 1 day in seconds
+        year: 2592000     // 30 days in seconds
+      };
+
+      const bucketSize = bucketConfigs[timeRange as keyof typeof bucketConfigs];
+      if (!bucketSize) return;
+
+      const currentBucket = Math.floor(timestamp / bucketSize) * bucketSize;
+
+      // Get latest aggregated data for current bucket
+      const rows = await this.database.getAggregatedHistoricalData(timeRange);
+      const currentBucketData = rows.filter(row => 
+        row.sensorMac.toLowerCase() === sensorMac.toLowerCase() && 
+        row.timestamp === currentBucket
+      );
+
+      if (currentBucketData.length > 0) {
+        const message = JSON.stringify({
+          type: "bucketUpdate",
+          data: {
+            sensorMac: sensorMac,
+            timeRange: timeRange,
+            bucketData: currentBucketData[0],
+            bucketSize: bucketSize,
+            timestamp: currentBucket
+          }
+        });
+
+        clients.forEach(client => {
+          if (client.readyState === WebSocket.OPEN) {
+            try {
+              client.send(message);
+            } catch (error) {
+              console.error("Error sending bucket update to client:", error);
+            }
+          }
+        });
+      }
+    } catch (error) {
+      console.error("Error preparing bucket update:", error);
+    }
+  }
+
   getConnectedClients(): number {
     return this.wss.clients.size;
   }
 
   close(): void {
+    this.clientStates.clear();
     this.wss.close();
     this.httpServer.close();
   }

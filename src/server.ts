@@ -34,6 +34,7 @@ class RuuviServer {
       this.setupEventHandlers();
 
       console.log("✅ Server initialization complete");
+      console.log("🚀 ZERO POLLING ARCHITECTURE: All updates are event-driven from MQTT data");
     } catch (error) {
       console.error("❌ Server initialization failed:", error);
       process.exit(1);
@@ -116,7 +117,7 @@ class RuuviServer {
           return;
         }
 
-        // Broadcast to web clients (minimal data)
+        // ZERO POLLING: Event-driven broadcast to web clients
         const clientData: ClientData = {
           sensorMac: sensorData.sensorMac,
           temperature: sensorData.temperature,
@@ -125,7 +126,9 @@ class RuuviServer {
         };
 
         try {
+          // This triggers immediate real-time updates, latest readings, and bucket updates
           this.webServer.broadcastToClients(clientData);
+          console.log(`📡 Event-driven update: ${sensorData.sensorMac} - ${sensorData.temperature}°C → ${this.webServer.getConnectedClients()} clients`);
         } catch (wsError) {
           console.error("Failed to broadcast to web clients:", wsError);
         }
@@ -157,6 +160,7 @@ class RuuviServer {
     // Handle MQTT connection
     this.mqttClient.on("connect", () => {
       console.log("🟢 MQTT connected successfully");
+      console.log("📡 Event-driven updates ready: MQTT → Server → WebSocket (ZERO POLLING)");
     });
   }
 
