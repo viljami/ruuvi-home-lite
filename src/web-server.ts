@@ -5,7 +5,7 @@ import { readFileSync, existsSync } from "fs";
 import { join, resolve } from "path";
 import * as path from "path";
 import { EventEmitter } from "events";
-import { Database, AggregatedDataRow } from "./db";
+import { Database, AggregatedDataRow, LatestSensorReading } from "./db";
 
 export interface ClientData {
   sensorMac: string;
@@ -96,6 +96,8 @@ export class WebServer extends EventEmitter {
             }
 
             this.sendHistoricalData(ws, timeRange);
+          } else if (request.type === "getLatestReadings") {
+            this.sendLatestReadings(ws);
           } else {
             console.warn("Unknown WebSocket request type:", request.type);
           }
@@ -302,6 +304,39 @@ export class WebServer extends EventEmitter {
       if (ws.readyState === WebSocket.OPEN) {
         ws.send(
           JSON.stringify({ type: "error", message: "Failed to retrieve data" }),
+        );
+      }
+    }
+  }
+
+  private async sendLatestReadings(ws: WebSocket): Promise<void> {
+    try {
+      // Rate limiting: prevent rapid requests
+      const now = Date.now();
+      const lastRequest = (ws as any).lastLatestRequest || 0;
+      if (now - lastRequest < 500) {
+        // 500ms minimum between requests
+        console.warn("Rate limiting latest readings request");
+        return;
+      }
+      (ws as any).lastLatestRequest = now;
+
+      const readings = await this.database.getLatestSensorReadings();
+
+      const response = JSON.stringify({
+        type: "latestReadings",
+        data: readings,
+        timestamp: Math.floor(Date.now() / 1000)
+      });
+
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(response);
+      }
+    } catch (error) {
+      console.error("Error getting latest readings:", error);
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(
+          JSON.stringify({ type: "error", message: "Failed to retrieve latest readings" }),
         );
       }
     }

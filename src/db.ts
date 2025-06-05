@@ -37,9 +37,22 @@ export interface AggregatedDataRow {
   dataPoints: number; // count of data points in bucket
 }
 
+export interface LatestSensorReading {
+  sensorMac: string;
+  temperature: number;
+  humidity: number | null;
+  timestamp: number;
+  pressure: number | null;
+  batteryVoltage: number | null;
+  txPower: number | null;
+  secondsAgo: number;
+}
+
 export class Database {
   private db!: sqlite3.Database;
   private migrationManager!: MigrationManager;
+  private insertStatement!: sqlite3.Statement;
+  private latestReadingsStatement!: sqlite3.Statement;
 
   constructor(dbPath: string = 'ruuvi.db') {
     const validatedPath = this.validateAndSecurePath(dbPath);
@@ -48,6 +61,7 @@ export class Database {
 
   async initialize(): Promise<void> {
     await this.runMigrationsIfNeeded();
+    this.prepareMigrationStatements();
   }
 
   private validateAndSecurePath(dbPath: string): string {
@@ -84,12 +98,65 @@ export class Database {
         fs.chmodSync(dbPath, 0o600);
       }
       
+      // Performance optimizations
+      this.configureDatabaseSettings();
+      
       this.migrationManager = new MigrationManager(this.db);
       console.log(`Database connection established: ${dbPath}`);
     } catch (error) {
       console.error('Database initialization failed:', error);
       throw error;
     }
+  }
+
+  private configureDatabaseSettings(): void {
+    // Enable WAL mode for better concurrency
+    this.db.exec("PRAGMA journal_mode = WAL;");
+    
+    // Optimize for performance
+    this.db.exec("PRAGMA synchronous = NORMAL;");
+    this.db.exec("PRAGMA cache_size = 10000;");
+    this.db.exec("PRAGMA temp_store = MEMORY;");
+    this.db.exec("PRAGMA mmap_size = 268435456;"); // 256MB
+    
+    // Auto-vacuum for space management
+    this.db.exec("PRAGMA auto_vacuum = INCREMENTAL;");
+  }
+
+  private prepareMigrationStatements(): void {
+    // Prepare frequently used statements
+    this.insertStatement = this.db.prepare(`
+      INSERT INTO sensor_data (
+        sensorMac, temperature, humidity, timestamp, pressure, batteryVoltage, 
+        txPower, movementCounter, measurementSequence, accelerationX, accelerationY, accelerationZ
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    this.latestReadingsStatement = this.db.prepare(`
+      SELECT 
+        sensorMac,
+        temperature,
+        humidity,
+        timestamp,
+        pressure,
+        batteryVoltage,
+        txPower,
+        ? - timestamp as secondsAgo
+      FROM (
+        SELECT 
+          sensorMac,
+          temperature,
+          humidity,
+          timestamp,
+          pressure,
+          batteryVoltage,
+          txPower,
+          ROW_NUMBER() OVER (PARTITION BY sensorMac ORDER BY timestamp DESC) as rn
+        FROM sensor_data
+      ) latest
+      WHERE rn = 1
+      ORDER BY sensorMac
+    `);
   }
 
   private async runMigrationsIfNeeded(): Promise<void> {
@@ -143,11 +210,8 @@ export class Database {
     // Sanitize MAC address (only allow hex and colons/dashes)
     const sanitizedMac = data.sensorMac.toLowerCase().replace(/[^a-f0-9:-]/g, '');
     
-    this.db.run(
-      `INSERT INTO sensor_data (
-        sensorMac, temperature, humidity, timestamp, pressure, batteryVoltage, 
-        txPower, movementCounter, measurementSequence, accelerationX, accelerationY, accelerationZ
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    // Use prepared statement for better performance
+    this.insertStatement.run(
       [
         sanitizedMac, data.temperature, data.humidity, data.timestamp,
         data.pressure, data.batteryVoltage, data.txPower, data.movementCounter,
@@ -159,6 +223,83 @@ export class Database {
         }
       }
     );
+  }
+
+  saveSensorDataBatch(dataArray: SensorData[]): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!dataArray || dataArray.length === 0) {
+        resolve();
+        return;
+      }
+
+      this.db.serialize(() => {
+        this.db.run('BEGIN TRANSACTION');
+        
+        let errors = 0;
+        let completed = 0;
+        
+        dataArray.forEach(data => {
+          try {
+            // Validate and sanitize each item
+            if (!data.sensorMac || typeof data.sensorMac !== 'string') {
+              errors++;
+              return;
+            }
+            
+            if (typeof data.temperature !== 'number' || isNaN(data.temperature)) {
+              errors++;
+              return;
+            }
+            
+            if (typeof data.timestamp !== 'number' || data.timestamp <= 0) {
+              errors++;
+              return;
+            }
+
+            const sanitizedMac = data.sensorMac.toLowerCase().replace(/[^a-f0-9:-]/g, '');
+            
+            this.insertStatement.run([
+              sanitizedMac, data.temperature, data.humidity, data.timestamp,
+              data.pressure, data.batteryVoltage, data.txPower, data.movementCounter,
+              data.measurementSequence, data.accelerationX, data.accelerationY, data.accelerationZ
+            ], function(err) {
+              if (err) {
+                errors++;
+                console.error('Batch insert error:', err);
+              }
+              completed++;
+              
+              if (completed === dataArray.length) {
+                if (errors > 0) {
+                  console.warn(`Batch insert completed with ${errors} errors out of ${dataArray.length} items`);
+                }
+                
+                this.run('COMMIT', (err) => {
+                  if (err) {
+                    reject(err);
+                  } else {
+                    resolve();
+                  }
+                });
+              }
+            });
+          } catch (error) {
+            errors++;
+            completed++;
+            
+            if (completed === dataArray.length) {
+              this.db.run('COMMIT', (err) => {
+                if (err) {
+                  reject(err);
+                } else {
+                  resolve();
+                }
+              });
+            }
+          }
+        });
+      });
+    });
   }
 
   getHistoricalData(timeRange: string): Promise<HistoricalDataRow[]> {
@@ -261,7 +402,83 @@ export class Database {
     });
   }
 
+  getLatestSensorReadings(): Promise<LatestSensorReading[]> {
+    return new Promise((resolve, reject) => {
+      const now = Math.floor(Date.now() / 1000);
+      
+      // Use prepared statement for better performance
+      this.latestReadingsStatement.all([now], (err, rows) => {
+        if (err) {
+          console.error('Database latest readings query error:', err);
+          reject(err);
+        } else {
+          const readings = (rows as any[]).map(row => ({
+            sensorMac: row.sensorMac,
+            temperature: Math.round(row.temperature * 100) / 100,
+            humidity: row.humidity ? Math.round(row.humidity * 100) / 100 : null,
+            timestamp: row.timestamp,
+            pressure: row.pressure ? Math.round(row.pressure * 100) / 100 : null,
+            batteryVoltage: row.batteryVoltage,
+            txPower: row.txPower,
+            secondsAgo: row.secondsAgo
+          }));
+          resolve(readings as LatestSensorReading[]);
+        }
+      });
+    });
+  }
+
+  optimizeDatabase(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      // Run incremental vacuum to reclaim space
+      this.db.run('PRAGMA incremental_vacuum(1000);', (err) => {
+        if (err) {
+          console.warn('Incremental vacuum failed:', err);
+        }
+        
+        // Analyze tables for query optimization
+        this.db.run('ANALYZE;', (err) => {
+          if (err) {
+            console.warn('Database analyze failed:', err);
+            reject(err);
+          } else {
+            console.log('Database optimization completed');
+            resolve();
+          }
+        });
+      });
+    });
+  }
+
+  cleanOldData(daysToKeep: number = 365): Promise<number> {
+    return new Promise((resolve, reject) => {
+      const cutoffTime = Math.floor(Date.now() / 1000) - (daysToKeep * 24 * 60 * 60);
+      
+      this.db.run(
+        'DELETE FROM sensor_data WHERE timestamp < ?',
+        [cutoffTime],
+        function(err) {
+          if (err) {
+            console.error('Failed to clean old data:', err);
+            reject(err);
+          } else {
+            console.log(`Cleaned ${this.changes} old records older than ${daysToKeep} days`);
+            resolve(this.changes);
+          }
+        }
+      );
+    });
+  }
+
   close(): void {
+    // Finalize prepared statements
+    if (this.insertStatement) {
+      this.insertStatement.finalize();
+    }
+    if (this.latestReadingsStatement) {
+      this.latestReadingsStatement.finalize();
+    }
+    
     if (this.db) {
       this.db.close((err) => {
         if (err) {

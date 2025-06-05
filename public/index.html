@@ -25,8 +25,18 @@
             border-radius: 4px; cursor: pointer; font-size: 12px;
         }
         .btn.active { background: #4a9eff; border-color: #4a9eff; }
+        .main-content { flex: 1; display: flex; }
         .chart-container { flex: 1; position: relative; padding: 20px; }
+        .sidebar { width: 300px; background: #2a2a2a; border-left: 1px solid #444; padding: 20px; overflow-y: auto; }
         #chart { width: 100%; height: 100%; display: block; }
+        .sidebar h3 { margin: 0 0 15px 0; color: #e0e0e0; font-size: 16px; }
+        .sensor-item { background: #333; margin-bottom: 10px; padding: 12px; border-radius: 6px; border-left: 3px solid #4a9eff; }
+        .sensor-mac { font-size: 12px; color: #888; margin-bottom: 5px; font-family: monospace; }
+        .sensor-temp { font-size: 20px; font-weight: bold; color: #4a9eff; margin-bottom: 3px; }
+        .sensor-humidity { font-size: 14px; color: #ff6b6b; margin-bottom: 3px; }
+        .sensor-age { font-size: 11px; color: #666; }
+        .sensor-offline { border-left-color: #666; }
+        .sensor-offline .sensor-temp { color: #666; }
         .status { 
             position: absolute; top: 30px; right: 30px; font-size: 12px; opacity: 0.7;
             padding: 4px 8px; background: #333; border-radius: 3px;
@@ -51,10 +61,16 @@
             <button class="btn" data-range="year">Year</button>
         </div>
     </div>
-    <div class="chart-container">
-        <canvas id="chart"></canvas>
-        <div class="status" id="status">Connecting...</div>
-        <div class="legend" id="legend"></div>
+    <div class="main-content">
+        <div class="chart-container">
+            <canvas id="chart"></canvas>
+            <div class="status" id="status">Connecting...</div>
+            <div class="legend" id="legend"></div>
+        </div>
+        <div class="sidebar">
+            <h3>Latest Readings</h3>
+            <div id="latest-readings"></div>
+        </div>
     </div>
 
     <script>
@@ -68,11 +84,35 @@
                 this.bucketSize = 3600; // 1 hour in seconds default
                 this.aggregated = false;
                 this.ws = null;
+                this.latestReadings = new Map();
+                
+                // Performance optimization flags
+                this.needsRender = false;
+                this.isRendering = false;
+                this.lastRenderTime = 0;
+                this.renderThrottleMs = 16; // ~60fps
+                
+                // Debounced methods
+                this.debouncedRender = this.debounce(() => this.performRender(), 100);
+                this.throttledLatestUpdate = this.throttle((data) => this.performLatestUpdate(data), 1000);
+                
                 this.setupWebSocket();
                 this.setupControls();
                 this.setupCanvas();
-                this.render();
-                window.addEventListener('resize', () => this.setupCanvas());
+                this.scheduleRender();
+                
+                // Optimized resize handler
+                window.addEventListener('resize', this.debounce(() => {
+                    this.setupCanvas();
+                    this.scheduleRender();
+                }, 250));
+                
+                // Request latest readings every 30 seconds
+                setInterval(() => {
+                    if (this.ws?.readyState === WebSocket.OPEN) {
+                        this.ws.send(JSON.stringify({ type: 'getLatestReadings' }));
+                    }
+                }, 30000);
             }
 
             setupWebSocket() {
@@ -82,6 +122,7 @@
                 this.ws.onopen = () => {
                     document.getElementById('status').textContent = 'Connected';
                     this.ws.send(JSON.stringify({ type: 'getData', timeRange: this.range }));
+                    this.ws.send(JSON.stringify({ type: 'getLatestReadings' }));
                 };
                 
                 this.ws.onmessage = (event) => {
@@ -92,6 +133,9 @@
                         this.loadData(msg.data);
                     } else if (msg.type === 'sensorData') {
                         this.addRealTimeData(msg.data);
+                        this.updateLatestReading(msg.data);
+                    } else if (msg.type === 'latestReadings') {
+                        this.loadLatestReadings(msg.data);
                     }
                 };
                 
@@ -155,7 +199,7 @@
                         });
                     }
                 });
-                this.render();
+                this.scheduleRender();
                 this.updateLegend();
             }
 
@@ -223,7 +267,7 @@
                     }
                 }
                 
-                this.render();
+                this.debouncedRender();
                 this.updateLegend();
             }
 
@@ -266,6 +310,30 @@
                     default:
                         return date.toLocaleTimeString('en-US', { hour12: false });
                 }
+            }
+
+            scheduleRender() {
+                if (!this.needsRender) {
+                    this.needsRender = true;
+                    requestAnimationFrame(() => this.performRender());
+                }
+            }
+
+            performRender() {
+                if (!this.needsRender || this.isRendering) return;
+                
+                const now = performance.now();
+                if (now - this.lastRenderTime < this.renderThrottleMs) {
+                    requestAnimationFrame(() => this.performRender());
+                    return;
+                }
+                
+                this.isRendering = true;
+                this.needsRender = false;
+                this.lastRenderTime = now;
+                
+                this.render();
+                this.isRendering = false;
             }
 
             render() {
@@ -499,6 +567,94 @@
                     });
                 });
                 return Math.max(newest - oldest, this.bucketSize); // Minimum bucket size span
+            }
+
+            loadLatestReadings(readings) {
+                this.latestReadings.clear();
+                readings.forEach(reading => {
+                    this.latestReadings.set(reading.sensorMac.toLowerCase(), reading);
+                });
+                this.renderLatestReadings();
+            }
+
+            updateLatestReading(data) {
+                this.throttledLatestUpdate(data);
+            }
+
+            performLatestUpdate(data) {
+                const normalizedMac = data.sensorMac.toLowerCase();
+                this.latestReadings.set(normalizedMac, {
+                    sensorMac: normalizedMac,
+                    temperature: data.temperature,
+                    humidity: data.humidity,
+                    timestamp: data.timestamp,
+                    secondsAgo: 0
+                });
+                this.renderLatestReadings();
+            }
+
+            renderLatestReadings() {
+                const container = document.getElementById('latest-readings');
+                container.innerHTML = '';
+                
+                if (this.latestReadings.size === 0) {
+                    container.innerHTML = '<div style="color: #666; text-align: center; padding: 20px;">No sensor data</div>';
+                    return;
+                }
+
+                const now = Math.floor(Date.now() / 1000);
+                const sortedReadings = Array.from(this.latestReadings.values())
+                    .sort((a, b) => a.sensorMac.localeCompare(b.sensorMac));
+
+                sortedReadings.forEach(reading => {
+                    const secondsAgo = now - reading.timestamp;
+                    const isOffline = secondsAgo > 300; // 5 minutes
+                    
+                    const item = document.createElement('div');
+                    item.className = `sensor-item ${isOffline ? 'sensor-offline' : ''}`;
+                    
+                    const shortMac = reading.sensorMac.slice(-8).toUpperCase();
+                    const ageText = this.formatAge(secondsAgo);
+                    
+                    item.innerHTML = `
+                        <div class="sensor-mac">${shortMac}</div>
+                        <div class="sensor-temp">${reading.temperature.toFixed(1)}°C</div>
+                        ${reading.humidity !== null ? `<div class="sensor-humidity">${reading.humidity.toFixed(1)}%</div>` : ''}
+                        <div class="sensor-age">${ageText}</div>
+                    `;
+                    
+                    container.appendChild(item);
+                });
+            }
+
+            formatAge(seconds) {
+                if (seconds < 60) return `${seconds}s ago`;
+                if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+                if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+                return `${Math.floor(seconds / 86400)}d ago`;
+            }
+
+            debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => {
+                        clearTimeout(timeout);
+                        func(...args);
+                    };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            }
+
+            throttle(func, limit) {
+                let inThrottle;
+                return function(...args) {
+                    if (!inThrottle) {
+                        func.apply(this, args);
+                        inThrottle = true;
+                        setTimeout(() => inThrottle = false, limit);
+                    }
+                };
             }
         }
 
