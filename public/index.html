@@ -717,15 +717,9 @@
               this.ctx.font = '10px sans-serif';
               const timeSteps = 6;
 
-              // For aggregated data, use actual data range; for real-time, use time window
-              let axisStartTime, axisEndTime;
-              if (this.aggregated && this.data.size > 0) {
-                  axisStartTime = this.getOldestTimestamp();
-                  axisEndTime = this.getNewestTimestamp();
-              } else {
-                  axisStartTime = startTime;
-                  axisEndTime = now;
-              }
+              // Use consistent time window for both aggregated and real-time data
+              const axisStartTime = startTime;
+              const axisEndTime = now;
 
               for (let i = 0; i <= timeSteps; i++) {
                   const timeProgress = i / timeSteps;
@@ -787,9 +781,9 @@
                   // Calculate humidity positions to align 0% with temperature 0°C
                   for (let i = 0; i <= 4; i++) {
                       const hum = i * 25; // 0%, 25%, 50%, 75%, 100%
-                      const humY = humZeroY + (hum / 100) * (height - padding - humZeroY);
+                      const humY = humZeroY - (hum / 100) * (humZeroY - humChartTop);
                       
-                      if (humY >= humZeroY && humY <= height - padding) {
+                      if (humY >= humChartTop && humY <= humZeroY) {
                           this.ctx.fillText(`${hum}%`, width - 40, humY + 3);
 
                           // Draw horizontal grid lines for humidity
@@ -865,9 +859,9 @@
                       if (this.aggregated || p.timestamp >= startTime) {
                           let x;
                           if (this.aggregated) {
-                              const dataStart = this.getOldestTimestamp();
-                              const dataSpan = this.getNewestTimestamp() - dataStart;
-                              x = padding + ((p.timestamp - dataStart) / Math.max(dataSpan, 3600)) * chartWidth;
+                              const dataStart = startTime;
+                              const dataSpan = timeWindow;
+                              x = padding + ((p.timestamp - dataStart) / dataSpan) * chartWidth;
                           } else {
                               x = padding + ((p.timestamp - startTime) / timeWindow) * chartWidth;
                           }
@@ -907,13 +901,13 @@
                           if ((this.aggregated || p.timestamp >= startTime) && humidity !== null && humidity !== undefined) {
                               let x;
                               if (this.aggregated) {
-                                  const dataStart = this.getOldestTimestamp();
-                                  const dataSpan = this.getNewestTimestamp() - dataStart;
-                                  x = padding + ((p.timestamp - dataStart) / Math.max(dataSpan, 3600)) * chartWidth;
+                                  const dataStart = startTime;
+                                  const dataSpan = timeWindow;
+                                  x = padding + ((p.timestamp - dataStart) / dataSpan) * chartWidth;
                               } else {
                                   x = padding + ((p.timestamp - startTime) / timeWindow) * chartWidth;
                               }
-                              const y = humZeroY + (humidity / 100) * (height - padding - humZeroY);
+                              const y = humZeroY - (humidity / 100) * (humZeroY - humChartTop);
                               if (first) {
                                   this.ctx.moveTo(x, y);
                                   first = false;
