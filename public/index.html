@@ -801,16 +801,29 @@
                       // Draw min/max temperature band (filled area)
                       this.ctx.globalAlpha = isOtherHovered ? 0.1 : 0.3;
                       this.ctx.fillStyle = color;
-                      this.ctx.beginPath();
-                      let firstPoint = true;
+                      
+                      // Filter points with valid min/max temperature data and apply same timestamp filtering as main line
+                      const validPoints = points.filter(p => 
+                          (this.aggregated || p.timestamp >= startTime) &&
+                          p.maxTemperature !== undefined && p.maxTemperature !== null &&
+                          p.minTemperature !== undefined && p.minTemperature !== null &&
+                          !isNaN(p.maxTemperature) && !isNaN(p.minTemperature) &&
+                          p.isAggregated === true &&
+                          p.maxTemperature !== p.minTemperature  // Only draw area if there's actually a range
+                      );
 
-                      // Top edge (max values)
-                      points.forEach(p => {
-                          if ((this.aggregated || p.timestamp >= startTime) && p.maxTemperature !== undefined) {
+                      if (validPoints.length > 1) {  // Need at least 2 points to create an area
+                          this.ctx.beginPath();
+                          let firstPoint = true;
+                          
+                          // Calculate coordinate variables once (same as main temperature line)
+                          const dataStart = this.aggregated ? this.getOldestTimestamp() : null;
+                          const dataSpan = this.aggregated ? this.getNewestTimestamp() - dataStart : null;
+
+                          // Top edge (max values)
+                          validPoints.forEach(p => {
                               let x;
                               if (this.aggregated) {
-                                  const dataStart = this.getOldestTimestamp();
-                                  const dataSpan = this.getNewestTimestamp() - dataStart;
                                   x = padding + ((p.timestamp - dataStart) / Math.max(dataSpan, 3600)) * chartWidth;
                               } else {
                                   x = padding + ((p.timestamp - startTime) / timeWindow) * chartWidth;
@@ -822,28 +835,24 @@
                               } else {
                                   this.ctx.lineTo(x, y);
                               }
-                          }
-                      });
+                          });
 
-                      // Bottom edge (min values, reversed)
-                      const reversedPoints = [...points].reverse();
-                      reversedPoints.forEach(p => {
-                          if ((this.aggregated || p.timestamp >= startTime) && p.minTemperature !== undefined) {
+                          // Bottom edge (min values, reversed)
+                          const reversedPoints = [...validPoints].reverse();
+                          reversedPoints.forEach(p => {
                               let x;
                               if (this.aggregated) {
-                                  const dataStart = this.getOldestTimestamp();
-                                  const dataSpan = this.getNewestTimestamp() - dataStart;
                                   x = padding + ((p.timestamp - dataStart) / Math.max(dataSpan, 3600)) * chartWidth;
                               } else {
                                   x = padding + ((p.timestamp - startTime) / timeWindow) * chartWidth;
                               }
                               const y = padding + tempChartHeight - ((p.minTemperature - minTemp) / (maxTemp - minTemp)) * tempChartHeight;
                               this.ctx.lineTo(x, y);
-                          }
-                      });
+                          });
 
-                      this.ctx.closePath();
-                      this.ctx.fill();
+                          this.ctx.closePath();
+                          this.ctx.fill();
+                      }
                       this.ctx.globalAlpha = 1.0;
                   }
 
