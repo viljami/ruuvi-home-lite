@@ -1,5 +1,8 @@
 .PHONY: help build clean install setup setup-docker dev start stop logs lint test cleanup docker-simple docker-secure docker-stop docker-logs docker-status docker-reset
 
+# Detect Docker Compose command
+DOCKER_COMPOSE := $(shell if command -v docker-compose >/dev/null 2>&1; then echo "docker-compose"; elif docker compose version >/dev/null 2>&1; then echo "docker compose"; else echo "docker-compose"; fi)
+
 # Default target
 help:
 	@echo "Ruuvi Home Lite - Available targets:"
@@ -88,32 +91,32 @@ cleanup-force:
 # Docker deployment targets
 docker-simple:
 	@echo "🚀 Starting simple Docker deployment..."
-	docker-compose -f docker-compose.simple.yml up --build -d
+	$(DOCKER_COMPOSE) -f docker-compose.simple.yml up --build -d
 	@echo "✅ Simple deployment started"
 	@echo "🌐 Web interface: http://localhost:3000"
 	@echo "📡 MQTT broker: localhost:1883 (no auth required)"
 
 docker-secure: setup-docker
 	@echo "🔐 Starting secure Docker deployment..."
-	docker-compose up --build -d
+	$(DOCKER_COMPOSE) up --build -d
 	@echo "✅ Secure deployment started"
 	@echo "🌐 Web interface: https://localhost:3000"
 	@echo "📡 MQTT broker: localhost:8883 (auth required)"
 
 docker-stop:
 	@echo "🛑 Stopping Docker services..."
-	docker-compose down 2>/dev/null || true
-	docker-compose -f docker-compose.simple.yml down 2>/dev/null || true
+	$(DOCKER_COMPOSE) down 2>/dev/null || true
+	$(DOCKER_COMPOSE) -f docker-compose.simple.yml down 2>/dev/null || true
 	@echo "✅ Docker services stopped"
 
 docker-logs:
 	@echo "📖 Docker container logs:"
 	@if docker ps | grep -q ruuvi-mosquitto-simple; then \
 		echo "Simple deployment logs:"; \
-		docker-compose -f docker-compose.simple.yml logs --tail=50; \
+		$(DOCKER_COMPOSE) -f docker-compose.simple.yml logs --tail=50; \
 	elif docker ps | grep -q ruuvi-mosquitto; then \
 		echo "Secure deployment logs:"; \
-		docker-compose logs --tail=50; \
+		$(DOCKER_COMPOSE) logs --tail=50; \
 	else \
 		echo "No Ruuvi containers running"; \
 	fi
@@ -140,8 +143,8 @@ docker-reset:
 	@echo "⚠️  WARNING: This will remove all Docker containers, volumes, and data!"
 	@read -p "Type 'RESET' to confirm: " confirm && [ "$$confirm" = "RESET" ] || (echo "Cancelled" && exit 1)
 	@echo "🧹 Performing Docker reset..."
-	docker-compose down -v 2>/dev/null || true
-	docker-compose -f docker-compose.simple.yml down -v 2>/dev/null || true
+	$(DOCKER_COMPOSE) down -v 2>/dev/null || true
+	$(DOCKER_COMPOSE) -f docker-compose.simple.yml down -v 2>/dev/null || true
 	docker system prune -af
 	docker volume prune -f
 	@echo "✅ Docker reset completed"

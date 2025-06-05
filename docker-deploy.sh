@@ -4,16 +4,30 @@ set -e
 echo "🐳 Ruuvi Home Lite - Docker Deployment Script"
 echo "=============================================="
 
+# Function to detect the correct Docker Compose command
+detect_docker_compose() {
+    if command -v docker-compose >/dev/null 2>&1; then
+        echo "docker-compose"
+    elif docker compose version >/dev/null 2>&1; then
+        echo "docker compose"
+    else
+        echo "ERROR: Neither 'docker-compose' nor 'docker compose' found" >&2
+        echo "Please install Docker Compose:" >&2
+        echo "  - Standalone: https://docs.docker.com/compose/install/" >&2
+        echo "  - Plugin: docker plugin install compose" >&2
+        exit 1
+    fi
+}
+
 # Check if Docker is installed
 if ! command -v docker >/dev/null 2>&1; then
     echo "❌ Docker is not installed. Please install Docker first."
     exit 1
 fi
 
-if ! command -v docker-compose >/dev/null 2>&1; then
-    echo "❌ Docker Compose is not installed. Please install Docker Compose first."
-    exit 1
-fi
+# Detect Docker Compose command
+DOCKER_COMPOSE=$(detect_docker_compose)
+echo "🐳 Using: $DOCKER_COMPOSE"
 
 # Function to show menu
 show_menu() {
@@ -34,11 +48,11 @@ deploy_simple() {
     echo "🚀 Starting Simple Deployment (HTTP, no TLS)..."
     
     # Stop any existing services
-    docker-compose down 2>/dev/null || true
-    docker-compose -f docker-compose.simple.yml down 2>/dev/null || true
+    $DOCKER_COMPOSE down 2>/dev/null || true
+    $DOCKER_COMPOSE -f docker-compose.simple.yml down 2>/dev/null || true
     
     # Start simple deployment
-    if docker-compose -f docker-compose.simple.yml up --build -d; then
+    if $DOCKER_COMPOSE -f docker-compose.simple.yml up --build -d; then
         echo "✅ Simple deployment started successfully!"
         echo ""
         echo "📡 MQTT Broker: http://$(hostname -I | awk '{print $1}'):1883 (insecure)"
@@ -50,7 +64,7 @@ deploy_simple() {
         echo "   Username: (leave empty)"
         echo "   Password: (leave empty)"
         echo ""
-        echo "💡 Check status with: docker-compose -f docker-compose.simple.yml ps"
+        echo "💡 Check status with: $DOCKER_COMPOSE -f docker-compose.simple.yml ps"
     else
         echo "❌ Simple deployment failed. Check logs with option 4."
     fi
@@ -61,7 +75,7 @@ deploy_secure() {
     echo "🔐 Starting Secure Deployment (HTTPS, TLS)..."
     
     # Stop simple deployment if running
-    docker-compose -f docker-compose.simple.yml down 2>/dev/null || true
+    $DOCKER_COMPOSE -f docker-compose.simple.yml down 2>/dev/null || true
     
     # Setup environment if not exists
     if [ ! -f .env.docker ]; then
@@ -75,7 +89,7 @@ deploy_secure() {
     fi
     
     # Start secure deployment
-    if docker-compose up --build -d; then
+    if $DOCKER_COMPOSE up --build -d; then
         echo "✅ Secure deployment started successfully!"
         echo ""
         echo "📡 MQTT Broker: https://$(hostname -I | awk '{print $1}'):8883 (TLS)"
@@ -87,7 +101,7 @@ deploy_secure() {
         echo "   Username: ruuvi"
         echo "   Password: $(grep MQTT_PASS .env.docker 2>/dev/null | cut -d'=' -f2 || echo 'Check .env.docker file')"
         echo ""
-        echo "💡 Check status with: docker-compose ps"
+        echo "💡 Check status with: $DOCKER_COMPOSE ps"
     else
         echo "❌ Secure deployment failed. Try simple deployment first or check logs."
     fi
@@ -96,8 +110,8 @@ deploy_secure() {
 # Function to stop all services
 stop_services() {
     echo "🛑 Stopping all services..."
-    docker-compose down 2>/dev/null || true
-    docker-compose -f docker-compose.simple.yml down 2>/dev/null || true
+    $DOCKER_COMPOSE down 2>/dev/null || true
+    $DOCKER_COMPOSE -f docker-compose.simple.yml down 2>/dev/null || true
     echo "✅ All services stopped."
 }
 
@@ -113,10 +127,10 @@ view_logs() {
     
     case $log_choice in
         1)
-            docker-compose -f docker-compose.simple.yml logs -f
+            $DOCKER_COMPOSE -f docker-compose.simple.yml logs -f
             ;;
         2)
-            docker-compose logs -f
+            $DOCKER_COMPOSE logs -f
             ;;
         3)
             if docker ps | grep -q ruuvi-mosquitto; then
@@ -149,8 +163,8 @@ clean_reset() {
     
     if [ "$confirmation" = "RESET" ]; then
         echo "🧹 Performing clean reset..."
-        docker-compose down -v 2>/dev/null || true
-        docker-compose -f docker-compose.simple.yml down -v 2>/dev/null || true
+        $DOCKER_COMPOSE down -v 2>/dev/null || true
+        $DOCKER_COMPOSE -f docker-compose.simple.yml down -v 2>/dev/null || true
         docker system prune -af
         docker volume prune -f
         echo "✅ Clean reset completed. You can now start fresh."

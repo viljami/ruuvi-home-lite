@@ -17,9 +17,12 @@ services:
       - mosquitto_run:/var/run/mosquitto
     networks:
       - ruuvi-network
-
     healthcheck:
-      test: ["CMD-SHELL", "mosquitto_pub -h localhost -p 1883 -t health -m check || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "mosquitto_pub -h localhost -p 1883 -t health -m check || exit 1",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -73,11 +76,11 @@ volumes:
   mosquitto_certs:
     driver: local
   mosquitto_ca:
-    driver: local
+    external: true
   mosquitto_passwd:
-    driver: local
+    external: true
   mosquitto_run:
-    driver: local
+    external: true
   app_data:
     driver: local
   app_logs:
