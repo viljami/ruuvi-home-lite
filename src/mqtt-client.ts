@@ -81,6 +81,15 @@ export class MQTTClient extends EventEmitter {
 
         // Security: Parse JSON safely with size limit
         const messageStr = message.toString("utf8");
+        // Gateway data example: {
+        //  "gw_mac":"A1:B2:C3:D4:E5:F6",
+        //  "rssi":-73,
+        //  "aoa":[],
+        //  "gwts":1749117770,
+        //  "ts":1749117770,
+        //  "data":"0201061BFF990405124148FBBE780064FFC003DCA93621128FEF2E0A68DC30",
+        //  "coords":""
+        // }
         const gatewayData = JSON.parse(messageStr);
         console.log(messageStr);
         // Security: Validate gateway data structure
@@ -131,32 +140,11 @@ export class MQTTClient extends EventEmitter {
         }
 
         if (decoded && decoded.temperature !== null) {
-          // Extract timestamp from gateway data, converting from seconds to milliseconds
-          let timestamp = Date.now(); // Default fallback
-          if (gatewayData.ts && typeof gatewayData.ts === "number") {
-            // Ruuvi gateway sends timestamp in seconds, convert to milliseconds
-            const ruuviTimestamp = gatewayData.ts * 1000;
-            // Validate timestamp is reasonable (within 1 hour of current time)
-            const now = Date.now();
-            const oneHour = 60 * 60 * 1000;
-            if (Math.abs(ruuviTimestamp - now) <= oneHour) {
-              timestamp = ruuviTimestamp;
-            } else {
-              console.warn(
-                `Ruuvi timestamp ${new Date(ruuviTimestamp).toISOString()} is too far from current time, using current time`,
-              );
-            }
-          } else {
-            console.log(
-              "No valid timestamp in gateway data, using current time",
-            );
-          }
-
           const sensorData: SensorDataEvent = {
             sensorMac: sensorMac,
             temperature: decoded.temperature,
             humidity: decoded.humidity || null,
-            timestamp: timestamp,
+            timestamp: gatewayData.ts,
             pressure: decoded.pressure,
             batteryVoltage: decoded.batteryVoltage,
             txPower: decoded.txPower,
