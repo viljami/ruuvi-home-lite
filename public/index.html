@@ -628,6 +628,32 @@
               }
           }
 
+          // Data preparation helper functions
+          prepareChartData(startTime, timeWindow) {
+              const preparedData = new Map();
+              this.data.forEach((points, sensorMac) => {
+                  const filteredPoints = points.filter(p => 
+                      p.timestamp >= startTime
+                  );
+                  if (filteredPoints.length > 0) {
+                      preparedData.set(sensorMac, filteredPoints);
+                  }
+              });
+              return preparedData;
+          }
+
+          calculateTimeCoordinates(timestamp, startTime, timeWindow, padding, chartWidth) {
+              return padding + ((timestamp - startTime) / timeWindow) * chartWidth;
+          }
+
+          calculateTemperatureCoordinates(temperature, minTemp, maxTemp, padding, tempChartHeight) {
+              return padding + tempChartHeight - ((temperature - minTemp) / (maxTemp - minTemp)) * tempChartHeight;
+          }
+
+          calculateHumidityCoordinates(humidity, humZeroY, humChartTop) {
+              return humZeroY - (humidity / 100) * (humZeroY - humChartTop);
+          }
+
           render() {
               const rect = this.canvas.getBoundingClientRect();
               const width = rect.width;
@@ -801,9 +827,12 @@
                   this.ctx.globalAlpha = 1.0; // Reset opacity
               }
 
+              // Prepare chart data
+              const preparedData = this.prepareChartData(startTime, timeWindow);
+
               // Draw temperature data in top area
               let colorIndex = 0;
-              this.data.forEach((points, sensorMac) => {
+              preparedData.forEach((points, sensorMac) => {
                   const baseColor = this.colors[colorIndex % this.colors.length];
                   const isHovered = this.hoveredSensor === sensorMac;
                   const isOtherHovered = this.hoveredSensor && this.hoveredSensor !== sensorMac;
@@ -856,22 +885,13 @@
                   let first = true;
 
                   points.forEach(p => {
-                      if (this.aggregated || p.timestamp >= startTime) {
-                          let x;
-                          if (this.aggregated) {
-                              const dataStart = startTime;
-                              const dataSpan = timeWindow;
-                              x = padding + ((p.timestamp - dataStart) / dataSpan) * chartWidth;
-                          } else {
-                              x = padding + ((p.timestamp - startTime) / timeWindow) * chartWidth;
-                          }
-                          const y = padding + tempChartHeight - ((p.temperature - minTemp) / (maxTemp - minTemp)) * tempChartHeight;
-                          if (first) {
-                              this.ctx.moveTo(x, y);
-                              first = false;
-                          } else {
-                              this.ctx.lineTo(x, y);
-                          }
+                      const x = this.calculateTimeCoordinates(p.timestamp, startTime, timeWindow, padding, chartWidth);
+                      const y = this.calculateTemperatureCoordinates(p.temperature, minTemp, maxTemp, padding, tempChartHeight);
+                      if (first) {
+                          this.ctx.moveTo(x, y);
+                          first = false;
+                      } else {
+                          this.ctx.lineTo(x, y);
                       }
                   });
                   this.ctx.stroke();
@@ -898,16 +918,9 @@
 
                       points.forEach(p => {
                           const humidity = p.humidity;
-                          if ((this.aggregated || p.timestamp >= startTime) && humidity !== null && humidity !== undefined) {
-                              let x;
-                              if (this.aggregated) {
-                                  const dataStart = startTime;
-                                  const dataSpan = timeWindow;
-                                  x = padding + ((p.timestamp - dataStart) / dataSpan) * chartWidth;
-                              } else {
-                                  x = padding + ((p.timestamp - startTime) / timeWindow) * chartWidth;
-                              }
-                              const y = humZeroY - (humidity / 100) * (humZeroY - humChartTop);
+                          if (humidity !== null && humidity !== undefined) {
+                              const x = this.calculateTimeCoordinates(p.timestamp, startTime, timeWindow, padding, chartWidth);
+                              const y = this.calculateHumidityCoordinates(humidity, humZeroY, humChartTop);
                               if (first) {
                                   this.ctx.moveTo(x, y);
                                   first = false;
