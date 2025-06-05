@@ -787,9 +787,9 @@
                   // Calculate humidity positions to align 0% with temperature 0°C
                   for (let i = 0; i <= 4; i++) {
                       const hum = i * 25; // 0%, 25%, 50%, 75%, 100%
-                      const humY = humZeroY - (hum / 100) * (humZeroY - humChartTop);
+                      const humY = humZeroY + (hum / 100) * (height - padding - humZeroY);
                       
-                      if (humY >= humChartTop && humY <= humChartTop + humChartHeight) {
+                      if (humY >= humZeroY && humY <= height - padding) {
                           this.ctx.fillText(`${hum}%`, width - 40, humY + 3);
 
                           // Draw horizontal grid lines for humidity
@@ -954,7 +954,7 @@
                               } else {
                                   x = padding + ((p.timestamp - startTime) / timeWindow) * chartWidth;
                               }
-                              const y = humZeroY - (humidity / 100) * (humZeroY - humChartTop);
+                              const y = humZeroY + (humidity / 100) * (height - padding - humZeroY);
                               if (first) {
                                   this.ctx.moveTo(x, y);
                                   first = false;
