@@ -5,7 +5,7 @@ import { readFileSync, existsSync } from "fs";
 import { join, resolve } from "path";
 import * as path from "path";
 import { EventEmitter } from "events";
-import { Database } from "./db";
+import { Database, AggregatedDataRow } from "./db";
 
 export interface ClientData {
   sensorMac: string;
@@ -87,7 +87,7 @@ export class WebServer extends EventEmitter {
           // Only allow specific request types
           if (request.type === "getData") {
             // Validate timeRange parameter
-            const allowedRanges = ["day", "week", "month", "year"];
+            const allowedRanges = ["hour", "day", "week", "month", "year"];
             const timeRange = request.timeRange || "day";
 
             if (!allowedRanges.includes(timeRange)) {
@@ -269,16 +269,28 @@ export class WebServer extends EventEmitter {
       }
       (ws as any).lastHistoricalRequest = now;
 
-      const rows = await this.database.getHistoricalData(timeRange);
+      const rows = await this.database.getAggregatedHistoricalData(timeRange);
 
       // Limit response size
       const maxRows = 1000;
       const limitedRows = rows.slice(0, maxRows);
 
+      // Define bucket sizes for the client
+      const bucketConfigs = {
+        hour: 300000,     // 5 minutes in ms
+        day: 3600000,     // 1 hour in ms
+        week: 21600000,   // 6 hours in ms
+        month: 86400000,  // 1 day in ms
+        year: 2592000000  // 30 days in ms
+      };
+
       const response = JSON.stringify({
         type: "historicalData",
         data: limitedRows,
         truncated: rows.length > maxRows,
+        timeRange: timeRange,
+        bucketSize: bucketConfigs[timeRange as keyof typeof bucketConfigs] || bucketConfigs.day,
+        aggregated: true
       });
 
       if (ws.readyState === WebSocket.OPEN) {

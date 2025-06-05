@@ -37,12 +37,14 @@
         }
         .legend-item { display: flex; align-items: center; margin-bottom: 4px; }
         .legend-color { width: 12px; height: 12px; margin-right: 6px; border-radius: 2px; }
+        .axis-label { position: absolute; font-size: 10px; color: #888; }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>Ruuvi Home</h1>
         <div class="controls">
+            <button class="btn" data-range="hour">Hour</button>
             <button class="btn active" data-range="day">Day</button>
             <button class="btn" data-range="week">Week</button>
             <button class="btn" data-range="month">Month</button>
@@ -63,6 +65,8 @@
                 this.data = new Map();
                 this.colors = ['#4a9eff', '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7'];
                 this.range = 'day';
+                this.bucketSize = 3600000; // 1 hour default
+                this.aggregated = false;
                 this.ws = null;
                 this.setupWebSocket();
                 this.setupControls();
@@ -83,6 +87,8 @@
                 this.ws.onmessage = (event) => {
                     const msg = JSON.parse(event.data);
                     if (msg.type === 'historicalData') {
+                        this.bucketSize = msg.bucketSize || 3600000;
+                        this.aggregated = msg.aggregated || false;
                         this.loadData(msg.data);
                     } else if (msg.type === 'sensorData') {
                         this.addRealTimeData(msg.data);
@@ -123,11 +129,29 @@
                     if (!this.data.has(row.sensorMac)) {
                         this.data.set(row.sensorMac, []);
                     }
-                    this.data.get(row.sensorMac).push({
-                        timestamp: row.timestamp,
-                        temperature: row.temperature,
-                        humidity: row.humidity
-                    });
+                    
+                    if (this.aggregated) {
+                        // Handle aggregated data
+                        this.data.get(row.sensorMac).push({
+                            timestamp: row.timestamp,
+                            temperature: row.avgTemperature,
+                            minTemperature: row.minTemperature,
+                            maxTemperature: row.maxTemperature,
+                            humidity: row.avgHumidity,
+                            minHumidity: row.minHumidity,
+                            maxHumidity: row.maxHumidity,
+                            dataPoints: row.dataPoints,
+                            isAggregated: true
+                        });
+                    } else {
+                        // Handle raw data
+                        this.data.get(row.sensorMac).push({
+                            timestamp: row.timestamp,
+                            temperature: row.temperature,
+                            humidity: row.humidity,
+                            isAggregated: false
+                        });
+                    }
                 });
                 this.render();
                 this.updateLegend();
@@ -137,12 +161,64 @@
                 if (!this.data.has(data.sensorMac)) {
                     this.data.set(data.sensorMac, []);
                 }
-                // Ensure humidity is properly handled even if null
-                const dataPoint = {
-                    ...data,
-                    humidity: data.humidity === null ? null : data.humidity
-                };
-                this.data.get(data.sensorMac).push(dataPoint);
+                
+                const sensorData = this.data.get(data.sensorMac);
+                const now = Date.now();
+                const timeWindow = this.getTimeWindow();
+                
+                if (this.aggregated && sensorData.length > 0) {
+                    // Find the current bucket
+                    const bucketStart = Math.floor(data.timestamp / this.bucketSize) * this.bucketSize;
+                    const lastBucket = sensorData[sensorData.length - 1];
+                    
+                    if (lastBucket && lastBucket.timestamp === bucketStart) {
+                        // Update existing bucket with running average
+                        const totalPoints = lastBucket.dataPoints + 1;
+                        lastBucket.temperature = ((lastBucket.temperature * lastBucket.dataPoints) + data.temperature) / totalPoints;
+                        if (data.humidity !== null && lastBucket.humidity !== null) {
+                            lastBucket.humidity = ((lastBucket.humidity * lastBucket.dataPoints) + data.humidity) / totalPoints;
+                        }
+                        lastBucket.dataPoints = totalPoints;
+                        lastBucket.maxTemperature = Math.max(lastBucket.maxTemperature || data.temperature, data.temperature);
+                        lastBucket.minTemperature = Math.min(lastBucket.minTemperature || data.temperature, data.temperature);
+                    } else {
+                        // Create new bucket
+                        const newBucket = {
+                            timestamp: bucketStart,
+                            temperature: data.temperature,
+                            minTemperature: data.temperature,
+                            maxTemperature: data.temperature,
+                            humidity: data.humidity,
+                            minHumidity: data.humidity,
+                            maxHumidity: data.humidity,
+                            dataPoints: 1,
+                            isAggregated: true
+                        };
+                        sensorData.push(newBucket);
+                        
+                        // Remove old data points outside time window
+                        const cutoff = now - timeWindow;
+                        while (sensorData.length > 0 && sensorData[0].timestamp < cutoff) {
+                            sensorData.shift();
+                        }
+                    }
+                } else {
+                    // Raw data mode or first data point
+                    const dataPoint = {
+                        timestamp: data.timestamp,
+                        temperature: data.temperature,
+                        humidity: data.humidity === null ? null : data.humidity,
+                        isAggregated: false
+                    };
+                    sensorData.push(dataPoint);
+                    
+                    // Remove old data points outside time window
+                    const cutoff = now - timeWindow;
+                    while (sensorData.length > 0 && sensorData[0].timestamp < cutoff) {
+                        sensorData.shift();
+                    }
+                }
+                
                 this.render();
                 this.updateLegend();
             }
@@ -163,6 +239,31 @@
                 });
             }
 
+            getTimeWindow() {
+                const ranges = { hour: 1, day: 24, week: 168, month: 720, year: 8760 };
+                return ranges[this.range] * 60 * 60 * 1000;
+            }
+
+            formatTimeLabel(timestamp, range) {
+                const date = new Date(timestamp);
+                
+                switch(range) {
+                    case 'hour':
+                        return date.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+                    case 'day':
+                        return date.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+                    case 'week':
+                        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' + 
+                               date.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit' });
+                    case 'month':
+                        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    case 'year':
+                        return date.toLocaleDateString('en-US', { month: 'short' });
+                    default:
+                        return date.toLocaleTimeString('en-US', { hour12: false });
+                }
+            }
+
             render() {
                 const rect = this.canvas.getBoundingClientRect();
                 const width = rect.width;
@@ -173,8 +274,7 @@
                 if (this.data.size === 0) return;
 
                 const now = Date.now();
-                const ranges = { day: 24, week: 168, month: 720, year: 8760 };
-                const timeWindow = ranges[this.range] * 60 * 60 * 1000;
+                const timeWindow = this.getTimeWindow();
                 const startTime = now - timeWindow;
 
                 // Calculate bounds
@@ -184,17 +284,26 @@
                 this.data.forEach(points => {
                     points.forEach(p => {
                         if (p.timestamp >= startTime) {
-                            minTemp = Math.min(minTemp, p.temperature);
-                            maxTemp = Math.max(maxTemp, p.temperature);
-                            if (p.humidity !== null && p.humidity !== undefined) {
-                                minHum = Math.min(minHum, p.humidity);
-                                maxHum = Math.max(maxHum, p.humidity);
+                            if (p.isAggregated) {
+                                minTemp = Math.min(minTemp, p.minTemperature || p.temperature);
+                                maxTemp = Math.max(maxTemp, p.maxTemperature || p.temperature);
+                                if (p.minHumidity !== null && p.maxHumidity !== null) {
+                                    minHum = Math.min(minHum, p.minHumidity);
+                                    maxHum = Math.max(maxHum, p.maxHumidity);
+                                }
+                            } else {
+                                minTemp = Math.min(minTemp, p.temperature);
+                                maxTemp = Math.max(maxTemp, p.temperature);
+                                if (p.humidity !== null && p.humidity !== undefined) {
+                                    minHum = Math.min(minHum, p.humidity);
+                                    maxHum = Math.max(maxHum, p.humidity);
+                                }
                             }
                         }
                     });
                 });
 
-                const padding = 60;
+                const padding = 80;
                 const chartWidth = width - padding * 2;
                 const chartHeight = height - padding * 2;
 
@@ -207,14 +316,47 @@
                 this.ctx.lineTo(width - padding, height - padding);
                 this.ctx.stroke();
 
+                // Draw time axis labels
+                this.ctx.fillStyle = '#888';
+                this.ctx.font = '10px sans-serif';
+                const timeSteps = 6;
+                for (let i = 0; i <= timeSteps; i++) {
+                    const timeProgress = i / timeSteps;
+                    const timestamp = startTime + (timeWindow * timeProgress);
+                    const x = padding + (chartWidth * timeProgress);
+                    const label = this.formatTimeLabel(timestamp, this.range);
+                    
+                    // Rotate text for better readability
+                    this.ctx.save();
+                    this.ctx.translate(x, height - padding + 15);
+                    this.ctx.rotate(-Math.PI / 4);
+                    this.ctx.fillText(label, 0, 0);
+                    this.ctx.restore();
+                    
+                    // Draw tick marks
+                    this.ctx.strokeStyle = '#444';
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x, height - padding);
+                    this.ctx.lineTo(x, height - padding + 5);
+                    this.ctx.stroke();
+                }
+
                 // Draw temperature lines (left axis)
-                this.ctx.strokeStyle = '#4a9eff';
                 this.ctx.fillStyle = '#4a9eff';
                 this.ctx.font = '10px sans-serif';
                 for (let i = 0; i <= 5; i++) {
                     const temp = minTemp + (maxTemp - minTemp) * i / 5;
                     const y = height - padding - (chartHeight * i / 5);
                     this.ctx.fillText(`${temp.toFixed(1)}°C`, 5, y + 3);
+                    
+                    // Draw horizontal grid lines
+                    this.ctx.strokeStyle = '#333';
+                    this.ctx.setLineDash([2, 2]);
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(padding, y);
+                    this.ctx.lineTo(width - padding, y);
+                    this.ctx.stroke();
+                    this.ctx.setLineDash([]);
                 }
 
                 // Draw humidity lines (right axis) - only if humidity data exists
@@ -232,9 +374,45 @@
                 this.data.forEach(points => {
                     const color = this.colors[colorIndex % this.colors.length];
                     
-                    // Temperature line
+                    // Temperature line with min/max bands for aggregated data
                     this.ctx.strokeStyle = color;
                     this.ctx.lineWidth = 2;
+                    
+                    if (this.aggregated) {
+                        // Draw min/max band
+                        this.ctx.fillStyle = color + '20'; // Semi-transparent
+                        this.ctx.beginPath();
+                        let firstMin = true, firstMax = true;
+                        
+                        // Top edge (max values)
+                        points.forEach(p => {
+                            if (p.timestamp >= startTime && p.maxTemperature !== undefined) {
+                                const x = padding + ((p.timestamp - startTime) / timeWindow) * chartWidth;
+                                const y = height - padding - ((p.maxTemperature - minTemp) / (maxTemp - minTemp)) * chartHeight;
+                                if (firstMax) {
+                                    this.ctx.moveTo(x, y);
+                                    firstMax = false;
+                                } else {
+                                    this.ctx.lineTo(x, y);
+                                }
+                            }
+                        });
+                        
+                        // Bottom edge (min values, reversed)
+                        const reversedPoints = [...points].reverse();
+                        reversedPoints.forEach(p => {
+                            if (p.timestamp >= startTime && p.minTemperature !== undefined) {
+                                const x = padding + ((p.timestamp - startTime) / timeWindow) * chartWidth;
+                                const y = height - padding - ((p.minTemperature - minTemp) / (maxTemp - minTemp)) * chartHeight;
+                                this.ctx.lineTo(x, y);
+                            }
+                        });
+                        
+                        this.ctx.closePath();
+                        this.ctx.fill();
+                    }
+                    
+                    // Average/main temperature line
                     this.ctx.beginPath();
                     let first = true;
                     
@@ -259,9 +437,10 @@
                         first = true;
                         
                         points.forEach(p => {
-                            if (p.timestamp >= startTime && p.humidity !== null && p.humidity !== undefined) {
+                            const humidity = p.humidity;
+                            if (p.timestamp >= startTime && humidity !== null && humidity !== undefined) {
                                 const x = padding + ((p.timestamp - startTime) / timeWindow) * chartWidth;
-                                const y = height - padding - ((p.humidity - minHum) / (maxHum - minHum)) * chartHeight;
+                                const y = height - padding - ((humidity - minHum) / (maxHum - minHum)) * chartHeight;
                                 if (first) {
                                     this.ctx.moveTo(x, y);
                                     first = false;

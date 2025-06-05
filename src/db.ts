@@ -25,6 +25,18 @@ export interface HistoricalDataRow {
   timestamp: number;
 }
 
+export interface AggregatedDataRow {
+  sensorMac: string;
+  timestamp: number; // bucket start timestamp
+  avgTemperature: number;
+  minTemperature: number;
+  maxTemperature: number;
+  avgHumidity: number | null;
+  minHumidity: number | null;
+  maxHumidity: number | null;
+  dataPoints: number; // count of data points in bucket
+}
+
 export class Database {
   private db!: sqlite3.Database;
   private migrationManager!: MigrationManager;
@@ -173,6 +185,77 @@ export class Database {
             reject(err);
           } else {
             resolve(rows as HistoricalDataRow[]);
+          }
+        }
+      );
+    });
+  }
+
+  getAggregatedHistoricalData(timeRange: string): Promise<AggregatedDataRow[]> {
+    return new Promise((resolve, reject) => {
+      // Validate timeRange input to prevent injection
+      const allowedRanges = { hour: 1, day: 24, week: 168, month: 720, year: 8760 };
+      const sanitizedRange = timeRange.toLowerCase().replace(/[^a-z]/g, '');
+      
+      if (!Object.keys(allowedRanges).includes(sanitizedRange)) {
+        reject(new Error('Invalid time range specified'));
+        return;
+      }
+
+      // Define bucket sizes (in seconds)
+      const bucketConfigs = {
+        hour: 300,     // 5 minutes
+        day: 3600,     // 1 hour
+        week: 21600,   // 6 hours
+        month: 86400,  // 1 day
+        year: 2592000  // 30 days (month)
+      };
+
+      const hours = allowedRanges[sanitizedRange as keyof typeof allowedRanges];
+      const bucketSeconds = bucketConfigs[sanitizedRange as keyof typeof bucketConfigs];
+      const bucketMilliseconds = bucketSeconds * 1000;
+      const since = Date.now() - (hours * 60 * 60 * 1000);
+
+      // SQLite query with time bucketing (working with milliseconds)
+      const query = `
+        SELECT 
+          sensorMac,
+          CAST((timestamp / ?) AS INTEGER) * ? as timestamp,
+          AVG(temperature) as avgTemperature,
+          MIN(temperature) as minTemperature,
+          MAX(temperature) as maxTemperature,
+          AVG(humidity) as avgHumidity,
+          MIN(humidity) as minHumidity,
+          MAX(humidity) as maxHumidity,
+          COUNT(*) as dataPoints
+        FROM sensor_data 
+        WHERE timestamp > ?
+        GROUP BY sensorMac, CAST((timestamp / ?) AS INTEGER)
+        ORDER BY timestamp, sensorMac
+        LIMIT 2000
+      `;
+
+      this.db.all(
+        query,
+        [bucketMilliseconds, bucketMilliseconds, since, bucketMilliseconds],
+        (err, rows) => {
+          if (err) {
+            console.error('Database aggregation query error:', err);
+            reject(err);
+          } else {
+            // Round numeric values for cleaner output
+            const processedRows = (rows as any[]).map(row => ({
+              sensorMac: row.sensorMac,
+              timestamp: Math.floor(row.timestamp),
+              avgTemperature: Math.round(row.avgTemperature * 100) / 100,
+              minTemperature: Math.round(row.minTemperature * 100) / 100,
+              maxTemperature: Math.round(row.maxTemperature * 100) / 100,
+              avgHumidity: row.avgHumidity ? Math.round(row.avgHumidity * 100) / 100 : null,
+              minHumidity: row.minHumidity ? Math.round(row.minHumidity * 100) / 100 : null,
+              maxHumidity: row.maxHumidity ? Math.round(row.maxHumidity * 100) / 100 : null,
+              dataPoints: row.dataPoints
+            }));
+            resolve(processedRows as AggregatedDataRow[]);
           }
         }
       );

@@ -73,7 +73,7 @@ export class MQTTClient extends EventEmitter {
 
         // Security: Validate topic format
         if (!this.isValidTopic(topic)) {
-          console.warn(`Invalid topic format: ${topic}`);
+          console.warn(`Invalid topic format: ${topic}: {message}`);
           return;
         }
 
@@ -81,13 +81,8 @@ export class MQTTClient extends EventEmitter {
 
         // Security: Parse JSON safely with size limit
         const messageStr = message.toString("utf8");
-        if (messageStr.length > 4096) {
-          console.warn("Message content too large, ignoring");
-          return;
-        }
-
         const gatewayData = JSON.parse(messageStr);
-
+        console.log(messageStr);
         // Security: Validate gateway data structure
         if (!gatewayData || typeof gatewayData !== "object") {
           console.warn("Invalid gateway data format");
@@ -136,11 +131,32 @@ export class MQTTClient extends EventEmitter {
         }
 
         if (decoded && decoded.temperature !== null) {
+          // Extract timestamp from gateway data, converting from seconds to milliseconds
+          let timestamp = Date.now(); // Default fallback
+          if (gatewayData.ts && typeof gatewayData.ts === "number") {
+            // Ruuvi gateway sends timestamp in seconds, convert to milliseconds
+            const ruuviTimestamp = gatewayData.ts * 1000;
+            // Validate timestamp is reasonable (within 1 hour of current time)
+            const now = Date.now();
+            const oneHour = 60 * 60 * 1000;
+            if (Math.abs(ruuviTimestamp - now) <= oneHour) {
+              timestamp = ruuviTimestamp;
+            } else {
+              console.warn(
+                `Ruuvi timestamp ${new Date(ruuviTimestamp).toISOString()} is too far from current time, using current time`,
+              );
+            }
+          } else {
+            console.log(
+              "No valid timestamp in gateway data, using current time",
+            );
+          }
+
           const sensorData: SensorDataEvent = {
             sensorMac: sensorMac,
             temperature: decoded.temperature,
             humidity: decoded.humidity || null,
-            timestamp: Date.now(),
+            timestamp: timestamp,
             pressure: decoded.pressure,
             batteryVoltage: decoded.batteryVoltage,
             txPower: decoded.txPower,
@@ -233,18 +249,9 @@ export class MQTTClient extends EventEmitter {
       return false;
     }
 
-    // Only allow valid MQTT topic characters
-    if (!/^[a-zA-Z0-9/_+-]+$/.test(topic)) {
-      return false;
-    }
-
     // Check for valid topic patterns
     const validPatterns = [
-      /^ruuvi\/[^/]+\/[^/]+$/, // ruuvi/gateway_id/sensor_mac
-      /^gateway\/[^/]+\/[^/]+$/, // gateway/gateway_id/sensor_mac
-      /^ruuvi\/[^/]+$/, // ruuvi/sensor_mac (legacy)
-      /^ruuvi\/gateway\/status$/, // status topics
-      /^ruuvi\/gateway\/[^/]+\/status$/,
+      /^ruuvi/, // ruuvi/gateway_id/sensor_mac
     ];
 
     return validPatterns.some((pattern) => pattern.test(topic));

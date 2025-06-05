@@ -63,6 +63,7 @@ clean:
 	rm -rf node_modules/
 	rm -rf logs/
 	rm -f ruuvi.db
+	rm -f data/ruuvi.db
 
 lint:
 	@echo "Linting placeholder - add tools as needed"

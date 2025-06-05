@@ -37,12 +37,12 @@ detect_local_ip() {
 generate_mqtt_password() {
     local password
     password=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-16 | tr -d '\n')
-    
+
     if [ ${#password} -ne 16 ]; then
         echo "ERROR: Failed to generate secure password" >&2
         return 1
     fi
-    
+
     echo "$password"
 }
 
@@ -52,7 +52,7 @@ validate_ip_address() {
     if [[ ! $ip =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
         return 1
     fi
-    
+
     # Check each octet is 0-255
     IFS='.' read -ra ADDR <<< "$ip"
     for i in "${ADDR[@]}"; do
@@ -69,23 +69,23 @@ create_or_update_env_file() {
     local server_ip="$2"
     local env_file="${3:-.env}"
     local deployment_type="${4:-native}"  # native or docker
-    
+
     # Validate inputs
     if [ -z "$mqtt_password" ] || [ -z "$server_ip" ]; then
         echo "ERROR: Missing required parameters for env file creation" >&2
         return 1
     fi
-    
+
     if ! validate_ip_address "$server_ip"; then
         echo "ERROR: Invalid IP address format: $server_ip" >&2
         return 1
     fi
-    
+
     # Create backup if file exists
     if [ -f "$env_file" ]; then
         cp "$env_file" "$env_file.backup.$(date +%s)"
     fi
-    
+
     # Create new .env file
     cat > "$env_file" << EOF
 # Environment Configuration - Generated $(date)
@@ -102,7 +102,7 @@ NODE_ENV=production
 SERVER_IP=$server_ip
 
 # Optional: Custom database path
-# DB_PATH=ruuvi.db
+# DB_PATH=data/ruuvi.db
 
 # Optional: Custom server port
 # SERVER_PORT=3000
@@ -113,7 +113,7 @@ EOF
 
     # Set secure permissions
     chmod 600 "$env_file"
-    
+
     return 0
 }
 
@@ -122,74 +122,74 @@ update_env_var() {
     local env_file="$1"
     local var_name="$2"
     local var_value="$3"
-    
+
     if [ ! -f "$env_file" ]; then
         echo "ERROR: Environment file $env_file not found" >&2
         return 1
     fi
-    
+
     # Create backup
     cp "$env_file" "$env_file.tmp"
-    
+
     # Update or add the variable
     if grep -q "^${var_name}=" "$env_file.tmp"; then
         sed -i "s/^${var_name}=.*/${var_name}=${var_value}/" "$env_file.tmp"
     else
         echo "${var_name}=${var_value}" >> "$env_file.tmp"
     fi
-    
+
     # Atomically replace the file
     mv "$env_file.tmp" "$env_file"
     chmod 600 "$env_file"
-    
+
     return 0
 }
 
 # Function to validate environment variables
 validate_env_vars() {
     local env_file="${1:-.env}"
-    
+
     if [ ! -f "$env_file" ]; then
         echo "ERROR: Environment file $env_file not found" >&2
         return 1
     fi
-    
+
     # Source the env file
     source "$env_file"
-    
+
     local errors=0
-    
+
     # Check required variables
     if [ -z "$MQTT_HOST" ]; then
         echo "ERROR: MQTT_HOST not set" >&2
         ((errors++))
     fi
-    
+
     if [ -z "$MQTT_PORT" ] || ! [[ "$MQTT_PORT" =~ ^[0-9]+$ ]]; then
         echo "ERROR: MQTT_PORT not set or invalid" >&2
         ((errors++))
     fi
-    
+
     if [ -z "$MQTT_USER" ]; then
         echo "ERROR: MQTT_USER not set" >&2
         ((errors++))
     fi
-    
+
     if [ -z "$MQTT_PASS" ] || [ "$MQTT_PASS" = "GENERATED_DURING_SETUP" ]; then
         echo "ERROR: MQTT_PASS not properly generated" >&2
         ((errors++))
     fi
-    
+
     if [ -z "$SERVER_IP" ] || [ "$SERVER_IP" = "DETECTED_DURING_SETUP" ]; then
         echo "ERROR: SERVER_IP not properly detected" >&2
         ((errors++))
     fi
-    
+
     if ! validate_ip_address "$SERVER_IP"; then
         echo "ERROR: SERVER_IP has invalid format: $SERVER_IP" >&2
         ((errors++))
     fi
-    
+
     if [ $errors -eq 0 ]; then
         echo "✅ Environment variables validation passed"
         return 0
@@ -202,9 +202,9 @@ validate_env_vars() {
 # Function to setup environment for Docker deployment
 setup_docker_env() {
     local env_file="${1:-.env.docker}"
-    
+
     echo "🔧 Setting up Docker environment variables..."
-    
+
     # Generate password
     local mqtt_password
     mqtt_password=$(generate_mqtt_password)
@@ -212,7 +212,7 @@ setup_docker_env() {
         echo "❌ Failed to generate MQTT password"
         return 1
     fi
-    
+
     # For Docker, we can use 0.0.0.0 or detect host IP
     local server_ip
     server_ip=$(detect_local_ip)
@@ -220,7 +220,7 @@ setup_docker_env() {
         echo "⚠️  Could not detect valid IP, using 0.0.0.0 for Docker"
         server_ip="0.0.0.0"
     fi
-    
+
     # Create Docker environment file
     if create_or_update_env_file "$mqtt_password" "$server_ip" "$env_file" "docker"; then
         echo "✅ Docker environment file created: $env_file"
@@ -236,9 +236,9 @@ setup_docker_env() {
 # Function to setup environment for native deployment
 setup_native_env() {
     local env_file="${1:-.env}"
-    
+
     echo "🔧 Setting up native environment variables..."
-    
+
     # Generate password
     local mqtt_password
     mqtt_password=$(generate_mqtt_password)
@@ -246,7 +246,7 @@ setup_native_env() {
         echo "❌ Failed to generate MQTT password"
         return 1
     fi
-    
+
     # Detect local IP
     local server_ip
     server_ip=$(detect_local_ip)
@@ -254,16 +254,16 @@ setup_native_env() {
         echo "❌ Failed to detect valid local IP address: $server_ip"
         return 1
     fi
-    
+
     # Create native environment file
     if create_or_update_env_file "$mqtt_password" "$server_ip" "$env_file" "native"; then
         echo "✅ Native environment file created: $env_file"
         echo "🔑 MQTT Password: $mqtt_password"
         echo "🌐 Server IP: $server_ip"
-        
+
         # Add password to bashrc for manual reference
         echo "export MQTT_PASS='$mqtt_password'" >> ~/.bashrc
-        
+
         return 0
     else
         echo "❌ Failed to create native environment file"
@@ -274,14 +274,14 @@ setup_native_env() {
 # Function to display environment info
 display_env_info() {
     local env_file="${1:-.env}"
-    
+
     if [ ! -f "$env_file" ]; then
         echo "❌ Environment file $env_file not found"
         return 1
     fi
-    
+
     source "$env_file"
-    
+
     echo ""
     echo "📋 Environment Configuration:"
     echo "=============================="

@@ -1,6 +1,6 @@
-import { Database, SensorData } from './db';
-import { MQTTClient, SensorDataEvent } from './mqtt-client';
-import { WebServer, ClientData } from './web-server';
+import { Database, SensorData } from "./db";
+import { MQTTClient, SensorDataEvent } from "./mqtt-client";
+import { WebServer, ClientData } from "./web-server";
 
 class RuuviServer {
   private database!: Database;
@@ -15,76 +15,80 @@ class RuuviServer {
 
   async init(): Promise<void> {
     try {
-      console.log('🚀 Starting Ruuvi Home Lite server...');
-      
+      console.log("🚀 Starting Ruuvi Home Lite server...");
+
       // Validate environment
       this.validateEnvironment();
-      
+
       // Initialize components with error handling
-      console.log('🗃️ Initializing database...');
-      this.database = new Database(process.env.DB_PATH || 'ruuvi.db');
+      console.log("🗃️ Initializing database...");
+      this.database = new Database(process.env.DB_PATH || "data/ruuvi.db");
       await this.database.initialize();
-      
-      console.log('📡 Initializing MQTT client...');
+
+      console.log("📡 Initializing MQTT client...");
       this.mqttClient = new MQTTClient();
-      
-      console.log('🌐 Initializing web server...');
+
+      console.log("🌐 Initializing web server...");
       this.webServer = new WebServer(this.database);
-      
+
       this.setupEventHandlers();
-      
-      console.log('✅ Server initialization complete');
+
+      console.log("✅ Server initialization complete");
     } catch (error) {
-      console.error('❌ Server initialization failed:', error);
+      console.error("❌ Server initialization failed:", error);
       process.exit(1);
     }
   }
 
   private validateEnvironment(): void {
-    const requiredVars = ['MQTT_HOST', 'MQTT_PORT', 'MQTT_USER', 'MQTT_PASS'];
-    const missing = requiredVars.filter(varName => !process.env[varName]);
-    
+    const requiredVars = ["MQTT_HOST", "MQTT_PORT", "MQTT_USER", "MQTT_PASS"];
+    const missing = requiredVars.filter((varName) => !process.env[varName]);
+
     if (missing.length > 0) {
-      throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+      throw new Error(
+        `Missing required environment variables: ${missing.join(", ")}`,
+      );
     }
-    
-    if (process.env.MQTT_PASS === 'GENERATED_DURING_SETUP') {
-      throw new Error('MQTT password not configured. Please run setup script first.');
+
+    if (process.env.MQTT_PASS === "GENERATED_DURING_SETUP") {
+      throw new Error(
+        "MQTT password not configured. Please run setup script first.",
+      );
     }
   }
 
   private setupProcessHandlers(): void {
     // Graceful shutdown on SIGTERM
-    process.on('SIGTERM', () => {
-      console.log('📡 Received SIGTERM, shutting down gracefully...');
+    process.on("SIGTERM", () => {
+      console.log("📡 Received SIGTERM, shutting down gracefully...");
       this.shutdown();
     });
 
     // Graceful shutdown on SIGINT (Ctrl+C)
-    process.on('SIGINT', () => {
-      console.log('📡 Received SIGINT, shutting down gracefully...');
+    process.on("SIGINT", () => {
+      console.log("📡 Received SIGINT, shutting down gracefully...");
       this.shutdown();
     });
 
     // Handle uncaught exceptions
-    process.on('uncaughtException', (error) => {
-      console.error('💥 Uncaught Exception:', error);
+    process.on("uncaughtException", (error) => {
+      console.error("💥 Uncaught Exception:", error);
       this.shutdown(1);
     });
 
     // Handle unhandled promise rejections
-    process.on('unhandledRejection', (reason, promise) => {
-      console.error('💥 Unhandled Rejection at:', promise, 'reason:', reason);
+    process.on("unhandledRejection", (reason, promise) => {
+      console.error("💥 Unhandled Rejection at:", promise, "reason:", reason);
       this.shutdown(1);
     });
   }
   private setupEventHandlers(): void {
     // Handle sensor data from MQTT
-    this.mqttClient.on('sensorData', (sensorData: SensorDataEvent) => {
+    this.mqttClient.on("sensorData", (sensorData: SensorDataEvent) => {
       try {
         // Security: Validate sensor data before processing
         if (!this.validateSensorData(sensorData)) {
-          console.warn('Invalid sensor data received, ignoring');
+          console.warn("Invalid sensor data received, ignoring");
           return;
         }
 
@@ -101,14 +105,14 @@ class RuuviServer {
           measurementSequence: sensorData.measurementSequence,
           accelerationX: sensorData.accelerationX,
           accelerationY: sensorData.accelerationY,
-          accelerationZ: sensorData.accelerationZ
+          accelerationZ: sensorData.accelerationZ,
         };
 
         // Save to database with error handling
         try {
           this.database.saveSensorData(dbData);
         } catch (dbError) {
-          console.error('Failed to save sensor data to database:', dbError);
+          console.error("Failed to save sensor data to database:", dbError);
           return;
         }
 
@@ -117,74 +121,78 @@ class RuuviServer {
           sensorMac: sensorData.sensorMac,
           temperature: sensorData.temperature,
           humidity: sensorData.humidity,
-          timestamp: sensorData.timestamp
+          timestamp: sensorData.timestamp,
         };
-        
+
         try {
           this.webServer.broadcastToClients(clientData);
         } catch (wsError) {
-          console.error('Failed to broadcast to web clients:', wsError);
+          console.error("Failed to broadcast to web clients:", wsError);
         }
       } catch (error) {
-        console.error('Error processing sensor data:', error);
+        console.error("Error processing sensor data:", error);
       }
     });
 
     // Handle MQTT errors
-    this.mqttClient.on('error', (error) => {
-      console.error('🔴 MQTT error:', error);
-      
+    this.mqttClient.on("error", (error) => {
+      console.error("🔴 MQTT error:", error);
+
       // If it's an authentication error, don't retry immediately
-      if (error.message?.includes('Not authorized')) {
-        console.error('❌ MQTT authentication failed. Check credentials and ACL configuration.');
-        console.error('💡 Run setup script again to regenerate credentials if needed.');
+      if (error.message?.includes("Not authorized")) {
+        console.error(
+          "❌ MQTT authentication failed. Check credentials and ACL configuration.",
+        );
+        console.error(
+          "💡 Run setup script again to regenerate credentials if needed.",
+        );
       }
     });
 
     // Handle MQTT disconnection
-    this.mqttClient.on('disconnected', () => {
-      console.log('🟡 MQTT disconnected, attempting to reconnect...');
+    this.mqttClient.on("disconnected", () => {
+      console.log("🟡 MQTT disconnected, attempting to reconnect...");
     });
 
     // Handle MQTT connection
-    this.mqttClient.on('connect', () => {
-      console.log('🟢 MQTT connected successfully');
+    this.mqttClient.on("connect", () => {
+      console.log("🟢 MQTT connected successfully");
     });
   }
 
   private validateSensorData(data: SensorDataEvent): boolean {
     // Security: Validate all required fields
-    if (!data || typeof data !== 'object') {
+    if (!data || typeof data !== "object") {
       return false;
     }
 
     // Validate sensor MAC (required)
-    if (!data.sensorMac || typeof data.sensorMac !== 'string') {
-      console.warn('Missing or invalid sensor MAC');
+    if (!data.sensorMac || typeof data.sensorMac !== "string") {
+      console.warn("Missing or invalid sensor MAC");
       return false;
     }
 
     // Sanitize MAC address format
     if (!/^[a-fA-F0-9:-]{12,17}$/.test(data.sensorMac)) {
-      console.warn('Invalid MAC address format:', data.sensorMac);
+      console.warn("Invalid MAC address format:", data.sensorMac);
       return false;
     }
 
     // Validate temperature (required)
-    if (typeof data.temperature !== 'number' || isNaN(data.temperature)) {
-      console.warn('Missing or invalid temperature');
+    if (typeof data.temperature !== "number" || isNaN(data.temperature)) {
+      console.warn("Missing or invalid temperature");
       return false;
     }
 
     // Validate temperature range (-40°C to +85°C for Ruuvi sensors)
     if (data.temperature < -40 || data.temperature > 85) {
-      console.warn('Temperature out of valid range:', data.temperature);
+      console.warn("Temperature out of valid range:", data.temperature);
       return false;
     }
 
     // Validate timestamp (required)
-    if (typeof data.timestamp !== 'number' || data.timestamp <= 0) {
-      console.warn('Missing or invalid timestamp');
+    if (typeof data.timestamp !== "number" || data.timestamp <= 0) {
+      console.warn("Missing or invalid timestamp");
       return false;
     }
 
@@ -192,18 +200,31 @@ class RuuviServer {
     const now = Date.now();
     const oneHour = 60 * 60 * 1000;
     if (Math.abs(data.timestamp - now) > oneHour) {
-      console.warn('Timestamp too far from current time:', new Date(data.timestamp));
+      console.warn(
+        "Timestamp too far from current time:",
+        new Date(data.timestamp),
+      );
       return false;
     }
 
     // Validate optional fields if present
-    if (data.humidity !== null && (typeof data.humidity !== 'number' || data.humidity < 0 || data.humidity > 100)) {
-      console.warn('Invalid humidity value:', data.humidity);
+    if (
+      data.humidity !== null &&
+      (typeof data.humidity !== "number" ||
+        data.humidity < 0 ||
+        data.humidity > 100)
+    ) {
+      console.warn("Invalid humidity value:", data.humidity);
       return false;
     }
 
-    if (data.pressure !== null && (typeof data.pressure !== 'number' || data.pressure < 300 || data.pressure > 1100)) {
-      console.warn('Invalid pressure value:', data.pressure);
+    if (
+      data.pressure !== null &&
+      (typeof data.pressure !== "number" ||
+        data.pressure < 300 ||
+        data.pressure > 1100)
+    ) {
+      console.warn("Invalid pressure value:", data.pressure);
       return false;
     }
 
@@ -214,9 +235,9 @@ class RuuviServer {
     if (this.isShuttingDown) {
       return;
     }
-    
+
     this.isShuttingDown = true;
-    console.log('🔄 Shutting down server...');
+    console.log("🔄 Shutting down server...");
 
     // Close components gracefully
     try {
@@ -224,7 +245,7 @@ class RuuviServer {
         this.mqttClient.disconnect();
       }
     } catch (error) {
-      console.error('Error disconnecting MQTT client:', error);
+      console.error("Error disconnecting MQTT client:", error);
     }
 
     try {
@@ -232,7 +253,7 @@ class RuuviServer {
         this.webServer.close();
       }
     } catch (error) {
-      console.error('Error closing web server:', error);
+      console.error("Error closing web server:", error);
     }
 
     try {
@@ -240,10 +261,10 @@ class RuuviServer {
         this.database.close();
       }
     } catch (error) {
-      console.error('Error closing database:', error);
+      console.error("Error closing database:", error);
     }
 
-    console.log('✅ Server shutdown complete');
+    console.log("✅ Server shutdown complete");
     process.exit(exitCode);
   }
 }
@@ -254,7 +275,7 @@ async function startServer(): Promise<void> {
     const server = new RuuviServer();
     await server.init();
   } catch (error) {
-    console.error('💥 Failed to start Ruuvi server:', error);
+    console.error("💥 Failed to start Ruuvi server:", error);
     process.exit(1);
   }
 }
