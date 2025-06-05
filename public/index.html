@@ -63,7 +63,10 @@
             <div class="status" id="status">Connecting...</div>
         </div>
         <div class="sidebar">
-            <h3>Latest Readings</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3 style="margin: 0;">Latest Readings</h3>
+                <button id="admin-btn" class="btn" style="padding: 4px 8px; font-size: 10px;">Admin</button>
+            </div>
             <div id="latest-readings"></div>
         </div>
     </div>
@@ -81,6 +84,9 @@
                 this.ws = null;
                 this.latestReadings = new Map();
                 this.hoveredSensor = null;
+                this.isAdmin = false;
+                this.adminToken = null;
+                this.sensorNames = new Map();
                 
                 // Performance optimization flags
                 this.needsRender = false;
@@ -96,6 +102,13 @@
                 this.setupControls();
                 this.setupCanvas();
                 this.scheduleRender();
+                
+                // Request latest readings every 30 seconds
+                setInterval(() => {
+                    if (this.ws?.readyState === WebSocket.OPEN) {
+                        this.ws.send(JSON.stringify({ type: 'getLatestReadings' }));
+                    }
+                }, 30000);
                 
                 // Optimized resize handler
                 window.addEventListener('resize', this.debounce(() => {
@@ -119,6 +132,7 @@
                     document.getElementById('status').textContent = 'Connected';
                     this.ws.send(JSON.stringify({ type: 'getData', timeRange: this.range }));
                     this.ws.send(JSON.stringify({ type: 'getLatestReadings' }));
+                    this.ws.send(JSON.stringify({ type: 'getSensorNames' }));
                 };
                 
                 this.ws.onmessage = (event) => {
@@ -132,6 +146,12 @@
                         this.updateLatestReading(msg.data);
                     } else if (msg.type === 'latestReadings') {
                         this.loadLatestReadings(msg.data);
+                    } else if (msg.type === 'adminAuthResult') {
+                        this.handleAdminAuthResult(msg);
+                    } else if (msg.type === 'sensorNames') {
+                        this.loadSensorNames(msg.data);
+                    } else if (msg.type === 'sensorNameSet' || msg.type === 'sensorNameDeleted') {
+                        this.renderLatestReadings();
                     }
                 };
                 
@@ -142,7 +162,7 @@
             }
 
             setupControls() {
-                document.querySelectorAll('.btn').forEach(btn => {
+                document.querySelectorAll('.btn[data-range]').forEach(btn => {
                     btn.addEventListener('click', () => {
                         document.querySelector('.btn.active')?.classList.remove('active');
                         btn.classList.add('active');
@@ -151,6 +171,15 @@
                             this.ws.send(JSON.stringify({ type: 'getData', timeRange: this.range }));
                         }
                     });
+                });
+                
+                // Setup admin button
+                document.getElementById('admin-btn').addEventListener('click', () => {
+                    if (this.isAdmin) {
+                        this.logout();
+                    } else {
+                        this.promptAdminAuth();
+                    }
                 });
             }
 
@@ -682,6 +711,58 @@
                 this.renderLatestReadings();
             }
 
+            loadSensorNames(names) {
+                this.sensorNames.clear();
+                names.forEach(item => {
+                    this.sensorNames.set(item.sensorMac.toLowerCase(), item.customName);
+                });
+                this.renderLatestReadings();
+            }
+
+            promptAdminAuth() {
+                const password = prompt('Enter admin password:');
+                if (password) {
+                    this.ws.send(JSON.stringify({
+                        type: 'adminAuth',
+                        password: password
+                    }));
+                }
+            }
+
+            handleAdminAuthResult(msg) {
+                if (msg.success) {
+                    this.isAdmin = true;
+                    this.adminToken = msg.token;
+                    document.getElementById('admin-btn').textContent = 'Logout';
+                    document.getElementById('admin-btn').style.background = '#ff6b6b';
+                    this.renderLatestReadings();
+                } else {
+                    alert(msg.message || 'Authentication failed');
+                }
+            }
+
+            logout() {
+                this.isAdmin = false;
+                this.adminToken = null;
+                document.getElementById('admin-btn').textContent = 'Admin';
+                document.getElementById('admin-btn').style.background = '#333';
+                this.renderLatestReadings();
+            }
+
+            editSensorName(sensorMac) {
+                const currentName = this.sensorNames.get(sensorMac) || sensorMac.slice(-8).toUpperCase();
+                const newName = prompt(`Enter name for sensor ${sensorMac.slice(-8).toUpperCase()}:`, currentName);
+                
+                if (newName && newName.trim() !== currentName) {
+                    this.ws.send(JSON.stringify({
+                        type: 'setSensorName',
+                        sensorMac: sensorMac,
+                        customName: newName.trim(),
+                        adminToken: this.adminToken
+                    }));
+                }
+            }
+
             updateLatestReading(data) {
                 this.throttledLatestUpdate(data);
             }
@@ -715,17 +796,18 @@
                     const secondsAgo = now - reading.timestamp;
                     const isOffline = secondsAgo > 300; // 5 minutes
                     const sensorColor = this.colors[index % this.colors.length];
+                    const customName = this.sensorNames.get(reading.sensorMac);
+                    const displayName = customName || reading.sensorMac.slice(-8).toUpperCase();
                     
                     const item = document.createElement('div');
                     item.className = `sensor-item ${isOffline ? 'sensor-offline' : ''}`;
                     item.style.borderLeftColor = sensorColor;
                     
-                    const shortMac = reading.sensorMac.slice(-8).toUpperCase();
                     const ageText = this.formatAge(secondsAgo);
                     
                     item.innerHTML = `
                         <div class="sensor-left">
-                            <div class="sensor-mac">${shortMac}</div>
+                            <div class="sensor-mac" ${this.isAdmin ? 'style="cursor: pointer; text-decoration: underline;"' : ''}>${displayName}</div>
                             <div class="sensor-temp">${reading.temperature.toFixed(1)}°C</div>
                             ${reading.humidity !== null ? `<div class="sensor-humidity">${reading.humidity.toFixed(1)}%</div>` : ''}
                         </div>
@@ -742,6 +824,15 @@
                         this.hoveredSensor = null;
                         this.scheduleRender();
                     });
+                    
+                    // Add click handler for admin name editing
+                    if (this.isAdmin) {
+                        const macElement = item.querySelector('.sensor-mac');
+                        macElement.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            this.editSensorName(reading.sensorMac);
+                        });
+                    }
                     
                     container.appendChild(item);
                 });

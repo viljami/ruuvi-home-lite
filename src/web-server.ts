@@ -6,6 +6,7 @@ import { join, resolve } from "path";
 import * as path from "path";
 import { EventEmitter } from "events";
 import { Database, AggregatedDataRow, LatestSensorReading } from "./db";
+import { SensorService } from "./sensor-service";
 
 export interface ClientData {
   sensorMac: string;
@@ -16,12 +17,14 @@ export interface ClientData {
 
 export class WebServer extends EventEmitter {
   private database: Database;
+  private sensorService: SensorService;
   private wss!: WebSocket.Server;
   private httpServer: any;
 
   constructor(database: Database) {
     super();
     this.database = database;
+    this.sensorService = new SensorService(database);
     this.setupHttpServer();
     this.setupWebSocket();
   }
@@ -98,6 +101,14 @@ export class WebServer extends EventEmitter {
             this.sendHistoricalData(ws, timeRange);
           } else if (request.type === "getLatestReadings") {
             this.sendLatestReadings(ws);
+          } else if (request.type === "adminAuth") {
+            this.handleAdminAuth(ws, request.password);
+          } else if (request.type === "getSensorNames") {
+            this.sendSensorNames(ws);
+          } else if (request.type === "setSensorName") {
+            this.handleSetSensorName(ws, request.sensorMac, request.customName, request.adminToken);
+          } else if (request.type === "deleteSensorName") {
+            this.handleDeleteSensorName(ws, request.sensorMac, request.adminToken);
           } else {
             console.warn("Unknown WebSocket request type:", request.type);
           }
@@ -339,6 +350,111 @@ export class WebServer extends EventEmitter {
           JSON.stringify({ type: "error", message: "Failed to retrieve latest readings" }),
         );
       }
+    }
+  }
+
+  private handleAdminAuth(ws: WebSocket, password: string): void {
+    const result = this.sensorService.authenticateAdmin(password);
+    
+    if (result.success && result.token) {
+      (ws as any).adminToken = result.token;
+    }
+    
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({
+        type: "adminAuthResult",
+        success: result.success,
+        token: result.token,
+        message: result.message
+      }));
+    }
+  }
+
+  private async sendSensorNames(ws: WebSocket): Promise<void> {
+    try {
+      const sensorNames = await this.sensorService.getSensorNames();
+      
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: "sensorNames",
+          data: sensorNames
+        }));
+      }
+    } catch (error) {
+      console.error("Error getting sensor names:", error);
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: "error",
+          message: "Failed to retrieve sensor names"
+        }));
+      }
+    }
+  }
+
+  private async handleSetSensorName(ws: WebSocket, sensorMac: string, customName: string, adminToken: string): Promise<void> {
+    const result = await this.sensorService.setSensorName(sensorMac, customName, adminToken);
+    
+    if (ws.readyState === WebSocket.OPEN) {
+      if (result.success) {
+        ws.send(JSON.stringify({
+          type: "sensorNameSet",
+          success: true,
+          sensorMac: result.sensorMac,
+          customName: result.customName
+        }));
+        
+        // Send updated sensor names to all clients
+        this.broadcastSensorNames();
+      } else {
+        ws.send(JSON.stringify({
+          type: "error",
+          message: result.message
+        }));
+      }
+    }
+  }
+
+  private async handleDeleteSensorName(ws: WebSocket, sensorMac: string, adminToken: string): Promise<void> {
+    const result = await this.sensorService.deleteSensorName(sensorMac, adminToken);
+    
+    if (ws.readyState === WebSocket.OPEN) {
+      if (result.success) {
+        ws.send(JSON.stringify({
+          type: "sensorNameDeleted",
+          success: true,
+          sensorMac: result.sensorMac
+        }));
+        
+        // Send updated sensor names to all clients
+        this.broadcastSensorNames();
+      } else {
+        ws.send(JSON.stringify({
+          type: "error",
+          message: result.message
+        }));
+      }
+    }
+  }
+
+  private async broadcastSensorNames(): Promise<void> {
+    try {
+      const sensorNames = await this.sensorService.getSensorNames();
+      const message = JSON.stringify({
+        type: "sensorNames",
+        data: sensorNames
+      });
+
+      this.wss.clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+          try {
+            client.send(message);
+          } catch (error) {
+            console.error("Error broadcasting sensor names:", error);
+          }
+        }
+      });
+    } catch (error) {
+      console.error("Error broadcasting sensor names:", error);
     }
   }
 

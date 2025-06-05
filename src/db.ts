@@ -508,50 +508,26 @@ export class Database {
     });
   }
 
-  setSensorName(sensorMac: string, customName: string): Promise<void> {
+  async setSensorName(sensorMac: string, customName: string): Promise<void> {
     return new Promise((resolve, reject) => {
-      // Validate inputs
-      if (!sensorMac || typeof sensorMac !== 'string') {
-        reject(new Error('Invalid sensor MAC address'));
-        return;
-      }
-      
-      if (!customName || typeof customName !== 'string' || customName.trim().length === 0) {
-        reject(new Error('Invalid custom name'));
-        return;
-      }
-
-      // Sanitize inputs
-      const sanitizedMac = sensorMac.toLowerCase().replace(/[^a-f0-9:-]/g, '');
-      const sanitizedName = customName.trim().substring(0, 50); // Limit length
-
-      this.setSensorNameStatement.run([sanitizedMac, sanitizedName], function(err) {
+      this.setSensorNameStatement.run([sensorMac, customName], function(err) {
         if (err) {
           console.error('Database set sensor name error:', err);
           reject(err);
         } else {
-          console.log(`Set sensor name: ${sanitizedMac} -> ${sanitizedName}`);
           resolve();
         }
       });
     });
   }
 
-  deleteSensorName(sensorMac: string): Promise<void> {
+  async deleteSensorName(sensorMac: string): Promise<void> {
     return new Promise((resolve, reject) => {
-      if (!sensorMac || typeof sensorMac !== 'string') {
-        reject(new Error('Invalid sensor MAC address'));
-        return;
-      }
-
-      const sanitizedMac = sensorMac.toLowerCase().replace(/[^a-f0-9:-]/g, '');
-
-      this.deleteSensorNameStatement.run([sanitizedMac], function(err) {
+      this.deleteSensorNameStatement.run([sensorMac], function(err) {
         if (err) {
           console.error('Database delete sensor name error:', err);
           reject(err);
         } else {
-          console.log(`Deleted sensor name for: ${sanitizedMac}`);
           resolve();
         }
       });

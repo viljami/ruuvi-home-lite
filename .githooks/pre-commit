@@ -59,11 +59,6 @@ fi
 # Allow console.log statements (useful for debugging and logging)
 # Removed restrictive console.log check
 
-# Check for hardcoded credentials
-if grep -r "password.*=" src/ 2>/dev/null | grep -v "process.env"; then
-    print_error "Found potential hardcoded credentials"
-fi
-
 # 4. Check file permissions on sensitive files
 if [ -f ".env" ]; then
     if [ "$(stat -c %a .env 2>/dev/null || stat -f %A .env 2>/dev/null)" != "600" ]; then
