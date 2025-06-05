@@ -48,11 +48,21 @@ export interface LatestSensorReading {
   secondsAgo: number;
 }
 
+export interface SensorName {
+  sensorMac: string;
+  customName: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
 export class Database {
   private db!: sqlite3.Database;
   private migrationManager!: MigrationManager;
   private insertStatement!: sqlite3.Statement;
   private latestReadingsStatement!: sqlite3.Statement;
+  private getSensorNamesStatement!: sqlite3.Statement;
+  private setSensorNameStatement!: sqlite3.Statement;
+  private deleteSensorNameStatement!: sqlite3.Statement;
 
   constructor(dbPath: string = 'ruuvi.db') {
     const validatedPath = this.validateAndSecurePath(dbPath);
@@ -156,6 +166,21 @@ export class Database {
       ) latest
       WHERE rn = 1
       ORDER BY sensorMac
+    `);
+
+    this.getSensorNamesStatement = this.db.prepare(`
+      SELECT sensorMac, customName, createdAt, updatedAt 
+      FROM sensor_names 
+      ORDER BY sensorMac
+    `);
+
+    this.setSensorNameStatement = this.db.prepare(`
+      INSERT OR REPLACE INTO sensor_names (sensorMac, customName, updatedAt) 
+      VALUES (?, ?, strftime('%s', 'now'))
+    `);
+
+    this.deleteSensorNameStatement = this.db.prepare(`
+      DELETE FROM sensor_names WHERE sensorMac = ?
     `);
   }
 
@@ -470,6 +495,69 @@ export class Database {
     });
   }
 
+  getSensorNames(): Promise<SensorName[]> {
+    return new Promise((resolve, reject) => {
+      this.getSensorNamesStatement.all([], (err, rows) => {
+        if (err) {
+          console.error('Database sensor names query error:', err);
+          reject(err);
+        } else {
+          resolve(rows as SensorName[]);
+        }
+      });
+    });
+  }
+
+  setSensorName(sensorMac: string, customName: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      // Validate inputs
+      if (!sensorMac || typeof sensorMac !== 'string') {
+        reject(new Error('Invalid sensor MAC address'));
+        return;
+      }
+      
+      if (!customName || typeof customName !== 'string' || customName.trim().length === 0) {
+        reject(new Error('Invalid custom name'));
+        return;
+      }
+
+      // Sanitize inputs
+      const sanitizedMac = sensorMac.toLowerCase().replace(/[^a-f0-9:-]/g, '');
+      const sanitizedName = customName.trim().substring(0, 50); // Limit length
+
+      this.setSensorNameStatement.run([sanitizedMac, sanitizedName], function(err) {
+        if (err) {
+          console.error('Database set sensor name error:', err);
+          reject(err);
+        } else {
+          console.log(`Set sensor name: ${sanitizedMac} -> ${sanitizedName}`);
+          resolve();
+        }
+      });
+    });
+  }
+
+  deleteSensorName(sensorMac: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!sensorMac || typeof sensorMac !== 'string') {
+        reject(new Error('Invalid sensor MAC address'));
+        return;
+      }
+
+      const sanitizedMac = sensorMac.toLowerCase().replace(/[^a-f0-9:-]/g, '');
+
+      this.deleteSensorNameStatement.run([sanitizedMac], function(err) {
+        if (err) {
+          console.error('Database delete sensor name error:', err);
+          reject(err);
+        } else {
+          console.log(`Deleted sensor name for: ${sanitizedMac}`);
+          resolve();
+        }
+      });
+    });
+  }
+
   close(): void {
     // Finalize prepared statements
     if (this.insertStatement) {
@@ -477,6 +565,15 @@ export class Database {
     }
     if (this.latestReadingsStatement) {
       this.latestReadingsStatement.finalize();
+    }
+    if (this.getSensorNamesStatement) {
+      this.getSensorNamesStatement.finalize();
+    }
+    if (this.setSensorNameStatement) {
+      this.setSensorNameStatement.finalize();
+    }
+    if (this.deleteSensorNameStatement) {
+      this.deleteSensorNameStatement.finalize();
     }
     
     if (this.db) {
