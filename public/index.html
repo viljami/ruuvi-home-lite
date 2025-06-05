@@ -348,6 +348,185 @@
         }
       }
 
+      class SensorCard {
+          constructor(reading, sensorIndex, colors, sensorNames, isAdmin, onHover, onEditName) {
+              this.reading = reading;
+              this.sensorIndex = sensorIndex;
+              this.colors = colors;
+              this.sensorNames = sensorNames;
+              this.isAdmin = isAdmin;
+              this.onHover = onHover;
+              this.onEditName = onEditName;
+              this.element = null;
+              this.pendingUpdate = false;
+          }
+
+          get sensorColor() {
+              return this.colors[this.sensorIndex % this.colors.length];
+          }
+
+          get displayName() {
+              const customName = this.sensorNames.get(this.reading.sensorMac);
+              return customName || this.reading.sensorMac.slice(-8).toUpperCase();
+          }
+
+          get isOffline() {
+              const now = Math.floor(Date.now() / 1000);
+              const secondsAgo = this.reading.secondsAgo !== undefined 
+                  ? this.reading.secondsAgo 
+                  : now - this.reading.timestamp;
+              return secondsAgo > 300; // 5 minutes
+          }
+
+          formatAge(seconds) {
+              if (seconds <= 0) return "now";
+              seconds = Math.round(seconds);
+              
+              if (seconds < 60) return `${seconds}s ago`;
+              if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+              if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+              return `${Math.floor(seconds / 86400)}d ago`;
+          }
+
+          createElement() {
+              const now = Math.floor(Date.now() / 1000);
+              const secondsAgo = this.reading.secondsAgo !== undefined 
+                  ? this.reading.secondsAgo 
+                  : now - this.reading.timestamp;
+              
+              const item = document.createElement("div");
+              item.className = `sensor-item ${this.isOffline ? "sensor-offline" : ""}`;
+              item.style.borderLeftColor = this.sensorColor;
+              item.setAttribute("data-sensor-mac", this.reading.sensorMac);
+
+              const ageText = this.formatAge(secondsAgo);
+
+              item.innerHTML = `
+                  <div class="sensor-left">
+                      <div class="sensor-mac" ${this.isAdmin ? 'style="cursor: pointer; text-decoration: underline;"' : ""}>${this.displayName}</div>
+                      <div class="sensor-temp">${this.reading.temperature.toFixed(1)}°C</div>
+                      ${this.reading.humidity !== null ? `<div class="sensor-humidity">${this.reading.humidity.toFixed(1)}%</div>` : ""}
+                  </div>
+                  <div class="sensor-age">${ageText}</div>
+              `;
+
+              this.setupEventListeners(item);
+              this.element = item;
+              return item;
+          }
+
+          setupEventListeners(element) {
+              // Hover events for graph highlighting
+              element.addEventListener("mouseenter", () => {
+                  this.onHover(this.reading.sensorMac);
+              });
+
+              element.addEventListener("mouseleave", () => {
+                  this.onHover(null);
+                  
+                  // Process pending update if any
+                  if (this.pendingUpdate) {
+                      this.pendingUpdate = false;
+                      setTimeout(() => this.update(), 50);
+                  }
+              });
+
+              // Touch events for mobile
+              element.addEventListener("touchstart", () => {
+                  this.onHover(this.reading.sensorMac);
+              });
+
+              // Admin click handler for name editing
+              if (this.isAdmin) {
+                  const macElement = element.querySelector(".sensor-mac");
+                  macElement.addEventListener("click", (e) => {
+                      e.stopPropagation();
+                      this.onEditName(this.reading.sensorMac);
+                  });
+              }
+          }
+
+          update(newReading, newSensorIndex, newIsAdmin) {
+              if (!this.element) return;
+
+              // If card is being hovered, schedule update for later
+              if (this.element.matches(":hover")) {
+                  this.pendingUpdate = true;
+                  return;
+              }
+
+              const oldReading = this.reading;
+              this.reading = newReading || this.reading;
+              this.sensorIndex = newSensorIndex !== undefined ? newSensorIndex : this.sensorIndex;
+              this.isAdmin = newIsAdmin !== undefined ? newIsAdmin : this.isAdmin;
+
+              const now = Math.floor(Date.now() / 1000);
+              const secondsAgo = this.reading.secondsAgo !== undefined 
+                  ? this.reading.secondsAgo 
+                  : now - this.reading.timestamp;
+
+              // Check if significant data has changed
+              const currentTemp = this.element.querySelector(".sensor-temp")?.textContent;
+              const newTemp = `${this.reading.temperature.toFixed(1)}°C`;
+              const currentAge = this.element.querySelector(".sensor-age")?.textContent;
+              const newAge = this.formatAge(secondsAgo);
+
+              // Only update if there are meaningful changes
+              if (currentTemp === newTemp && currentAge === newAge && 
+                  this.isOffline === (secondsAgo > 300)) {
+                  return;
+              }
+
+              // Update element class and style
+              this.element.className = `sensor-item ${this.isOffline ? "sensor-offline" : ""}`;
+              this.element.style.borderLeftColor = this.sensorColor;
+
+              // Update temperature
+              const tempElement = this.element.querySelector(".sensor-temp");
+              if (tempElement) tempElement.textContent = newTemp;
+
+              // Update humidity
+              const humidityElement = this.element.querySelector(".sensor-humidity");
+              if (this.reading.humidity !== null) {
+                  if (humidityElement) {
+                      humidityElement.textContent = `${this.reading.humidity.toFixed(1)}%`;
+                  } else {
+                      const sensorLeft = this.element.querySelector(".sensor-left");
+                      const humidityDiv = document.createElement("div");
+                      humidityDiv.className = "sensor-humidity";
+                      humidityDiv.textContent = `${this.reading.humidity.toFixed(1)}%`;
+                      sensorLeft.appendChild(humidityDiv);
+                  }
+              } else if (humidityElement) {
+                  humidityElement.remove();
+              }
+
+              // Update age
+              const ageElement = this.element.querySelector(".sensor-age");
+              if (ageElement) ageElement.textContent = newAge;
+
+              // Update name display
+              const nameElement = this.element.querySelector(".sensor-mac");
+              if (nameElement) {
+                  nameElement.textContent = this.displayName;
+                  if (this.isAdmin) {
+                      nameElement.style.cursor = "pointer";
+                      nameElement.style.textDecoration = "underline";
+                  } else {
+                      nameElement.style.cursor = "";
+                      nameElement.style.textDecoration = "";
+                  }
+              }
+          }
+
+          destroy() {
+              if (this.element) {
+                  this.element.remove();
+                  this.element = null;
+              }
+          }
+      }
+
       class RuuviChart {
         constructor() {
           this.canvas = document.getElementById("chart");
@@ -370,6 +549,7 @@
           this.isAdmin = false;
           this.adminToken = null;
           this.sensorNames = new Map();
+          this.sensorCards = new Map();
 
           // Performance optimization flags
           this.needsRender = false;
@@ -558,17 +738,7 @@
                 this.scheduleRender();
               }
 
-              // Process any pending card updates when leaving the entire interface
-              if (this.pendingCardUpdates && this.pendingCardUpdates.size > 0) {
-                const pendingSensors = Array.from(this.pendingCardUpdates);
-                this.pendingCardUpdates.clear();
-                // Delay updates slightly to ensure smooth transition
-                setTimeout(() => {
-                  pendingSensors.forEach((sensorMac) =>
-                    this.updateSensorCard(sensorMac),
-                  );
-                }, 50);
-              }
+
             });
 
             // Add touch events for mobile devices
@@ -1234,109 +1404,30 @@
         }
 
         updateSensorCard(sensorMac) {
-          const container = document.getElementById("latest-readings");
           const reading = this.latestReadings.get(sensorMac);
           if (!reading) return;
 
-          // Find existing card or determine insertion point
-          let existingCard = container.querySelector(
-            `[data-sensor-mac="${sensorMac}"]`,
-          );
-
-          // Avoid updating cards that are currently being hovered to prevent twitching
-          if (
-            existingCard &&
-            (existingCard.matches(":hover") || this.hoveredSensor === sensorMac)
-          ) {
-            // Schedule update for later when hover ends
-            if (!this.pendingCardUpdates) this.pendingCardUpdates = new Set();
-            this.pendingCardUpdates.add(sensorMac);
-            return;
-          }
-
-          const now = Math.floor(Date.now() / 1000);
-          const secondsAgo =
-            reading.secondsAgo !== undefined
-              ? reading.secondsAgo
-              : now - reading.timestamp;
-          const isOffline = secondsAgo > 300; // 5 minutes
-
-          // Get color and display info
           const sortedReadings = Array.from(this.latestReadings.values()).sort(
             (a, b) => a.sensorMac.localeCompare(b.sensorMac),
           );
           const sensorIndex = sortedReadings.findIndex(
             (r) => r.sensorMac === sensorMac,
           );
-          const sensorColor = this.colors[sensorIndex % this.colors.length];
-          const customName = this.sensorNames.get(sensorMac);
-          const displayName = customName || sensorMac.slice(-8).toUpperCase();
-          const ageText = this.formatAge(secondsAgo);
 
+          const existingCard = this.sensorCards.get(sensorMac);
           if (existingCard) {
-            // Check if significant data has changed to avoid unnecessary updates
-            const currentTemp =
-              existingCard.querySelector(".sensor-temp")?.textContent;
-            const newTemp = `${reading.temperature.toFixed(1)}°C`;
-            const currentAge =
-              existingCard.querySelector(".sensor-age")?.textContent;
-
-            // Only update if temperature changed by more than 0.1°C or age changed significantly
-            if (currentTemp === newTemp && currentAge === ageText) {
-              return; // No meaningful change, skip update
-            }
-
-            // Update existing card content without rebuilding
-            existingCard.className = `sensor-item ${isOffline ? "sensor-offline" : ""}`;
-            existingCard.style.borderLeftColor = sensorColor;
-
-            // Update temperature
-            const tempElement = existingCard.querySelector(".sensor-temp");
-            if (tempElement) tempElement.textContent = newTemp;
-
-            // Update humidity
-            const humidityElement =
-              existingCard.querySelector(".sensor-humidity");
-            if (reading.humidity !== null) {
-              if (humidityElement) {
-                humidityElement.textContent = `${reading.humidity.toFixed(1)}%`;
-              } else {
-                // Add humidity element if it didn't exist
-                const sensorLeft = existingCard.querySelector(".sensor-left");
-                const humidityDiv = document.createElement("div");
-                humidityDiv.className = "sensor-humidity";
-                humidityDiv.textContent = `${reading.humidity.toFixed(1)}%`;
-                sensorLeft.appendChild(humidityDiv);
-              }
-            } else if (humidityElement) {
-              // Remove humidity element if no humidity data
-              humidityElement.remove();
-            }
-
-            // Update age
-            const ageElement = existingCard.querySelector(".sensor-age");
-            if (ageElement) ageElement.textContent = ageText;
-
-            // Update name if admin state might have changed
-            const nameElement = existingCard.querySelector(".sensor-mac");
-            if (nameElement) {
-              nameElement.textContent = displayName;
-              if (this.isAdmin) {
-                nameElement.style.cursor = "pointer";
-                nameElement.style.textDecoration = "underline";
-              } else {
-                nameElement.style.cursor = "";
-                nameElement.style.textDecoration = "";
-              }
-            }
+            existingCard.update(reading, sensorIndex, this.isAdmin);
           } else {
-            // Create new card (full rebuild only for this sensor)
             this.renderLatestReadings();
           }
         }
 
         renderLatestReadings() {
           const container = document.getElementById("latest-readings");
+          
+          // Clear existing cards
+          this.sensorCards.forEach(card => card.destroy());
+          this.sensorCards.clear();
           container.innerHTML = "";
 
           if (this.latestReadings.size === 0) {
@@ -1345,90 +1436,33 @@
             return;
           }
 
-          const now = Math.floor(Date.now() / 1000);
           const sortedReadings = Array.from(this.latestReadings.values()).sort(
             (a, b) => a.sensorMac.localeCompare(b.sensorMac),
           );
 
           sortedReadings.forEach((reading, index) => {
-            const secondsAgo =
-              reading.secondsAgo !== undefined
-                ? reading.secondsAgo
-                : now - reading.timestamp;
-            const isOffline = secondsAgo > 300; // 5 minutes
-            const sensorColor = this.colors[index % this.colors.length];
-            const customName = this.sensorNames.get(reading.sensorMac);
-            const displayName =
-              customName || reading.sensorMac.slice(-8).toUpperCase();
-
-            const item = document.createElement("div");
-            item.className = `sensor-item ${isOffline ? "sensor-offline" : ""}`;
-            item.style.borderLeftColor = sensorColor;
-            item.setAttribute("data-sensor-mac", reading.sensorMac);
-
-            const ageText = this.formatAge(secondsAgo);
-
-            item.innerHTML = `
-                      <div class="sensor-left">
-                          <div class="sensor-mac" ${this.isAdmin ? 'style="cursor: pointer; text-decoration: underline;"' : ""}>${displayName}</div>
-                          <div class="sensor-temp">${reading.temperature.toFixed(1)}°C</div>
-                          ${reading.humidity !== null ? `<div class="sensor-humidity">${reading.humidity.toFixed(1)}%</div>` : ""}
-                      </div>
-                      <div class="sensor-age">${ageText}</div>
-                  `;
-
-            // Add hover event listeners for graph highlighting
-            item.addEventListener("mouseenter", () => {
-              this.hoveredSensor = reading.sensorMac;
-              this.scheduleRender();
-            });
-
-            item.addEventListener("mouseleave", () => {
-              this.hoveredSensor = null;
-              this.scheduleRender();
-
-              // Process any pending card updates for this sensor
-              if (
-                this.pendingCardUpdates &&
-                this.pendingCardUpdates.has(reading.sensorMac)
-              ) {
-                this.pendingCardUpdates.delete(reading.sensorMac);
-                // Delay the update slightly to ensure smooth transition
-                setTimeout(() => this.updateSensorCard(reading.sensorMac), 50);
+            const sensorCard = new SensorCard(
+              reading,
+              index,
+              this.colors,
+              this.sensorNames,
+              this.isAdmin,
+              (sensorMac) => {
+                this.hoveredSensor = sensorMac;
+                this.scheduleRender();
+              },
+              (sensorMac) => {
+                this.editSensorName(sensorMac);
               }
-            });
+            );
 
-            // Add touch event listeners for mobile devices
-            item.addEventListener("touchstart", () => {
-              this.hoveredSensor = reading.sensorMac;
-              this.scheduleRender();
-            });
-
-            // Add click handler for admin name editing
-            if (this.isAdmin) {
-              const macElement = item.querySelector(".sensor-mac");
-              macElement.addEventListener("click", (e) => {
-                e.stopPropagation();
-                this.editSensorName(reading.sensorMac);
-              });
-            }
-
-            container.appendChild(item);
+            const cardElement = sensorCard.createElement();
+            this.sensorCards.set(reading.sensorMac, sensorCard);
+            container.appendChild(cardElement);
           });
         }
 
-        formatAge(seconds) {
-          // Handle negative values (clock drift, future timestamps)
-          if (seconds <= 0) return "now";
 
-          // Round to nearest second for display
-          seconds = Math.round(seconds);
-
-          if (seconds < 60) return `${seconds}s ago`;
-          if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-          if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-          return `${Math.floor(seconds / 86400)}d ago`;
-        }
 
         debounce(func, wait) {
           let timeout;
