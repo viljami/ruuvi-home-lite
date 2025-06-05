@@ -3,12 +3,17 @@ import { MQTTClient, SensorDataEvent } from './mqtt-client';
 import { WebServer, ClientData } from './web-server';
 
 class RuuviServer {
-  private database: Database;
-  private mqttClient: MQTTClient;
-  private webServer: WebServer;
+  private database!: Database;
+  private mqttClient!: MQTTClient;
+  private webServer!: WebServer;
   private isShuttingDown: boolean = false;
 
   constructor() {
+    // Constructor now only sets up process handlers
+    this.setupProcessHandlers();
+  }
+
+  async init(): Promise<void> {
     try {
       console.log('🚀 Starting Ruuvi Home Lite server...');
       
@@ -16,12 +21,17 @@ class RuuviServer {
       this.validateEnvironment();
       
       // Initialize components with error handling
+      console.log('🗃️ Initializing database...');
       this.database = new Database(process.env.DB_PATH || 'ruuvi.db');
+      await this.database.initialize();
+      
+      console.log('📡 Initializing MQTT client...');
       this.mqttClient = new MQTTClient();
+      
+      console.log('🌐 Initializing web server...');
       this.webServer = new WebServer(this.database);
       
       this.setupEventHandlers();
-      this.setupProcessHandlers();
       
       console.log('✅ Server initialization complete');
     } catch (error) {
@@ -239,9 +249,14 @@ class RuuviServer {
 }
 
 // Initialize server
-try {
-  new RuuviServer();
-} catch (error) {
-  console.error('💥 Failed to start Ruuvi server:', error);
-  process.exit(1);
+async function startServer(): Promise<void> {
+  try {
+    const server = new RuuviServer();
+    await server.init();
+  } catch (error) {
+    console.error('💥 Failed to start Ruuvi server:', error);
+    process.exit(1);
+  }
 }
+
+startServer();

@@ -1,4 +1,4 @@
-.PHONY: help build clean install setup setup-docker dev start stop logs lint test cleanup docker-simple docker-secure docker-stop docker-logs docker-status docker-reset
+.PHONY: help build clean install setup setup-docker dev start stop logs lint test migrate migrate-status migrate-rollback migrate-health cleanup docker-simple docker-secure docker-stop docker-logs docker-status docker-reset
 
 # Detect Docker Compose command
 DOCKER_COMPOSE := $(shell if command -v docker-compose >/dev/null 2>&1; then echo "docker-compose"; elif docker compose version >/dev/null 2>&1; then echo "docker compose"; else echo "docker-compose"; fi)
@@ -30,6 +30,9 @@ help:
 	@echo "  cleanup       - Remove installation (interactive)"
 	@echo "  lint          - Run linting"
 	@echo "  test          - Run tests"
+	@echo "  migrate       - Run database migrations"
+	@echo "  migrate-status- Check migration status"
+	@echo "  migrate-health- Check database health"
 
 install:
 	npm install
@@ -79,6 +82,25 @@ test: test-unit
 	@echo "Running integration tests (may fail if infrastructure not ready)..."
 	@-node tests/test-mqtt.js 2>/dev/null && echo "✅ Integration tests passed" || echo "⚠️  Integration tests skipped (infrastructure not ready)"
 	@echo "All available tests completed!"
+
+migrate: build
+	@echo "🔄 Running database migrations..."
+	npm run migrate
+	@echo "✅ Migrations completed"
+
+migrate-status: build
+	@echo "📊 Checking migration status..."
+	npm run migrate:status
+
+migrate-rollback: build
+	@echo "⚠️  Rolling back last migration..."
+	@read -p "Are you sure you want to rollback? (y/N): " confirm && [ "$$confirm" = "y" ] || (echo "Cancelled" && exit 1)
+	npm run migrate:rollback
+	@echo "✅ Rollback completed"
+
+migrate-health: build
+	@echo "🏥 Checking database health..."
+	npm run migrate:health
 
 cleanup:
 	chmod +x scripts/cleanup.sh

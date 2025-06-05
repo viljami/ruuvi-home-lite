@@ -16,7 +16,11 @@
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
     "prepare": "echo no-hooks",
-    "clean": "rm -rf dist/"
+    "clean": "rm -rf dist/",
+    "migrate": "tsc && node dist/cli/migrate.js migrate",
+    "migrate:status": "tsc && node dist/cli/migrate.js status",
+    "migrate:rollback": "tsc && node dist/cli/migrate.js rollback",
+    "migrate:health": "tsc && node dist/cli/migrate.js health"
   },
   "dependencies": {
     "mqtt": "^5.3.4",

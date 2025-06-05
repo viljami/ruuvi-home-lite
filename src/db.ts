@@ -1,6 +1,7 @@
 import * as sqlite3 from 'sqlite3';
 import * as fs from 'fs';
 import * as path from 'path';
+import { MigrationManager, MigrationStatus } from './migration-manager';
 
 export interface SensorData {
   sensorMac: string;
@@ -26,10 +27,15 @@ export interface HistoricalDataRow {
 
 export class Database {
   private db!: sqlite3.Database;
+  private migrationManager!: MigrationManager;
 
   constructor(dbPath: string = 'ruuvi.db') {
     const validatedPath = this.validateAndSecurePath(dbPath);
     this.initializeDatabase(validatedPath);
+  }
+
+  async initialize(): Promise<void> {
+    await this.runMigrationsIfNeeded();
   }
 
   private validateAndSecurePath(dbPath: string): string {
@@ -66,36 +72,46 @@ export class Database {
         fs.chmodSync(dbPath, 0o600);
       }
       
-      this.createTables();
-      this.createIndexes();
-      console.log(`Database initialized: ${dbPath}`);
+      this.migrationManager = new MigrationManager(this.db);
+      console.log(`Database connection established: ${dbPath}`);
     } catch (error) {
       console.error('Database initialization failed:', error);
       throw error;
     }
   }
 
-  private createTables(): void {
-    this.db.run(`CREATE TABLE IF NOT EXISTS sensor_data (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      sensorMac TEXT NOT NULL,
-      temperature REAL NOT NULL,
-      humidity REAL,
-      timestamp INTEGER NOT NULL,
-      pressure REAL,
-      batteryVoltage INTEGER,
-      txPower INTEGER,
-      movementCounter INTEGER,
-      measurementSequence INTEGER,
-      accelerationX REAL,
-      accelerationY REAL,
-      accelerationZ REAL
-    )`);
+  private async runMigrationsIfNeeded(): Promise<void> {
+    try {
+      const status = await this.migrationManager.getStatus();
+      
+      if (!status.isUpToDate) {
+        console.log(`🔄 Running ${status.pendingMigrations.length} pending migrations...`);
+        const applied = await this.migrationManager.runMigrations();
+        console.log(`✅ Applied ${applied.length} migrations successfully`);
+      } else {
+        console.log('✅ Database schema is up to date');
+      }
+    } catch (error) {
+      console.error('❌ Migration failed:', error);
+      throw error;
+    }
   }
 
-  private createIndexes(): void {
-    this.db.run('CREATE INDEX IF NOT EXISTS idx_timestamp ON sensor_data(timestamp)');
-    this.db.run('CREATE INDEX IF NOT EXISTS idx_sensor ON sensor_data(sensorMac)');
+  async getMigrationStatus(): Promise<MigrationStatus> {
+    return await this.migrationManager.getStatus();
+  }
+
+  async checkDatabaseHealth(): Promise<boolean> {
+    try {
+      const isHealthy = await this.migrationManager.checkHealth();
+      if (!isHealthy) {
+        console.warn('⚠️ Database health check failed - migrations table missing');
+      }
+      return isHealthy;
+    } catch (error) {
+      console.error('❌ Database health check error:', error);
+      return false;
+    }
   }
 
   saveSensorData(data: SensorData): void {
