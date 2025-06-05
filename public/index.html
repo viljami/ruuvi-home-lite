@@ -178,6 +178,151 @@
     </div>
 
     <script>
+      class ChartComponent {
+          constructor(canvas, ctx, config) {
+              this.canvas = canvas;
+              this.ctx = ctx;
+              this.config = {
+                  type: 'temperature', // 'temperature' or 'humidity'
+                  area: { x: 0, y: 0, width: 100, height: 100 }, // Area within canvas
+                  scale: { min: 0, max: 100 },
+                  color: '#4a9eff',
+                  opacity: 1.0,
+                  lineWidth: 3,
+                  lineStyle: 'solid', // 'solid' or 'dashed'
+                  unit: '°C',
+                  gridLines: 5,
+                  showGrid: true,
+                  showLabels: true,
+                  ...config
+              };
+          }
+
+          calculateCoordinates(value, timestamp, startTime, timeWindow) {
+              const { area, scale } = this.config;
+              
+              // X coordinate (time)
+              const x = area.x + ((timestamp - startTime) / timeWindow) * area.width;
+              
+              // Y coordinate (value) - inverted so higher values are at top
+              const y = area.y + area.height - ((value - scale.min) / (scale.max - scale.min)) * area.height;
+              
+              return { x, y };
+          }
+
+          drawGrid() {
+              if (!this.config.showGrid) return;
+
+              const { area, scale, gridLines } = this.config;
+              
+              this.ctx.strokeStyle = '#333';
+              this.ctx.setLineDash([2, 2]);
+              this.ctx.lineWidth = 1;
+              this.ctx.globalAlpha = 0.5;
+
+              // Draw horizontal grid lines
+              for (let i = 0; i <= gridLines; i++) {
+                  const value = scale.min + (scale.max - scale.min) * i / gridLines;
+                  const y = area.y + area.height - (area.height * i / gridLines);
+                  
+                  // Emphasize zero line
+                  if (Math.abs(value) < 0.01) {
+                      this.ctx.strokeStyle = '#666';
+                      this.ctx.setLineDash([]);
+                      this.ctx.lineWidth = 2;
+                  } else {
+                      this.ctx.strokeStyle = '#333';
+                      this.ctx.setLineDash([2, 2]);
+                      this.ctx.lineWidth = 1;
+                  }
+                  
+                  this.ctx.beginPath();
+                  this.ctx.moveTo(area.x, y);
+                  this.ctx.lineTo(area.x + area.width, y);
+                  this.ctx.stroke();
+              }
+              
+              this.ctx.setLineDash([]);
+              this.ctx.globalAlpha = 1.0;
+          }
+
+          drawLabels() {
+              if (!this.config.showLabels) return;
+
+              const { area, scale, gridLines, unit, color } = this.config;
+              const canvasWidth = this.canvas.width;
+              
+              this.ctx.fillStyle = color;
+              this.ctx.font = '10px sans-serif';
+              this.ctx.globalAlpha = 1.0;
+
+              for (let i = 0; i <= gridLines; i++) {
+                  const value = scale.min + (scale.max - scale.min) * i / gridLines;
+                  const y = area.y + area.height - (area.height * i / gridLines);
+                  
+                  const labelX = this.config.type === 'temperature' ? 5 : canvasWidth - 50;
+                  this.ctx.fillText(`${value.toFixed(1)}${unit}`, labelX, y + 3);
+              }
+              
+              this.ctx.globalAlpha = 1.0;
+          }
+
+          drawData(dataPoints, startTime, timeWindow, isHovered = false, isOtherHovered = false) {
+              if (!dataPoints || dataPoints.length === 0) return;
+
+              const { color, opacity, lineWidth, lineStyle } = this.config;
+              
+              // Adjust appearance based on hover state
+              let drawColor = color;
+              let drawOpacity = opacity;
+              
+              if (isOtherHovered) {
+                  drawColor = '#666';
+                  drawOpacity = 0.3;
+              } else if (isHovered) {
+                  drawOpacity = 1.0;
+                  this.ctx.shadowColor = color;
+                  this.ctx.shadowBlur = 8;
+              }
+
+              this.ctx.strokeStyle = drawColor;
+              this.ctx.lineWidth = isHovered ? lineWidth + 1 : lineWidth;
+              this.ctx.globalAlpha = drawOpacity;
+              
+              if (lineStyle === 'dashed') {
+                  this.ctx.setLineDash([3, 3]);
+              }
+
+              this.ctx.beginPath();
+              let first = true;
+
+              dataPoints.forEach(point => {
+                  const value = this.config.type === 'temperature' ? point.temperature : point.humidity;
+                  if (value !== null && value !== undefined) {
+                      const coords = this.calculateCoordinates(value, point.timestamp, startTime, timeWindow);
+                      
+                      if (first) {
+                          this.ctx.moveTo(coords.x, coords.y);
+                          first = false;
+                      } else {
+                          this.ctx.lineTo(coords.x, coords.y);
+                      }
+                  }
+              });
+              
+              this.ctx.stroke();
+              this.ctx.setLineDash([]);
+              this.ctx.shadowBlur = 0;
+              this.ctx.globalAlpha = 1.0;
+          }
+
+          render(dataPoints, startTime, timeWindow, isHovered, isOtherHovered) {
+              this.drawGrid();
+              this.drawLabels();
+              this.drawData(dataPoints, startTime, timeWindow, isHovered, isOtherHovered);
+          }
+      }
+
       class RuuviChart {
           constructor() {
               this.canvas = document.getElementById('chart');
@@ -642,17 +787,7 @@
               return preparedData;
           }
 
-          calculateTimeCoordinates(timestamp, startTime, timeWindow, padding, chartWidth) {
-              return padding + ((timestamp - startTime) / timeWindow) * chartWidth;
-          }
 
-          calculateTemperatureCoordinates(temperature, minTemp, maxTemp, padding, tempChartHeight) {
-              return padding + tempChartHeight - ((temperature - minTemp) / (maxTemp - minTemp)) * tempChartHeight;
-          }
-
-          calculateHumidityCoordinates(humidity, humZeroY, humChartTop) {
-              return humZeroY - (humidity / 100) * (humZeroY - humChartTop);
-          }
 
           render() {
               const rect = this.canvas.getBoundingClientRect();
@@ -669,14 +804,13 @@
               const timeWindow = this.getTimeWindow();
               const startTime = now - timeWindow;
 
-              // Calculate bounds with fixed temperature range (-20 to +40 minimum)
+              // Calculate data bounds
               let dataMinTemp = Infinity, dataMaxTemp = -Infinity;
               let minHum = Infinity, maxHum = -Infinity;
               let pointsInWindow = 0;
 
               this.data.forEach((points, sensorMac) => {
                   points.forEach(p => {
-                      // For aggregated data, show all points; for raw data, filter by time window
                       if (this.aggregated || p.timestamp >= startTime) {
                           pointsInWindow++;
                           if (p.isAggregated) {
@@ -698,38 +832,69 @@
                   });
               });
 
-              // Set default temperature range (0 to +25) but expand if data exceeds
-              const minTemp = Math.min(0, dataMinTemp !== Infinity ? dataMinTemp : 0);
-              const maxTemp = Math.max(25, dataMaxTemp !== -Infinity ? dataMaxTemp : 25);
-
-              // Fixed humidity range (0 to 100)
-              if (minHum === Infinity) minHum = 0;
-              if (maxHum === -Infinity) maxHum = 100;
-              minHum = 0;
-              maxHum = 100;
-
               if (pointsInWindow === 0) {
                   return;
               }
+
+              // Set temperature range (expandable from 0-25°C default)
+              const minTemp = Math.min(0, dataMinTemp !== Infinity ? dataMinTemp : 0);
+              const maxTemp = Math.max(25, dataMaxTemp !== -Infinity ? dataMaxTemp : 25);
+
+              // Fixed humidity range
+              const humMin = 0;
+              const humMax = 100;
 
               const padding = 80;
               const chartWidth = width - padding * 2;
               const chartHeight = height - padding * 2;
 
-              // Split chart area: temperature (top 2/3) and humidity (bottom 1/3)
-              const tempChartHeight = Math.floor(chartHeight * 0.67);
-              const humChartHeight = Math.floor(chartHeight * 0.33);
+              // Split chart area: temperature (top 60%) and humidity (bottom 40%)
+              const tempChartHeight = Math.floor(chartHeight * 0.6);
+              const humChartHeight = Math.floor(chartHeight * 0.4);
               const humChartTop = padding + tempChartHeight;
-              
-              // Calculate aligned zero positions for both axes
-              const tempRange = maxTemp - minTemp;
-              const tempZeroFromBottom = minTemp < 0 ? (-minTemp / tempRange) : 0;
-              const tempZeroY = padding + tempChartHeight - (tempChartHeight * tempZeroFromBottom);
-              
-              // Align humidity zero with temperature zero
-              const humZeroY = tempZeroY;
 
-              // Draw axes
+              // Initialize chart components
+              if (!this.temperatureChart) {
+                  this.temperatureChart = new ChartComponent(this.canvas, this.ctx, {
+                      type: 'temperature',
+                      area: { x: padding, y: padding, width: chartWidth, height: tempChartHeight },
+                      scale: { min: minTemp, max: maxTemp },
+                      color: '#4a9eff',
+                      opacity: 1.0,
+                      lineWidth: 3,
+                      lineStyle: 'solid',
+                      unit: '°C',
+                      gridLines: 5,
+                      showGrid: true,
+                      showLabels: true
+                  });
+              }
+
+              if (!this.humidityChart) {
+                  this.humidityChart = new ChartComponent(this.canvas, this.ctx, {
+                      type: 'humidity',
+                      area: { x: padding, y: humChartTop, width: chartWidth, height: humChartHeight },
+                      scale: { min: humMin, max: humMax },
+                      color: '#ff6b6b',
+                      opacity: 0.9,
+                      lineWidth: 3,
+                      lineStyle: 'dashed',
+                      unit: '%',
+                      gridLines: 4,
+                      showGrid: true,
+                      showLabels: true
+                  });
+</edits>
+              }
+
+              // Update chart configurations with current data bounds
+              this.temperatureChart.config.scale = { min: minTemp, max: maxTemp };
+              this.temperatureChart.config.area = { x: padding, y: padding, width: chartWidth, height: tempChartHeight };
+              
+              this.humidityChart.config.scale = { min: humMin, max: humMax };
+              this.humidityChart.config.area = { x: padding, y: humChartTop, width: chartWidth, height: humChartHeight };
+
+              // Draw main axes
               this.ctx.strokeStyle = '#444';
               this.ctx.lineWidth = 1;
               this.ctx.beginPath();
@@ -738,22 +903,24 @@
               this.ctx.lineTo(width - padding, height - padding);
               this.ctx.stroke();
 
+              // Draw separator line between temperature and humidity
+              this.ctx.strokeStyle = '#555';
+              this.ctx.beginPath();
+              this.ctx.moveTo(padding, humChartTop);
+              this.ctx.lineTo(width - padding, humChartTop);
+              this.ctx.stroke();
+
               // Draw time axis labels
               this.ctx.fillStyle = '#888';
               this.ctx.font = '10px sans-serif';
               const timeSteps = 6;
 
-              // Use consistent time window for both aggregated and real-time data
-              const axisStartTime = startTime;
-              const axisEndTime = now;
-
               for (let i = 0; i <= timeSteps; i++) {
                   const timeProgress = i / timeSteps;
-                  const timestamp = axisStartTime + ((axisEndTime - axisStartTime) * timeProgress);
+                  const timestamp = startTime + (timeWindow * timeProgress);
                   const x = padding + (chartWidth * timeProgress);
                   const label = this.formatTimeLabel(timestamp, this.range);
 
-                  // Rotate text for better readability
                   this.ctx.save();
                   this.ctx.translate(x, height - padding + 15);
                   this.ctx.rotate(-Math.PI / 4);
@@ -768,176 +935,25 @@
                   this.ctx.stroke();
               }
 
-              // Draw temperature grid and labels (top 2/3)
-              this.ctx.fillStyle = '#4a9eff';
-              this.ctx.font = '10px sans-serif';
-
-              for (let i = 0; i <= 5; i++) {
-                  const temp = minTemp + (maxTemp - minTemp) * i / 5;
-                  const y = padding + tempChartHeight - (tempChartHeight * i / 5);
-                  this.ctx.fillText(`${temp.toFixed(1)}°C`, 5, y + 3);
-
-                  // Draw horizontal grid lines for temperature
-                  this.ctx.strokeStyle = temp === 0 ? '#666' : '#333'; // Emphasize zero line
-                  this.ctx.setLineDash(temp === 0 ? [] : [2, 2]);
-                  this.ctx.lineWidth = temp === 0 ? 2 : 1;
-                  this.ctx.beginPath();
-                  this.ctx.moveTo(padding, y);
-                  this.ctx.lineTo(width - padding, y);
-                  this.ctx.stroke();
-                  this.ctx.setLineDash([]);
-                  this.ctx.lineWidth = 1;
-              }
-
-              // Draw separator line between temperature and humidity
-              this.ctx.strokeStyle = '#555';
-              this.ctx.setLineDash([]);
-              this.ctx.lineWidth = 1;
-              this.ctx.beginPath();
-              this.ctx.moveTo(padding, humChartTop);
-              this.ctx.lineTo(width - padding, humChartTop);
-              this.ctx.stroke();
-
-              // Draw humidity grid and labels (bottom 1/3) - aligned with temperature zero
-              if (minHum !== Infinity && maxHum !== -Infinity) {
-                  this.ctx.fillStyle = '#ff6b6b';
-                  this.ctx.globalAlpha = 0.6; // Reduced opacity for humidity
-                  
-
-                  // Calculate humidity positions to align 0% with temperature 0°C
-                  for (let i = 0; i <= 4; i++) {
-                      const hum = i * 25; // 0%, 25%, 50%, 75%, 100%
-                      const humY = humZeroY - (hum / 100) * (humZeroY - humChartTop);
-                      
-                      if (humY >= humChartTop && humY <= humZeroY) {
-                          this.ctx.fillText(`${hum}%`, width - 40, humY + 3);
-
-                          // Draw horizontal grid lines for humidity
-                          this.ctx.strokeStyle = hum === 0 ? '#666' : '#333'; // Emphasize zero line
-                          this.ctx.setLineDash(hum === 0 ? [] : [1, 3]);
-                          this.ctx.lineWidth = hum === 0 ? 2 : 1;
-                          this.ctx.beginPath();
-                          this.ctx.moveTo(padding, humY);
-                          this.ctx.lineTo(width - padding, humY);
-                          this.ctx.stroke();
-                          this.ctx.setLineDash([]);
-                          this.ctx.lineWidth = 1;
-                      }
-                  }
-                  this.ctx.globalAlpha = 1.0; // Reset opacity
-              }
-
               // Prepare chart data
               const preparedData = this.prepareChartData(startTime, timeWindow);
 
-              // Draw temperature data in top area
+              // Render each sensor's data using both chart components
               let colorIndex = 0;
               preparedData.forEach((points, sensorMac) => {
                   const baseColor = this.colors[colorIndex % this.colors.length];
                   const isHovered = this.hoveredSensor === sensorMac;
                   const isOtherHovered = this.hoveredSensor && this.hoveredSensor !== sensorMac;
 
-                  // Adjust color based on hover state
-                  let color = baseColor;
-                  let opacity = 1.0;
-                  if (isOtherHovered) {
-                      // Fade non-hovered sensors to gray
-                      color = '#666';
-                      opacity = 0.3;
-                  } else if (isHovered) {
-                      // Brighten hovered sensor
-                      opacity = 1.0;
-                  }
+                  // Update colors for this sensor
+                  this.temperatureChart.config.color = baseColor;
+                  this.humidityChart.config.color = baseColor;
 
-                  // ========================================
-                  // MIN/MAX AREA FILL FEATURE - TEMPORARILY DISABLED
-                  // ========================================
-                  // This feature was disabled due to rendering issues with the area fill between
-                  // min and max temperature values. The data structure still contains minTemperature
-                  // and maxTemperature values for aggregated data points.
-                  //
-                  // To re-enable:
-                  // 1. Uncomment the area fill rendering code below
-                  // 2. Verify coordinate calculations work with zero-aligned axes
-                  // 3. Test with various temperature ranges and data scenarios
-                  //
-                  // Current behavior: Only average temperature lines are displayed
-                  // ========================================
+                  // Render temperature chart
+                  this.temperatureChart.render(points, startTime, timeWindow, isHovered, isOtherHovered);
                   
-                  // if (this.aggregated) {
-                  //     // Draw min/max temperature band (filled area) - DISABLED
-                  //     // [Area fill rendering code was here]
-                  // }
-
-                  // Add glow effect for hovered sensor
-                  if (isHovered) {
-                      this.ctx.shadowColor = color;
-                      this.ctx.shadowBlur = 8;
-                      this.ctx.shadowOffsetX = 0;
-                      this.ctx.shadowOffsetY = 0;
-                  }
-
-                  // Draw prominent average temperature line
-                  this.ctx.strokeStyle = color;
-                  this.ctx.lineWidth = isHovered ? 4 : 3; // Thicker line for hovered sensor
-                  this.ctx.globalAlpha = opacity;
-                  this.ctx.beginPath();
-                  let first = true;
-
-                  points.forEach(p => {
-                      const x = this.calculateTimeCoordinates(p.timestamp, startTime, timeWindow, padding, chartWidth);
-                      const y = this.calculateTemperatureCoordinates(p.temperature, minTemp, maxTemp, padding, tempChartHeight);
-                      if (first) {
-                          this.ctx.moveTo(x, y);
-                          first = false;
-                      } else {
-                          this.ctx.lineTo(x, y);
-                      }
-                  });
-                  this.ctx.stroke();
-
-                  // Reset shadow for other elements
-                  if (isHovered) {
-                      this.ctx.shadowBlur = 0;
-                  }
-
-                  // Draw humidity in bottom area with same color but reduced opacity
-                  if (minHum !== Infinity && maxHum !== -Infinity) {
-                      // Add subtle glow for humidity on hovered sensor
-                      if (isHovered) {
-                          this.ctx.shadowColor = color;
-                          this.ctx.shadowBlur = 4;
-                      }
-
-                      this.ctx.globalAlpha = isOtherHovered ? 0.1 : 0.3; // Reduced opacity for humidity
-                      this.ctx.strokeStyle = color; // Same color as temperature
-                      this.ctx.lineWidth = isHovered ? 3 : 2;
-                      this.ctx.setLineDash([3, 3]); // Dashed line to distinguish from temperature
-                      this.ctx.beginPath();
-                      first = true;
-
-                      points.forEach(p => {
-                          const humidity = p.humidity;
-                          if (humidity !== null && humidity !== undefined) {
-                              const x = this.calculateTimeCoordinates(p.timestamp, startTime, timeWindow, padding, chartWidth);
-                              const y = this.calculateHumidityCoordinates(humidity, humZeroY, humChartTop);
-                              if (first) {
-                                  this.ctx.moveTo(x, y);
-                                  first = false;
-                              } else {
-                                  this.ctx.lineTo(x, y);
-                              }
-                          }
-                      });
-                      this.ctx.stroke();
-                      this.ctx.setLineDash([]);
-
-                      // Reset shadow and opacity
-                      if (isHovered) {
-                          this.ctx.shadowBlur = 0;
-                      }
-                      this.ctx.globalAlpha = 1.0; // Reset opacity
-                  }
+                  // Render humidity chart
+                  this.humidityChart.render(points, startTime, timeWindow, isHovered, isOtherHovered);
 
                   colorIndex++;
               });
