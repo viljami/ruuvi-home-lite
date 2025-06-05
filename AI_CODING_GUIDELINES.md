@@ -22,6 +22,8 @@
 
 **KISS (Keep it Simple Sweetheart)**: Simplicity is the ultimate sophistication.
 
+Do not leave commented code behind. Always remove unused code. Code is cheap - context (cognitive load) is expensive.
+
 ### Zero Tolerance for Redundancy
 
 **NEVER create duplicate information**:
