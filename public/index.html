@@ -27,26 +27,23 @@
         .btn.active { background: #4a9eff; border-color: #4a9eff; }
         .main-content { flex: 1; display: flex; }
         .chart-container { flex: 1; position: relative; padding: 20px; }
-        .sidebar { width: 300px; background: #2a2a2a; border-left: 1px solid #444; padding: 20px; overflow-y: auto; }
+        .sidebar { width: 280px; background: #2a2a2a; border-left: 1px solid #444; padding: 15px; overflow-y: auto; }
         #chart { width: 100%; height: 100%; display: block; }
-        .sidebar h3 { margin: 0 0 15px 0; color: #e0e0e0; font-size: 16px; }
-        .sensor-item { background: #333; margin-bottom: 10px; padding: 12px; border-radius: 6px; border-left: 3px solid #4a9eff; }
-        .sensor-mac { font-size: 12px; color: #888; margin-bottom: 5px; font-family: monospace; }
-        .sensor-temp { font-size: 20px; font-weight: bold; color: #4a9eff; margin-bottom: 3px; }
-        .sensor-humidity { font-size: 14px; color: #ff6b6b; margin-bottom: 3px; }
-        .sensor-age { font-size: 11px; color: #666; }
-        .sensor-offline { border-left-color: #666; }
+        .sidebar h3 { margin: 0 0 10px 0; color: #e0e0e0; font-size: 16px; }
+        .sensor-item { background: #333; margin-bottom: 6px; padding: 8px 10px; border-radius: 4px; border-left: 3px solid #4a9eff; display: flex; align-items: center; justify-content: space-between; font-size: 12px; cursor: pointer; transition: all 0.2s ease; }
+        .sensor-item:hover { background: #404040; transform: translateX(2px); box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+        .sensor-left { display: flex; align-items: center; gap: 8px; }
+        .sensor-mac { font-family: monospace; color: #888; font-size: 11px; }
+        .sensor-temp { font-weight: bold; color: #4a9eff; }
+        .sensor-humidity { color: #ff6b6b; }
+        .sensor-age { color: #666; font-size: 10px; }
+        .sensor-offline { border-left-color: #666; opacity: 0.6; }
         .sensor-offline .sensor-temp { color: #666; }
         .status { 
             position: absolute; top: 30px; right: 30px; font-size: 12px; opacity: 0.7;
             padding: 4px 8px; background: #333; border-radius: 3px;
         }
-        .legend { 
-            position: absolute; top: 30px; left: 30px; font-size: 12px;
-            background: rgba(34, 34, 34, 0.9); padding: 8px; border-radius: 4px;
-        }
-        .legend-item { display: flex; align-items: center; margin-bottom: 4px; }
-        .legend-color { width: 12px; height: 12px; margin-right: 6px; border-radius: 2px; }
+
         .axis-label { position: absolute; font-size: 10px; color: #888; }
     </style>
 </head>
@@ -65,7 +62,6 @@
         <div class="chart-container">
             <canvas id="chart"></canvas>
             <div class="status" id="status">Connecting...</div>
-            <div class="legend" id="legend"></div>
         </div>
         <div class="sidebar">
             <h3>Latest Readings</h3>
@@ -85,6 +81,7 @@
                 this.aggregated = false;
                 this.ws = null;
                 this.latestReadings = new Map();
+                this.hoveredSensor = null;
                 
                 // Performance optimization flags
                 this.needsRender = false;
@@ -200,7 +197,6 @@
                     }
                 });
                 this.scheduleRender();
-                this.updateLegend();
             }
 
             addRealTimeData(data) {
@@ -268,24 +264,9 @@
                 }
                 
                 this.debouncedRender();
-                this.updateLegend();
             }
 
-            updateLegend() {
-                const legend = document.getElementById('legend');
-                legend.innerHTML = '';
-                let colorIndex = 0;
-                this.data.forEach((_, sensorMac) => {
-                    const item = document.createElement('div');
-                    item.className = 'legend-item';
-                    item.innerHTML = `
-                        <div class="legend-color" style="background:${this.colors[colorIndex % this.colors.length]}"></div>
-                        ${sensorMac.slice(-6)}
-                    `;
-                    legend.appendChild(item);
-                    colorIndex++;
-                });
-            }
+
 
             getTimeWindow() {
                 const ranges = { hour: 1, day: 24, week: 168, month: 720, year: 8760 };
@@ -351,8 +332,8 @@
                 const timeWindow = this.getTimeWindow();
                 const startTime = now - timeWindow;
 
-                // Calculate bounds
-                let minTemp = Infinity, maxTemp = -Infinity;
+                // Calculate bounds with fixed temperature range (-20 to +40 minimum)
+                let dataMinTemp = Infinity, dataMaxTemp = -Infinity;
                 let minHum = Infinity, maxHum = -Infinity;
                 let pointsInWindow = 0;
                 
@@ -362,15 +343,15 @@
                         if (this.aggregated || p.timestamp >= startTime) {
                             pointsInWindow++;
                             if (p.isAggregated) {
-                                minTemp = Math.min(minTemp, p.minTemperature || p.temperature);
-                                maxTemp = Math.max(maxTemp, p.maxTemperature || p.temperature);
+                                dataMinTemp = Math.min(dataMinTemp, p.minTemperature || p.temperature);
+                                dataMaxTemp = Math.max(dataMaxTemp, p.maxTemperature || p.temperature);
                                 if (p.minHumidity !== null && p.maxHumidity !== null) {
                                     minHum = Math.min(minHum, p.minHumidity);
                                     maxHum = Math.max(maxHum, p.maxHumidity);
                                 }
                             } else {
-                                minTemp = Math.min(minTemp, p.temperature);
-                                maxTemp = Math.max(maxTemp, p.temperature);
+                                dataMinTemp = Math.min(dataMinTemp, p.temperature);
+                                dataMaxTemp = Math.max(dataMaxTemp, p.temperature);
                                 if (p.humidity !== null && p.humidity !== undefined) {
                                     minHum = Math.min(minHum, p.humidity);
                                     maxHum = Math.max(maxHum, p.humidity);
@@ -380,6 +361,16 @@
                     });
                 });
                 
+                // Set fixed temperature range (-20 to +40) but expand if data exceeds
+                const minTemp = Math.min(-20, dataMinTemp !== Infinity ? dataMinTemp : -20);
+                const maxTemp = Math.max(40, dataMaxTemp !== -Infinity ? dataMaxTemp : 40);
+                
+                // Fixed humidity range (0 to 100)
+                if (minHum === Infinity) minHum = 0;
+                if (maxHum === -Infinity) maxHum = 100;
+                minHum = 0;
+                maxHum = 100;
+                
                 if (pointsInWindow === 0) {
                     return;
                 }
@@ -387,6 +378,11 @@
                 const padding = 80;
                 const chartWidth = width - padding * 2;
                 const chartHeight = height - padding * 2;
+                
+                // Split chart area: temperature (top 2/3) and humidity (bottom 1/3)
+                const tempChartHeight = Math.floor(chartHeight * 0.67);
+                const humChartHeight = Math.floor(chartHeight * 0.33);
+                const humChartTop = padding + tempChartHeight;
 
                 // Draw axes
                 this.ctx.strokeStyle = '#444';
@@ -424,15 +420,15 @@
                     this.ctx.stroke();
                 }
 
-                // Draw temperature lines (left axis)
+                // Draw temperature grid and labels (top 2/3)
                 this.ctx.fillStyle = '#4a9eff';
                 this.ctx.font = '10px sans-serif';
                 for (let i = 0; i <= 5; i++) {
                     const temp = minTemp + (maxTemp - minTemp) * i / 5;
-                    const y = height - padding - (chartHeight * i / 5);
+                    const y = padding + tempChartHeight - (tempChartHeight * i / 5);
                     this.ctx.fillText(`${temp.toFixed(1)}°C`, 5, y + 3);
                     
-                    // Draw horizontal grid lines
+                    // Draw horizontal grid lines for temperature
                     this.ctx.strokeStyle = '#333';
                     this.ctx.setLineDash([2, 2]);
                     this.ctx.beginPath();
@@ -441,31 +437,62 @@
                     this.ctx.stroke();
                     this.ctx.setLineDash([]);
                 }
+                
+                // Draw separator line between temperature and humidity
+                this.ctx.strokeStyle = '#555';
+                this.ctx.setLineDash([]);
+                this.ctx.lineWidth = 1;
+                this.ctx.beginPath();
+                this.ctx.moveTo(padding, humChartTop);
+                this.ctx.lineTo(width - padding, humChartTop);
+                this.ctx.stroke();
 
-                // Draw humidity lines (right axis) - only if humidity data exists
+                // Draw humidity grid and labels (bottom 1/3) - only if humidity data exists
                 if (minHum !== Infinity && maxHum !== -Infinity) {
                     this.ctx.fillStyle = '#ff6b6b';
-                    for (let i = 0; i <= 5; i++) {
-                        const hum = minHum + (maxHum - minHum) * i / 5;
-                        const y = height - padding - (chartHeight * i / 5);
-                        this.ctx.fillText(`${hum.toFixed(1)}%`, width - 50, y + 3);
+                    this.ctx.globalAlpha = 0.6; // Reduced opacity for humidity
+                    for (let i = 0; i <= 3; i++) {
+                        const hum = minHum + (maxHum - minHum) * i / 3;
+                        const y = humChartTop + humChartHeight - (humChartHeight * i / 3);
+                        this.ctx.fillText(`${hum.toFixed(0)}%`, width - 40, y + 3);
+                        
+                        // Draw horizontal grid lines for humidity
+                        this.ctx.strokeStyle = '#333';
+                        this.ctx.setLineDash([1, 3]);
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(padding, y);
+                        this.ctx.lineTo(width - padding, y);
+                        this.ctx.stroke();
+                        this.ctx.setLineDash([]);
                     }
+                    this.ctx.globalAlpha = 1.0; // Reset opacity
                 }
 
-                // Draw data
+                // Draw temperature data in top area
                 let colorIndex = 0;
-                this.data.forEach(points => {
-                    const color = this.colors[colorIndex % this.colors.length];
+                this.data.forEach((points, sensorMac) => {
+                    const baseColor = this.colors[colorIndex % this.colors.length];
+                    const isHovered = this.hoveredSensor === sensorMac;
+                    const isOtherHovered = this.hoveredSensor && this.hoveredSensor !== sensorMac;
                     
-                    // Temperature line with min/max bands for aggregated data
-                    this.ctx.strokeStyle = color;
-                    this.ctx.lineWidth = 2;
+                    // Adjust color based on hover state
+                    let color = baseColor;
+                    let opacity = 1.0;
+                    if (isOtherHovered) {
+                        // Fade non-hovered sensors to gray
+                        color = '#666';
+                        opacity = 0.3;
+                    } else if (isHovered) {
+                        // Brighten hovered sensor
+                        opacity = 1.0;
+                    }
                     
                     if (this.aggregated) {
-                        // Draw min/max band
-                        this.ctx.fillStyle = color + '20'; // Semi-transparent
+                        // Draw min/max temperature band (filled area)
+                        this.ctx.globalAlpha = isOtherHovered ? 0.1 : 0.3;
+                        this.ctx.fillStyle = color;
                         this.ctx.beginPath();
-                        let firstMin = true, firstMax = true;
+                        let firstPoint = true;
                         
                         // Top edge (max values)
                         points.forEach(p => {
@@ -473,10 +500,10 @@
                                 const dataStart = this.aggregated ? this.getOldestTimestamp() : startTime;
                                 const dataSpan = this.aggregated ? this.getDataTimeSpan() : timeWindow;
                                 const x = padding + ((p.timestamp - dataStart) / dataSpan) * chartWidth;
-                                const y = height - padding - ((p.maxTemperature - minTemp) / (maxTemp - minTemp)) * chartHeight;
-                                if (firstMax) {
+                                const y = padding + tempChartHeight - ((p.maxTemperature - minTemp) / (maxTemp - minTemp)) * tempChartHeight;
+                                if (firstPoint) {
                                     this.ctx.moveTo(x, y);
-                                    firstMax = false;
+                                    firstPoint = false;
                                 } else {
                                     this.ctx.lineTo(x, y);
                                 }
@@ -490,16 +517,28 @@
                                 const dataStart = this.aggregated ? this.getOldestTimestamp() : startTime;
                                 const dataSpan = this.aggregated ? this.getDataTimeSpan() : timeWindow;
                                 const x = padding + ((p.timestamp - dataStart) / dataSpan) * chartWidth;
-                                const y = height - padding - ((p.minTemperature - minTemp) / (maxTemp - minTemp)) * chartHeight;
+                                const y = padding + tempChartHeight - ((p.minTemperature - minTemp) / (maxTemp - minTemp)) * tempChartHeight;
                                 this.ctx.lineTo(x, y);
                             }
                         });
                         
                         this.ctx.closePath();
                         this.ctx.fill();
+                        this.ctx.globalAlpha = 1.0;
                     }
                     
-                    // Average/main temperature line
+                    // Add glow effect for hovered sensor
+                    if (isHovered) {
+                        this.ctx.shadowColor = color;
+                        this.ctx.shadowBlur = 8;
+                        this.ctx.shadowOffsetX = 0;
+                        this.ctx.shadowOffsetY = 0;
+                    }
+                    
+                    // Draw prominent average temperature line
+                    this.ctx.strokeStyle = color;
+                    this.ctx.lineWidth = isHovered ? 4 : 3; // Thicker line for hovered sensor
+                    this.ctx.globalAlpha = opacity;
                     this.ctx.beginPath();
                     let first = true;
                     
@@ -508,7 +547,7 @@
                             const dataStart = this.aggregated ? this.getOldestTimestamp() : startTime;
                             const dataSpan = this.aggregated ? this.getDataTimeSpan() : timeWindow;
                             const x = padding + ((p.timestamp - dataStart) / dataSpan) * chartWidth;
-                            const y = height - padding - ((p.temperature - minTemp) / (maxTemp - minTemp)) * chartHeight;
+                            const y = padding + tempChartHeight - ((p.temperature - minTemp) / (maxTemp - minTemp)) * tempChartHeight;
                             if (first) {
                                 this.ctx.moveTo(x, y);
                                 first = false;
@@ -518,10 +557,24 @@
                         }
                     });
                     this.ctx.stroke();
+                    
+                    // Reset shadow for other elements
+                    if (isHovered) {
+                        this.ctx.shadowBlur = 0;
+                    }
 
-                    // Humidity line (dashed) - only if humidity data exists
+                    // Draw humidity in bottom area with same color but reduced opacity
                     if (minHum !== Infinity && maxHum !== -Infinity) {
-                        this.ctx.setLineDash([5, 5]);
+                        // Add subtle glow for humidity on hovered sensor
+                        if (isHovered) {
+                            this.ctx.shadowColor = color;
+                            this.ctx.shadowBlur = 4;
+                        }
+                        
+                        this.ctx.globalAlpha = isOtherHovered ? 0.1 : 0.3; // Reduced opacity for humidity
+                        this.ctx.strokeStyle = color; // Same color as temperature
+                        this.ctx.lineWidth = isHovered ? 3 : 2;
+                        this.ctx.setLineDash([3, 3]); // Dashed line to distinguish from temperature
                         this.ctx.beginPath();
                         first = true;
                         
@@ -531,7 +584,7 @@
                                 const dataStart = this.aggregated ? this.getOldestTimestamp() : startTime;
                                 const dataSpan = this.aggregated ? this.getDataTimeSpan() : timeWindow;
                                 const x = padding + ((p.timestamp - dataStart) / dataSpan) * chartWidth;
-                                const y = height - padding - ((humidity - minHum) / (maxHum - minHum)) * chartHeight;
+                                const y = humChartTop + humChartHeight - ((humidity - minHum) / (maxHum - minHum)) * humChartHeight;
                                 if (first) {
                                     this.ctx.moveTo(x, y);
                                     first = false;
@@ -542,6 +595,12 @@
                         });
                         this.ctx.stroke();
                         this.ctx.setLineDash([]);
+                        
+                        // Reset shadow and opacity
+                        if (isHovered) {
+                            this.ctx.shadowBlur = 0;
+                        }
+                        this.ctx.globalAlpha = 1.0; // Reset opacity
                     }
                     
                     colorIndex++;
@@ -606,22 +665,37 @@
                 const sortedReadings = Array.from(this.latestReadings.values())
                     .sort((a, b) => a.sensorMac.localeCompare(b.sensorMac));
 
-                sortedReadings.forEach(reading => {
+                sortedReadings.forEach((reading, index) => {
                     const secondsAgo = now - reading.timestamp;
                     const isOffline = secondsAgo > 300; // 5 minutes
+                    const sensorColor = this.colors[index % this.colors.length];
                     
                     const item = document.createElement('div');
                     item.className = `sensor-item ${isOffline ? 'sensor-offline' : ''}`;
+                    item.style.borderLeftColor = sensorColor;
                     
                     const shortMac = reading.sensorMac.slice(-8).toUpperCase();
                     const ageText = this.formatAge(secondsAgo);
                     
                     item.innerHTML = `
-                        <div class="sensor-mac">${shortMac}</div>
-                        <div class="sensor-temp">${reading.temperature.toFixed(1)}°C</div>
-                        ${reading.humidity !== null ? `<div class="sensor-humidity">${reading.humidity.toFixed(1)}%</div>` : ''}
+                        <div class="sensor-left">
+                            <div class="sensor-mac">${shortMac}</div>
+                            <div class="sensor-temp">${reading.temperature.toFixed(1)}°C</div>
+                            ${reading.humidity !== null ? `<div class="sensor-humidity">${reading.humidity.toFixed(1)}%</div>` : ''}
+                        </div>
                         <div class="sensor-age">${ageText}</div>
                     `;
+                    
+                    // Add hover event listeners for graph highlighting
+                    item.addEventListener('mouseenter', () => {
+                        this.hoveredSensor = reading.sensorMac;
+                        this.scheduleRender();
+                    });
+                    
+                    item.addEventListener('mouseleave', () => {
+                        this.hoveredSensor = null;
+                        this.scheduleRender();
+                    });
                     
                     container.appendChild(item);
                 });
