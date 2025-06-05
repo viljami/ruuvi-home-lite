@@ -1,5 +1,63 @@
 # AI Coding Guidelines (Generic)
 
+## 🔄 Development Cycle
+
+1. **Make It Work**: Solve core problem with minimal viable implementation
+2. **Make It Right**: Clean, maintainable, documented code
+3. **Make It Fast**: Optimize with measurable improvements
+
+## 🎯 Core Principles
+
+**Explicitness**: Write code that can be understood by AI systems. No hidden dependencies
+
+**Do NOT reinvent the wheel** Start by checking if there is a library that solves the problem at hand
+
+**Modularity**: Keep files focused and reasonably sized. Single responsibility per component. No file should be longer than 500 lines.
+
+**Reversibility**: All decisions must be easily undoable. Use feature flags, configuration, interfaces.
+
+## 🔥 SACRED PRINCIPLES: DRY & KISS
+
+**DRY (Don't Repeat Yourself)**: The highest pride for both human and AI programmers.
+
+**KISS (Keep it Simple Sweetheart)**: Simplicity is the ultimate sophistication.
+
+### Zero Tolerance for Redundancy
+
+**NEVER create duplicate information**:
+
+- Same validation commands in multiple files
+- Identical explanations across documents
+- Repeated code examples or instructions
+- Overlapping documentation sections
+
+**MANDATORY before any addition**:
+
+1. Search existing files for similar content
+2. If ANY overlap exists, consolidate instead of duplicating
+3. If absolutely certain you need repetition: **ASK FOR EXPLICIT CONFIRMATION**
+4. Reviewer must approve repetition with clear justification
+
+### Simplicity Requirements
+
+**Always choose the simpler option**:
+
+- One build target instead of multiple scripts
+- Concise documentation over verbose explanations
+- Single source of truth over distributed information
+- Essential content only - remove nice-to-have details
+
+**Review every addition**: Does this make the system simpler or more complex? If more complex, justify or remove.
+
+## 📋 Essential Workflow
+
+### Before Code Changes
+
+- [ ] Understand current project goals and milestones
+- [ ] Define task scope explicitly
+- [ ] Plan rollback strategy
+- [ ] Avoid verbose .md file generation
+
 ## 🚨 CRITICAL: Code Quality Enforcement
 
 **NEVER use direct tool commands when project has standardized workflows:**
@@ -65,55 +123,6 @@ Use `/opt/app-name/bin/` with proper ownership (`app-user:app-user`) for securit
 - Violate the principle of immutable source code
 
 **Detection**: Any `cat >`, `echo >`, or redirection to `$PROJECT_DIR/**` (except local config files) is **FORBIDDEN**.
-
-## 🎯 Core Principles
-
-**Explicitness**: Write code that can be understood by AI systems. No hidden dependencies.
-
-**Modularity**: Keep files focused and reasonably sized. Single responsibility per component.
-
-**Reversibility**: All decisions must be easily undoable. Use feature flags, configuration, interfaces.
-
-## 🔥 SACRED PRINCIPLES: DRY & KISS
-
-**DRY (Don't Repeat Yourself)**: The highest pride for both human and AI programmers.
-
-**KISS (Keep it Simple Sweetheart)**: Simplicity is the ultimate sophistication.
-
-### Zero Tolerance for Redundancy
-
-**NEVER create duplicate information**:
-
-- Same validation commands in multiple files
-- Identical explanations across documents
-- Repeated code examples or instructions
-- Overlapping documentation sections
-
-**MANDATORY before any addition**:
-
-1. Search existing files for similar content
-2. If ANY overlap exists, consolidate instead of duplicating
-3. If absolutely certain you need repetition: **ASK FOR EXPLICIT CONFIRMATION**
-4. Reviewer must approve repetition with clear justification
-
-### Simplicity Requirements
-
-**Always choose the simpler option**:
-
-- One build target instead of multiple scripts
-- Concise documentation over verbose explanations
-- Single source of truth over distributed information
-- Essential content only - remove nice-to-have details
-
-**Review every addition**: Does this make the system simpler or more complex? If more complex, justify or remove.
-
-## 📋 Essential Workflow
-
-### Before Code Changes
-
-- [ ] Understand current project goals and milestones
-- [ ] Define task scope explicitly
-- [ ] Plan rollback strategy
 
 ## 🎨 Automatic Code Formatting
 
@@ -184,12 +193,6 @@ flake8 . && pytest
 
 **Error Handling**: Application code must handle errors properly (avoid panic/crash patterns). Test code can fail fast for debugging.
 
-## 🔄 Development Cycle
-
-1. **Make It Work**: Solve core problem with minimal viable implementation
-2. **Make It Right**: Clean, maintainable, documented code
-3. **Make It Fast**: Optimize with measurable improvements
-
 ## 🚫 Anti-Patterns
 
 **Avoid**:
@@ -225,8 +228,6 @@ flake8 . && pytest
 **Refactor When**: Code becomes hard to understand, test, or modify. Technical debt accumulates.
 
 **Rewrite When**: Fundamental architecture no longer serves requirements. Refactoring cost exceeds rewrite cost.
-
-**Documentation**: All public APIs, complex algorithms, and architectural decisions must be documented.
 
 ## ✅ Validation Checklist
 

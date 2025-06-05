@@ -140,11 +140,14 @@ export class MQTTClient extends EventEmitter {
         }
 
         if (decoded && decoded.temperature !== null) {
+          // Use Ruuvi timestamp in seconds, fallback to current time in seconds
+          const timestamp = gatewayData.ts || Math.floor(Date.now() / 1000);
+          
           const sensorData: SensorDataEvent = {
             sensorMac: sensorMac,
             temperature: decoded.temperature,
             humidity: decoded.humidity || null,
-            timestamp: gatewayData.ts,
+            timestamp: timestamp,
             pressure: decoded.pressure,
             batteryVoltage: decoded.batteryVoltage,
             txPower: decoded.txPower,

@@ -277,11 +277,11 @@ export class WebServer extends EventEmitter {
 
       // Define bucket sizes for the client
       const bucketConfigs = {
-        hour: 300000,     // 5 minutes in ms
-        day: 3600000,     // 1 hour in ms
-        week: 21600000,   // 6 hours in ms
-        month: 86400000,  // 1 day in ms
-        year: 2592000000  // 30 days in ms
+        hour: 300,        // 5 minutes in seconds
+        day: 3600,        // 1 hour in seconds
+        week: 21600,      // 6 hours in seconds
+        month: 86400,     // 1 day in seconds
+        year: 2592000     // 30 days in seconds
       };
 
       const response = JSON.stringify({

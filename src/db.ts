@@ -173,7 +173,7 @@ export class Database {
       }
       
       const hours = allowedRanges[sanitizedRange as keyof typeof allowedRanges];
-      const since = Date.now() - (hours * 60 * 60 * 1000);
+      const since = Math.floor(Date.now() / 1000) - (hours * 60 * 60);
 
       // Add LIMIT to prevent excessive data retrieval
       this.db.all(
@@ -213,10 +213,9 @@ export class Database {
 
       const hours = allowedRanges[sanitizedRange as keyof typeof allowedRanges];
       const bucketSeconds = bucketConfigs[sanitizedRange as keyof typeof bucketConfigs];
-      const bucketMilliseconds = bucketSeconds * 1000;
-      const since = Date.now() - (hours * 60 * 60 * 1000);
+      const since = Math.floor(Date.now() / 1000) - (hours * 60 * 60);
 
-      // SQLite query with time bucketing (working with milliseconds)
+      // SQLite query with time bucketing (working with seconds)
       const query = `
         SELECT 
           sensorMac,
@@ -237,7 +236,7 @@ export class Database {
 
       this.db.all(
         query,
-        [bucketMilliseconds, bucketMilliseconds, since, bucketMilliseconds],
+        [bucketSeconds, bucketSeconds, since, bucketSeconds],
         (err, rows) => {
           if (err) {
             console.error('Database aggregation query error:', err);

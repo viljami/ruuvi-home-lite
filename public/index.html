@@ -65,7 +65,7 @@
                 this.data = new Map();
                 this.colors = ['#4a9eff', '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7'];
                 this.range = 'day';
-                this.bucketSize = 3600000; // 1 hour default
+                this.bucketSize = 3600; // 1 hour in seconds default
                 this.aggregated = false;
                 this.ws = null;
                 this.setupWebSocket();
@@ -87,7 +87,7 @@
                 this.ws.onmessage = (event) => {
                     const msg = JSON.parse(event.data);
                     if (msg.type === 'historicalData') {
-                        this.bucketSize = msg.bucketSize || 3600000;
+                        this.bucketSize = msg.bucketSize || 3600;
                         this.aggregated = msg.aggregated || false;
                         this.loadData(msg.data);
                     } else if (msg.type === 'sensorData') {
@@ -163,7 +163,7 @@
                 }
                 
                 const sensorData = this.data.get(data.sensorMac);
-                const now = Date.now();
+                const now = Math.floor(Date.now() / 1000);
                 const timeWindow = this.getTimeWindow();
                 
                 if (this.aggregated && sensorData.length > 0) {
@@ -241,11 +241,11 @@
 
             getTimeWindow() {
                 const ranges = { hour: 1, day: 24, week: 168, month: 720, year: 8760 };
-                return ranges[this.range] * 60 * 60 * 1000;
+                return ranges[this.range] * 60 * 60;
             }
 
             formatTimeLabel(timestamp, range) {
-                const date = new Date(timestamp);
+                const date = new Date(timestamp * 1000);
                 
                 switch(range) {
                     case 'hour':
@@ -273,7 +273,7 @@
                 
                 if (this.data.size === 0) return;
 
-                const now = Date.now();
+                const now = Math.floor(Date.now() / 1000);
                 const timeWindow = this.getTimeWindow();
                 const startTime = now - timeWindow;
 

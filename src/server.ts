@@ -197,12 +197,12 @@ class RuuviServer {
     }
 
     // Validate timestamp is reasonable (not too far in past/future)
-    const now = Date.now();
-    const oneHour = 60 * 60 * 1000;
+    const now = Math.floor(Date.now() / 1000);
+    const oneHour = 60 * 60;
     if (Math.abs(data.timestamp - now) > oneHour) {
       console.warn(
         "Timestamp too far from current time:",
-        new Date(data.timestamp),
+        new Date(data.timestamp * 1000),
       );
       return false;
     }

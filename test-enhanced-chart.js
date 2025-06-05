@@ -30,7 +30,7 @@ async function testEnhancedChart() {
     
     // Generate data for past 2 hours with 1-minute intervals
     for (let i = 0; i < 120; i++) {
-      const timestamp = now - (i * 60 * 1000); // 1 minute intervals
+      const timestamp = Math.floor(now / 1000) - (i * 60); // 1 minute intervals in seconds
       
       sensorMacs.forEach(mac => {
         const temp = 20 + Math.sin(i / 10) * 5 + Math.random() * 2; // Varying temperature
@@ -119,15 +119,16 @@ async function testEnhancedChart() {
     
     // Test 5: Test time formatting logic
     console.log('\n📝 Test 5: Test time formatting logic');
+    const nowSeconds = Math.floor(now / 1000);
     const testTimestamps = [
-      now - 30 * 60 * 1000,  // 30 minutes ago
-      now - 2 * 60 * 60 * 1000,  // 2 hours ago
-      now - 24 * 60 * 60 * 1000, // 1 day ago
-      now - 7 * 24 * 60 * 60 * 1000, // 1 week ago
+      nowSeconds - 30 * 60,  // 30 minutes ago
+      nowSeconds - 2 * 60 * 60,  // 2 hours ago
+      nowSeconds - 24 * 60 * 60, // 1 day ago
+      nowSeconds - 7 * 24 * 60 * 60, // 1 week ago
     ];
     
     function formatTimeLabel(timestamp, range) {
-      const date = new Date(timestamp);
+      const date = new Date(timestamp * 1000);
       
       switch(range) {
         case 'hour':
@@ -149,7 +150,7 @@ async function testEnhancedChart() {
     timeRanges.forEach(range => {
       testTimestamps.forEach(timestamp => {
         const formatted = formatTimeLabel(timestamp, range);
-        console.log(`   ${range}: ${new Date(timestamp).toISOString()} → "${formatted}"`);
+        console.log(`   ${range}: ${new Date(timestamp * 1000).toISOString()} → "${formatted}"`);
       });
     });
     console.log('✅ Time formatting test completed');
@@ -159,7 +160,7 @@ async function testEnhancedChart() {
     
     // Simulate chart data structure
     const chartData = new Map();
-    const bucketSize = 300000; // 5 minutes in ms
+    const bucketSize = 300; // 5 minutes in seconds
     
     function simulateRealTimeUpdate(sensorMac, newData, aggregated = true) {
       if (!chartData.has(sensorMac)) {
@@ -212,11 +213,12 @@ async function testEnhancedChart() {
     
     // Test bucket updates
     const testSensorMac = 'TEST:SENSOR:01';
-    const baseTime = Math.floor(now / bucketSize) * bucketSize;
+    const currentTimeSeconds = Math.floor(now / 1000);
+    const baseTime = Math.floor(currentTimeSeconds / bucketSize) * bucketSize;
     
     // First data point in bucket
     let result = simulateRealTimeUpdate(testSensorMac, {
-      timestamp: baseTime + 60000, // 1 minute into bucket
+      timestamp: baseTime + 60, // 1 minute into bucket
       temperature: 22.5,
       humidity: 45.0
     });
@@ -224,7 +226,7 @@ async function testEnhancedChart() {
     
     // Second data point in same bucket
     result = simulateRealTimeUpdate(testSensorMac, {
-      timestamp: baseTime + 120000, // 2 minutes into bucket
+      timestamp: baseTime + 120, // 2 minutes into bucket
       temperature: 23.0,
       humidity: 46.0
     });
@@ -232,7 +234,7 @@ async function testEnhancedChart() {
     
     // Third data point in new bucket
     result = simulateRealTimeUpdate(testSensorMac, {
-      timestamp: baseTime + bucketSize + 60000, // Next bucket
+      timestamp: baseTime + bucketSize + 60, // Next bucket
       temperature: 23.5,
       humidity: 47.0
     });
