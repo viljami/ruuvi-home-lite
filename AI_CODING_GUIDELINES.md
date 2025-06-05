@@ -24,6 +24,8 @@
 
 Do not leave commented code behind. Always remove unused code. Code is cheap - context (cognitive load) is expensive.
 
+Build from components: Block vs Knitted Castle principle.
+
 ### Zero Tolerance for Redundancy
 
 **NEVER create duplicate information**:

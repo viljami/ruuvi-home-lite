@@ -179,1095 +179,1284 @@
 
     <script>
       class ChartComponent {
-          constructor(canvas, ctx, config) {
-              this.canvas = canvas;
-              this.ctx = ctx;
-              this.config = {
-                  type: 'temperature', // 'temperature' or 'humidity'
-                  area: { x: 0, y: 0, width: 100, height: 100 }, // Area within canvas
-                  scale: { min: 0, max: 100 },
-                  color: '#4a9eff',
-                  opacity: 1.0,
-                  lineWidth: 3,
-                  lineStyle: 'solid', // 'solid' or 'dashed'
-                  unit: '°C',
-                  gridLines: 5,
-                  showGrid: true,
-                  showLabels: true,
-                  ...config
-              };
-          }
+        constructor(canvas, ctx, config) {
+          this.canvas = canvas;
+          this.ctx = ctx;
+          this.config = {
+            type: "temperature", // 'temperature' or 'humidity'
+            area: { x: 0, y: 0, width: 100, height: 100 }, // Area within canvas
+            scale: { min: 0, max: 100 },
+            color: "#4a9eff",
+            opacity: 1.0,
+            lineWidth: 3,
+            lineStyle: "solid", // 'solid' or 'dashed'
+            unit: "°C",
+            gridLines: 5,
+            showGrid: true,
+            showLabels: true,
+            ...config,
+          };
+        }
 
-          calculateCoordinates(value, timestamp, startTime, timeWindow) {
-              const { area, scale } = this.config;
-              
-              // X coordinate (time)
-              const x = area.x + ((timestamp - startTime) / timeWindow) * area.width;
-              
-              // Y coordinate (value) - inverted so higher values are at top
-              const y = area.y + area.height - ((value - scale.min) / (scale.max - scale.min)) * area.height;
-              
-              return { x, y };
-          }
+        calculateCoordinates(value, timestamp, startTime, timeWindow) {
+          const { area, scale } = this.config;
 
-          drawGrid() {
-              if (!this.config.showGrid) return;
+          // X coordinate (time)
+          const x =
+            area.x + ((timestamp - startTime) / timeWindow) * area.width;
 
-              const { area, scale, gridLines } = this.config;
-              
-              this.ctx.strokeStyle = '#333';
+          // Y coordinate (value) - inverted so higher values are at top
+          const y =
+            area.y +
+            area.height -
+            ((value - scale.min) / (scale.max - scale.min)) * area.height;
+
+          return { x, y };
+        }
+
+        drawGrid() {
+          if (!this.config.showGrid) return;
+
+          const { area, scale, gridLines } = this.config;
+
+          this.ctx.strokeStyle = "#333";
+          this.ctx.setLineDash([2, 2]);
+          this.ctx.lineWidth = 1;
+          this.ctx.globalAlpha = 0.5;
+
+          // Draw horizontal grid lines
+          for (let i = 0; i <= gridLines; i++) {
+            const value = scale.min + ((scale.max - scale.min) * i) / gridLines;
+            const y = area.y + area.height - (area.height * i) / gridLines;
+
+            // Emphasize zero line
+            if (Math.abs(value) < 0.01) {
+              this.ctx.strokeStyle = "#666";
+              this.ctx.setLineDash([]);
+              this.ctx.lineWidth = 2;
+            } else {
+              this.ctx.strokeStyle = "#333";
               this.ctx.setLineDash([2, 2]);
               this.ctx.lineWidth = 1;
-              this.ctx.globalAlpha = 0.5;
+            }
 
-              // Draw horizontal grid lines
-              for (let i = 0; i <= gridLines; i++) {
-                  const value = scale.min + (scale.max - scale.min) * i / gridLines;
-                  const y = area.y + area.height - (area.height * i / gridLines);
-                  
-                  // Emphasize zero line
-                  if (Math.abs(value) < 0.01) {
-                      this.ctx.strokeStyle = '#666';
-                      this.ctx.setLineDash([]);
-                      this.ctx.lineWidth = 2;
-                  } else {
-                      this.ctx.strokeStyle = '#333';
-                      this.ctx.setLineDash([2, 2]);
-                      this.ctx.lineWidth = 1;
-                  }
-                  
-                  this.ctx.beginPath();
-                  this.ctx.moveTo(area.x, y);
-                  this.ctx.lineTo(area.x + area.width, y);
-                  this.ctx.stroke();
-              }
-              
-              this.ctx.setLineDash([]);
-              this.ctx.globalAlpha = 1.0;
+            this.ctx.beginPath();
+            this.ctx.moveTo(area.x, y);
+            this.ctx.lineTo(area.x + area.width, y);
+            this.ctx.stroke();
           }
 
-          drawLabels() {
-              if (!this.config.showLabels) return;
+          this.ctx.setLineDash([]);
+          this.ctx.globalAlpha = 1.0;
+        }
 
-              const { area, scale, gridLines, unit, color } = this.config;
-              const canvasWidth = this.canvas.width;
-              
-              this.ctx.fillStyle = color;
-              this.ctx.font = '10px sans-serif';
-              this.ctx.globalAlpha = 1.0;
+        drawLabels() {
+          if (!this.config.showLabels) return;
 
-              for (let i = 0; i <= gridLines; i++) {
-                  const value = scale.min + (scale.max - scale.min) * i / gridLines;
-                  const y = area.y + area.height - (area.height * i / gridLines);
-                  
-                  const labelX = this.config.type === 'temperature' ? 5 : canvasWidth - 50;
-                  this.ctx.fillText(`${value.toFixed(1)}${unit}`, labelX, y + 3);
-              }
-              
-              this.ctx.globalAlpha = 1.0;
+          const { area, scale, gridLines, unit, color } = this.config;
+          const canvasWidth = this.canvas.width;
+
+          this.ctx.fillStyle = color;
+          this.ctx.font = "10px sans-serif";
+          this.ctx.globalAlpha = 1.0;
+
+          for (let i = 0; i <= gridLines; i++) {
+            const value = scale.min + ((scale.max - scale.min) * i) / gridLines;
+            const y = area.y + area.height - (area.height * i) / gridLines;
+
+            const labelX =
+              this.config.type === "temperature" ? 5 : canvasWidth - 50;
+            this.ctx.fillText(`${value.toFixed(1)}${unit}`, labelX, y + 3);
           }
 
-          drawData(dataPoints, startTime, timeWindow, isHovered = false, isOtherHovered = false) {
-              if (!dataPoints || dataPoints.length === 0) return;
+          this.ctx.globalAlpha = 1.0;
+        }
 
-              const { color, opacity, lineWidth, lineStyle } = this.config;
-              
-              // Adjust appearance based on hover state
-              let drawColor = color;
-              let drawOpacity = opacity;
-              
-              if (isOtherHovered) {
-                  drawColor = '#666';
-                  drawOpacity = 0.3;
-              } else if (isHovered) {
-                  drawOpacity = 1.0;
-                  this.ctx.shadowColor = color;
-                  this.ctx.shadowBlur = 8;
-              }
+        drawData(
+          dataPoints,
+          startTime,
+          timeWindow,
+          isHovered = false,
+          isOtherHovered = false,
+        ) {
+          if (!dataPoints || dataPoints.length === 0) return;
 
-              this.ctx.strokeStyle = drawColor;
-              this.ctx.lineWidth = isHovered ? lineWidth + 1 : lineWidth;
-              this.ctx.globalAlpha = drawOpacity;
-              
-              if (lineStyle === 'dashed') {
-                  this.ctx.setLineDash([3, 3]);
-              }
+          const { color, opacity, lineWidth, lineStyle } = this.config;
 
-              this.ctx.beginPath();
-              let first = true;
+          // Adjust appearance based on hover state
+          let drawColor = color;
+          let drawOpacity = opacity;
 
-              dataPoints.forEach(point => {
-                  const value = this.config.type === 'temperature' ? point.temperature : point.humidity;
-                  if (value !== null && value !== undefined) {
-                      const coords = this.calculateCoordinates(value, point.timestamp, startTime, timeWindow);
-                      
-                      if (first) {
-                          this.ctx.moveTo(coords.x, coords.y);
-                          first = false;
-                      } else {
-                          this.ctx.lineTo(coords.x, coords.y);
-                      }
-                  }
-              });
-              
-              this.ctx.stroke();
-              this.ctx.setLineDash([]);
-              this.ctx.shadowBlur = 0;
-              this.ctx.globalAlpha = 1.0;
+          if (isOtherHovered) {
+            drawColor = "#666";
+            drawOpacity = 0.3;
+          } else if (isHovered) {
+            drawOpacity = 1.0;
+            this.ctx.shadowColor = color;
+            this.ctx.shadowBlur = 8;
           }
 
-          render(dataPoints, startTime, timeWindow, isHovered, isOtherHovered) {
-              this.drawGrid();
-              this.drawLabels();
-              this.drawData(dataPoints, startTime, timeWindow, isHovered, isOtherHovered);
+          this.ctx.strokeStyle = drawColor;
+          this.ctx.lineWidth = isHovered ? lineWidth + 1 : lineWidth;
+          this.ctx.globalAlpha = drawOpacity;
+
+          if (lineStyle === "dashed") {
+            this.ctx.setLineDash([3, 3]);
           }
+
+          this.ctx.beginPath();
+          let first = true;
+
+          dataPoints.forEach((point) => {
+            const value =
+              this.config.type === "temperature"
+                ? point.temperature
+                : point.humidity;
+            if (value !== null && value !== undefined) {
+              const coords = this.calculateCoordinates(
+                value,
+                point.timestamp,
+                startTime,
+                timeWindow,
+              );
+
+              if (first) {
+                this.ctx.moveTo(coords.x, coords.y);
+                first = false;
+              } else {
+                this.ctx.lineTo(coords.x, coords.y);
+              }
+            }
+          });
+
+          this.ctx.stroke();
+          this.ctx.setLineDash([]);
+          this.ctx.shadowBlur = 0;
+          this.ctx.globalAlpha = 1.0;
+        }
+
+        render(dataPoints, startTime, timeWindow, isHovered, isOtherHovered) {
+          this.drawGrid();
+          this.drawLabels();
+          this.drawData(
+            dataPoints,
+            startTime,
+            timeWindow,
+            isHovered,
+            isOtherHovered,
+          );
+        }
       }
 
       class RuuviChart {
-          constructor() {
-              this.canvas = document.getElementById('chart');
-              this.ctx = this.canvas.getContext('2d');
-              this.data = new Map();
-              this.colors = ['#4a9eff', '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7'];
-              this.range = 'day';
-              this.bucketSize = 3600; // 1 hour in seconds default
-              this.aggregated = false;
-              this.ws = null;
-              this.latestReadings = new Map();
-              this.hoveredSensor = null;
-              this.isAdmin = false;
-              this.adminToken = null;
-              this.sensorNames = new Map();
+        constructor() {
+          this.canvas = document.getElementById("chart");
+          this.ctx = this.canvas.getContext("2d");
+          this.data = new Map();
+          this.colors = [
+            "#4a9eff",
+            "#ff6b6b",
+            "#4ecdc4",
+            "#45b7d1",
+            "#96ceb4",
+            "#ffeaa7",
+          ];
+          this.range = "day";
+          this.bucketSize = 3600; // 1 hour in seconds default
+          this.aggregated = false;
+          this.ws = null;
+          this.latestReadings = new Map();
+          this.hoveredSensor = null;
+          this.isAdmin = false;
+          this.adminToken = null;
+          this.sensorNames = new Map();
 
-              // Performance optimization flags
-              this.needsRender = false;
-              this.isRendering = false;
-              this.lastRenderTime = 0;
-              this.renderThrottleMs = 16; // ~60fps
+          // Performance optimization flags
+          this.needsRender = false;
+          this.isRendering = false;
+          this.lastRenderTime = 0;
+          this.renderThrottleMs = 16; // ~60fps
 
-              // Debounced methods
-              this.debouncedRender = this.debounce(() => this.performRender(), 100);
-              this.throttledLatestUpdate = this.throttle((data) => this.performLatestUpdate(data), 250);
+          // Debounced methods
+          this.debouncedRender = this.debounce(() => this.performRender(), 100);
+          this.throttledLatestUpdate = this.throttle(
+            (data) => this.performLatestUpdate(data),
+            250,
+          );
 
-              this.setupWebSocket();
-              this.setupControls();
+          this.setupWebSocket();
+          this.setupControls();
+          this.setupCanvas();
+          this.scheduleRender();
+
+          // ZERO POLLING: All updates are event-driven from server
+          // Latest readings are pushed immediately when new data arrives
+          this.connectionAttempts = 0;
+
+          console.log("🚀 ZERO POLLING CLIENT INITIALIZED");
+          console.log(
+            "📡 Real-time updates: MQTT → Server → WebSocket → Chart",
+          );
+          console.log(
+            "🚫 No timers, no polling, pure event-driven architecture",
+          );
+
+          // Optimized resize handler
+          window.addEventListener(
+            "resize",
+            this.debounce(() => {
               this.setupCanvas();
               this.scheduleRender();
+            }, 250),
+          );
+        }
 
-              // ZERO POLLING: All updates are event-driven from server
-              // Latest readings are pushed immediately when new data arrives
-              this.connectionAttempts = 0;
-              
-              console.log('🚀 ZERO POLLING CLIENT INITIALIZED');
-              console.log('📡 Real-time updates: MQTT → Server → WebSocket → Chart');
-              console.log('🚫 No timers, no polling, pure event-driven architecture');
+        setupWebSocket() {
+          const protocol = location.protocol === "https:" ? "wss:" : "ws:";
+          this.ws = new WebSocket(`${protocol}//${location.host}`);
+          this.connectionAttempts = (this.connectionAttempts || 0) + 1;
 
-              // Optimized resize handler
-              window.addEventListener('resize', this.debounce(() => {
-                  this.setupCanvas();
-                  this.scheduleRender();
-              }, 250));
+          this.ws.onopen = () => {
+            console.log(
+              "🟢 ZERO POLLING: WebSocket connected - pure event-driven updates",
+            );
+            document.getElementById("status").textContent = "Connected";
+            this.connectionAttempts = 0;
+
+            // Initial data load only - no periodic requests
+            this.ws.send(
+              JSON.stringify({ type: "getData", timeRange: this.range }),
+            );
+            this.ws.send(JSON.stringify({ type: "getSensorNames" }));
+            // Note: Latest readings will be pushed automatically when data arrives
+          };
+
+          this.ws.onmessage = (event) => {
+            try {
+              const msg = JSON.parse(event.data);
+              this.handleServerMessage(msg);
+            } catch (error) {
+              console.error("Failed to parse WebSocket message:", error);
+            }
+          };
+
+          this.ws.onerror = (error) => {
+            console.error("WebSocket error:", error);
+            document.getElementById("status").textContent = "Connection Error";
+          };
+
+          this.ws.onclose = (event) => {
+            console.log("🔴 WebSocket disconnected");
+            document.getElementById("status").textContent = "Disconnected";
+
+            // Smart reconnection with exponential backoff
+            const delay = Math.min(
+              1000 * Math.pow(2, this.connectionAttempts),
+              30000,
+            );
+            console.log(
+              `🔄 Reconnecting in ${delay}ms (attempt ${this.connectionAttempts})`,
+            );
+            setTimeout(() => this.setupWebSocket(), delay);
+          };
+        }
+
+        handleServerMessage(msg) {
+          // ZERO POLLING: Handle all server-driven messages
+          switch (msg.type) {
+            case "historicalData":
+              this.bucketSize = msg.bucketSize || 3600;
+              this.aggregated = msg.aggregated || false;
+              this.loadData(msg.data);
+              console.log(
+                `📊 Loaded ${msg.data.length} historical data points (${msg.timeRange})`,
+              );
+              break;
+
+            case "sensorData":
+              this.handleRealTimeUpdate(msg.data);
+              break;
+
+            case "latestReadings":
+              this.loadLatestReadings(msg.data);
+              console.log(
+                `📋 Updated latest readings for ${msg.data.length} sensors`,
+              );
+              break;
+
+            case "bucketUpdate":
+              this.handleBucketUpdate(msg.data);
+              break;
+
+            case "adminAuthResult":
+              this.handleAdminAuthResult(msg);
+              break;
+
+            case "sensorNames":
+              this.loadSensorNames(msg.data);
+              break;
+
+            case "sensorNameSet":
+            case "sensorNameDeleted":
+              this.renderLatestReadings();
+              break;
+
+            default:
+              console.warn("Unknown message type:", msg.type);
           }
+        }
 
-          setupWebSocket() {
-              const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-              this.ws = new WebSocket(`${protocol}//${location.host}`);
-              this.connectionAttempts = (this.connectionAttempts || 0) + 1;
+        setupControls() {
+          document.querySelectorAll(".btn[data-range]").forEach((btn) => {
+            btn.addEventListener("click", () => {
+              const newRange = btn.dataset.range;
+              if (newRange === this.range) return; // No change needed
 
-              this.ws.onopen = () => {
-                  console.log('🟢 ZERO POLLING: WebSocket connected - pure event-driven updates');
-                  document.getElementById('status').textContent = 'Connected';
-                  this.connectionAttempts = 0;
-                  
-                  // Initial data load only - no periodic requests
-                  this.ws.send(JSON.stringify({ type: 'getData', timeRange: this.range }));
-                  this.ws.send(JSON.stringify({ type: 'getSensorNames' }));
-                  // Note: Latest readings will be pushed automatically when data arrives
-              };
+              document.querySelector(".btn.active")?.classList.remove("active");
+              btn.classList.add("active");
+              this.range = newRange;
 
-              this.ws.onmessage = (event) => {
-                  try {
-                      const msg = JSON.parse(event.data);
-                      this.handleServerMessage(msg);
-                  } catch (error) {
-                      console.error('Failed to parse WebSocket message:', error);
-                  }
-              };
+              console.log(`📅 Time range changed to: ${this.range}`);
 
-              this.ws.onerror = (error) => {
-                  console.error('WebSocket error:', error);
-                  document.getElementById('status').textContent = 'Connection Error';
-              };
-
-              this.ws.onclose = (event) => {
-                  console.log('🔴 WebSocket disconnected');
-                  document.getElementById('status').textContent = 'Disconnected';
-                  
-                  // Smart reconnection with exponential backoff
-                  const delay = Math.min(1000 * Math.pow(2, this.connectionAttempts), 30000);
-                  console.log(`🔄 Reconnecting in ${delay}ms (attempt ${this.connectionAttempts})`);
-                  setTimeout(() => this.setupWebSocket(), delay);
-              };
-          }
-
-          handleServerMessage(msg) {
-              // ZERO POLLING: Handle all server-driven messages
-              switch (msg.type) {
-                  case 'historicalData':
-                      this.bucketSize = msg.bucketSize || 3600;
-                      this.aggregated = msg.aggregated || false;
-                      this.loadData(msg.data);
-                      console.log(`📊 Loaded ${msg.data.length} historical data points (${msg.timeRange})`);
-                      break;
-                      
-                  case 'sensorData':
-                      this.handleRealTimeUpdate(msg.data);
-                      break;
-                      
-                  case 'latestReadings':
-                      this.loadLatestReadings(msg.data);
-                      console.log(`📋 Updated latest readings for ${msg.data.length} sensors`);
-                      break;
-                      
-                  case 'bucketUpdate':
-                      this.handleBucketUpdate(msg.data);
-                      break;
-                      
-                  case 'adminAuthResult':
-                      this.handleAdminAuthResult(msg);
-                      break;
-                      
-                  case 'sensorNames':
-                      this.loadSensorNames(msg.data);
-                      break;
-                      
-                  case 'sensorNameSet':
-                  case 'sensorNameDeleted':
-                      this.renderLatestReadings();
-                      break;
-                      
-                  default:
-                      console.warn('Unknown message type:', msg.type);
+              if (this.ws?.readyState === WebSocket.OPEN) {
+                // ZERO POLLING: Only request data when range changes
+                this.ws.send(
+                  JSON.stringify({ type: "getData", timeRange: this.range }),
+                );
               }
-          }
+            });
+          });
 
-          setupControls() {
-              document.querySelectorAll('.btn[data-range]').forEach(btn => {
-                  btn.addEventListener('click', () => {
-                      const newRange = btn.dataset.range;
-                      if (newRange === this.range) return; // No change needed
-                      
-                      document.querySelector('.btn.active')?.classList.remove('active');
-                      btn.classList.add('active');
-                      this.range = newRange;
-                      
-                      console.log(`📅 Time range changed to: ${this.range}`);
-                      
-                      if (this.ws?.readyState === WebSocket.OPEN) {
-                          // ZERO POLLING: Only request data when range changes
-                          this.ws.send(JSON.stringify({ type: 'getData', timeRange: this.range }));
-                      }
-                  });
-              });
+          // Setup admin button
+          document.getElementById("admin-btn").addEventListener("click", () => {
+            if (this.isAdmin) {
+              this.logout();
+            } else {
+              this.promptAdminAuth();
+            }
+          });
+        }
 
-              // Setup admin button
-              document.getElementById('admin-btn').addEventListener('click', () => {
-                  if (this.isAdmin) {
-                      this.logout();
-                  } else {
-                      this.promptAdminAuth();
-                  }
-              });
-          }
+        setupCanvas() {
+          const rect = this.canvas.getBoundingClientRect();
+          this.canvas.width = rect.width * devicePixelRatio;
+          this.canvas.height = rect.height * devicePixelRatio;
+          this.ctx.scale(devicePixelRatio, devicePixelRatio);
+          this.canvas.style.width = rect.width + "px";
+          this.canvas.style.height = rect.height + "px";
 
-          setupCanvas() {
-              const rect = this.canvas.getBoundingClientRect();
-              this.canvas.width = rect.width * devicePixelRatio;
-              this.canvas.height = rect.height * devicePixelRatio;
-              this.ctx.scale(devicePixelRatio, devicePixelRatio);
-              this.canvas.style.width = rect.width + 'px';
-              this.canvas.style.height = rect.height + 'px';
-              
-              // Add mouse leave event to reset highlighting when leaving the main content area
-              const mainContent = document.querySelector('.main-content');
-              if (mainContent && !mainContent.hasAttribute('data-mouse-events-setup')) {
-                  mainContent.setAttribute('data-mouse-events-setup', 'true');
-                  mainContent.addEventListener('mouseleave', () => {
-                      if (this.hoveredSensor !== null) {
-                          this.hoveredSensor = null;
-                          this.scheduleRender();
-                      }
-                      
-                      // Process any pending card updates when leaving the entire interface
-                      if (this.pendingCardUpdates && this.pendingCardUpdates.size > 0) {
-                          const pendingSensors = Array.from(this.pendingCardUpdates);
-                          this.pendingCardUpdates.clear();
-                          // Delay updates slightly to ensure smooth transition
-                          setTimeout(() => {
-                              pendingSensors.forEach(sensorMac => this.updateSensorCard(sensorMac));
-                          }, 50);
-                      }
-                  });
-                  
-                  // Add touch events for mobile devices
-                  mainContent.addEventListener('touchend', () => {
-                      if (this.hoveredSensor !== null) {
-                          this.hoveredSensor = null;
-                          this.scheduleRender();
-                      }
-                  });
-                  
-                  mainContent.addEventListener('touchcancel', () => {
-                      if (this.hoveredSensor !== null) {
-                          this.hoveredSensor = null;
-                          this.scheduleRender();
-                      }
-                  });
-              }
-          }
-
-          loadData(rows) {
-              this.data.clear();
-              rows.forEach(row => {
-                  // Normalize MAC address to lowercase
-                  const normalizedMac = row.sensorMac.toLowerCase();
-                  if (!this.data.has(normalizedMac)) {
-                      this.data.set(normalizedMac, []);
-                  }
-
-                  if (this.aggregated) {
-                      // Handle aggregated data
-                      this.data.get(normalizedMac).push({
-                          timestamp: row.timestamp,
-                          temperature: row.avgTemperature,
-                          minTemperature: row.minTemperature,
-                          maxTemperature: row.maxTemperature,
-                          humidity: row.avgHumidity,
-                          minHumidity: row.minHumidity,
-                          maxHumidity: row.maxHumidity,
-                          dataPoints: row.dataPoints,
-                          isAggregated: true
-                      });
-                  } else {
-                      // Handle raw data
-                      this.data.get(normalizedMac).push({
-                          timestamp: row.timestamp,
-                          temperature: row.temperature,
-                          humidity: row.humidity,
-                          isAggregated: false
-                      });
-                  }
-              });
-              this.scheduleRender();
-          }
-
-          handleRealTimeUpdate(data) {
-              // ZERO POLLING: Handle real-time updates with fixed time window
-              const normalizedMac = data.sensorMac.toLowerCase();
-              const now = Math.floor(Date.now() / 1000);
-              const timeWindow = this.getTimeWindow();
-              const windowStart = now - timeWindow;
-
-              console.log(`📊 Real-time update: ${normalizedMac} ${data.temperature}°C (${this.range} view)`);
-
-              // Only update chart if data point affects current time window
-              if (data.timestamp >= windowStart) {
-                  this.addRealTimeDataPoint(data);
-                  this.scheduleRender();
+          // Add mouse leave event to reset highlighting when leaving the main content area
+          const mainContent = document.querySelector(".main-content");
+          if (
+            mainContent &&
+            !mainContent.hasAttribute("data-mouse-events-setup")
+          ) {
+            mainContent.setAttribute("data-mouse-events-setup", "true");
+            mainContent.addEventListener("mouseleave", () => {
+              if (this.hoveredSensor !== null) {
+                this.hoveredSensor = null;
+                this.scheduleRender();
               }
 
-              // Always update latest reading for sidebar (regardless of time window)
-              this.updateLatestReading(data);
-          }
-
-          addRealTimeDataPoint(data) {
-              // Normalize MAC address to lowercase
-              const normalizedMac = data.sensorMac.toLowerCase();
-              if (!this.data.has(normalizedMac)) {
-                  this.data.set(normalizedMac, []);
-              }
-
-              const sensorData = this.data.get(normalizedMac);
-              const now = Math.floor(Date.now() / 1000);
-              const timeWindow = this.getTimeWindow();
-
-              if (this.aggregated && sensorData.length > 0) {
-                  // Find the current bucket for real-time updates
-                  const bucketStart = Math.floor(data.timestamp / this.bucketSize) * this.bucketSize;
-                  const lastBucket = sensorData[sensorData.length - 1];
-
-                  if (lastBucket && lastBucket.timestamp === bucketStart) {
-                      // Update existing current bucket with running average
-                      const totalPoints = lastBucket.dataPoints + 1;
-                      lastBucket.temperature = ((lastBucket.temperature * lastBucket.dataPoints) + data.temperature) / totalPoints;
-                      if (data.humidity !== null && lastBucket.humidity !== null) {
-                          lastBucket.humidity = ((lastBucket.humidity * lastBucket.dataPoints) + data.humidity) / totalPoints;
-                      }
-                      lastBucket.dataPoints = totalPoints;
-                      lastBucket.maxTemperature = Math.max(lastBucket.maxTemperature || data.temperature, data.temperature);
-                      lastBucket.minTemperature = Math.min(lastBucket.minTemperature || data.temperature, data.temperature);
-                  } else if (bucketStart >= lastBucket?.timestamp) {
-                      // Only add new bucket if it's newer than the last one (edge of time window)
-                      const newBucket = {
-                          timestamp: bucketStart,
-                          temperature: data.temperature,
-                          minTemperature: data.temperature,
-                          maxTemperature: data.temperature,
-                          humidity: data.humidity,
-                          minHumidity: data.humidity,
-                          maxHumidity: data.humidity,
-                          dataPoints: 1,
-                          isAggregated: true
-                      };
-                      sensorData.push(newBucket);
-
-                      // Keep only data within time window (maintain fixed window)
-                      const cutoff = now - timeWindow;
-                      while (sensorData.length > 0 && sensorData[0].timestamp < cutoff) {
-                          sensorData.shift();
-                      }
-                  }
-              } else {
-                  // Raw data mode - only add if it's at the edge of our time window
-                  const dataPoint = {
-                      timestamp: data.timestamp,
-                      temperature: data.temperature,
-                      humidity: data.humidity === null ? null : data.humidity,
-                      isAggregated: false
-                  };
-                  
-                  // Insert at correct position (usually at the end for real-time data)
-                  const insertIndex = sensorData.findIndex(p => p.timestamp > data.timestamp);
-                  if (insertIndex === -1) {
-                      sensorData.push(dataPoint);
-                  } else {
-                      sensorData.splice(insertIndex, 0, dataPoint);
-                  }
-
-                  // Maintain fixed time window
-                  const cutoff = now - timeWindow;
-                  while (sensorData.length > 0 && sensorData[0].timestamp < cutoff) {
-                      sensorData.shift();
-                  }
-                  
-                  // Limit total points to prevent memory bloat
-                  const maxPoints = this.getMaxPointsForRange();
-                  if (sensorData.length > maxPoints) {
-                      sensorData.splice(0, sensorData.length - maxPoints);
-                  }
-              }
-          }
-
-          handleBucketUpdate(bucketData) {
-              // ZERO POLLING: Handle bucket updates from server
-              if (bucketData.timeRange !== this.range) {
-                  return; // Ignore updates for different time ranges
-              }
-
-              const normalizedMac = bucketData.sensorMac.toLowerCase();
-              console.log(`🪣 Bucket update: ${normalizedMac} (${bucketData.timeRange}) bucket ${new Date(bucketData.timestamp * 1000).toLocaleTimeString()}`);
-              
-              if (!this.data.has(normalizedMac)) {
-                  this.data.set(normalizedMac, []);
-              }
-
-              const sensorData = this.data.get(normalizedMac);
-              const bucket = bucketData.bucketData;
-
-              // Find and update the existing bucket or add new one
-              const bucketIndex = sensorData.findIndex(p => p.timestamp === bucket.timestamp);
-              
-              const bucketPoint = {
-                  timestamp: bucket.timestamp,
-                  temperature: bucket.avgTemperature,
-                  minTemperature: bucket.minTemperature,
-                  maxTemperature: bucket.maxTemperature,
-                  humidity: bucket.avgHumidity,
-                  minHumidity: bucket.minHumidity,
-                  maxHumidity: bucket.maxHumidity,
-                  dataPoints: bucket.dataPoints,
-                  isAggregated: true
-              };
-              
-              if (bucketIndex !== -1) {
-                  // Update existing bucket
-                  sensorData[bucketIndex] = bucketPoint;
-              } else {
-                  // Add new bucket at correct position
-                  const insertIndex = sensorData.findIndex(p => p.timestamp > bucket.timestamp);
-                  if (insertIndex === -1) {
-                      sensorData.push(bucketPoint);
-                  } else {
-                      sensorData.splice(insertIndex, 0, bucketPoint);
-                  }
-              }
-
-              this.scheduleRender();
-          }
-
-          getMaxPointsForRange() {
-              // Prevent memory bloat by limiting points per time range
-              const limits = {
-                  hour: 200,    // 5-min buckets = 12 per hour, raw data = ~200 points
-                  day: 500,     // 1-hour buckets = 24 per day, raw data = ~500 points  
-                  week: 300,    // 6-hour buckets = 28 per week
-                  month: 200,   // 1-day buckets = ~30 per month
-                  year: 400     // 30-day buckets = 12 per year
-              };
-              return limits[this.range] || 500;
-          }
-
-
-
-          getTimeWindow() {
-              const ranges = { hour: 1, day: 24, week: 168, month: 720, year: 8760 };
-              return ranges[this.range] * 60 * 60;
-          }
-
-          formatTimeLabel(timestamp, range) {
-              const date = new Date(timestamp * 1000);
-
-              switch(range) {
-                  case 'hour':
-                      return date.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
-                  case 'day':
-                      return date.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
-                  case 'week':
-                      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' +
-                             date.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit' });
-                  case 'month':
-                      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                  case 'year':
-                      return date.toLocaleDateString('en-US', { month: 'short' });
-                  default:
-                      return date.toLocaleTimeString('en-US', { hour12: false });
-              }
-          }
-
-          scheduleRender() {
-              if (!this.needsRender) {
-                  this.needsRender = true;
-                  requestAnimationFrame(() => this.performRender());
-              }
-          }
-
-          performRender() {
-              if (!this.needsRender || this.isRendering) return;
-
-              const now = performance.now();
-              if (now - this.lastRenderTime < this.renderThrottleMs) {
-                  requestAnimationFrame(() => this.performRender());
-                  return;
-              }
-
-              this.isRendering = true;
-              this.needsRender = false;
-              this.lastRenderTime = now;
-
-              try {
-                  this.render();
-              } catch (error) {
-                  console.error('Render error:', error);
-              } finally {
-                  this.isRendering = false;
-              }
-          }
-
-          // Data preparation helper functions
-          prepareChartData(startTime, timeWindow) {
-              const preparedData = new Map();
-              this.data.forEach((points, sensorMac) => {
-                  const filteredPoints = points.filter(p => 
-                      p.timestamp >= startTime
+              // Process any pending card updates when leaving the entire interface
+              if (this.pendingCardUpdates && this.pendingCardUpdates.size > 0) {
+                const pendingSensors = Array.from(this.pendingCardUpdates);
+                this.pendingCardUpdates.clear();
+                // Delay updates slightly to ensure smooth transition
+                setTimeout(() => {
+                  pendingSensors.forEach((sensorMac) =>
+                    this.updateSensorCard(sensorMac),
                   );
-                  if (filteredPoints.length > 0) {
-                      preparedData.set(sensorMac, filteredPoints);
+                }, 50);
+              }
+            });
+
+            // Add touch events for mobile devices
+            mainContent.addEventListener("touchend", () => {
+              if (this.hoveredSensor !== null) {
+                this.hoveredSensor = null;
+                this.scheduleRender();
+              }
+            });
+
+            mainContent.addEventListener("touchcancel", () => {
+              if (this.hoveredSensor !== null) {
+                this.hoveredSensor = null;
+                this.scheduleRender();
+              }
+            });
+          }
+        }
+
+        loadData(rows) {
+          this.data.clear();
+          rows.forEach((row) => {
+            // Normalize MAC address to lowercase
+            const normalizedMac = row.sensorMac.toLowerCase();
+            if (!this.data.has(normalizedMac)) {
+              this.data.set(normalizedMac, []);
+            }
+
+            if (this.aggregated) {
+              // Handle aggregated data
+              this.data.get(normalizedMac).push({
+                timestamp: row.timestamp,
+                temperature: row.avgTemperature,
+                minTemperature: row.minTemperature,
+                maxTemperature: row.maxTemperature,
+                humidity: row.avgHumidity,
+                minHumidity: row.minHumidity,
+                maxHumidity: row.maxHumidity,
+                dataPoints: row.dataPoints,
+                isAggregated: true,
+              });
+            } else {
+              // Handle raw data
+              this.data.get(normalizedMac).push({
+                timestamp: row.timestamp,
+                temperature: row.temperature,
+                humidity: row.humidity,
+                isAggregated: false,
+              });
+            }
+          });
+          this.scheduleRender();
+        }
+
+        handleRealTimeUpdate(data) {
+          // ZERO POLLING: Handle real-time updates with fixed time window
+          const normalizedMac = data.sensorMac.toLowerCase();
+          const now = Math.floor(Date.now() / 1000);
+          const timeWindow = this.getTimeWindow();
+          const windowStart = now - timeWindow;
+
+          console.log(
+            `📊 Real-time update: ${normalizedMac} ${data.temperature}°C (${this.range} view)`,
+          );
+
+          // Only update chart if data point affects current time window
+          if (data.timestamp >= windowStart) {
+            this.addRealTimeDataPoint(data);
+            this.scheduleRender();
+          }
+
+          // Always update latest reading for sidebar (regardless of time window)
+          this.updateLatestReading(data);
+        }
+
+        addRealTimeDataPoint(data) {
+          // Normalize MAC address to lowercase
+          const normalizedMac = data.sensorMac.toLowerCase();
+          if (!this.data.has(normalizedMac)) {
+            this.data.set(normalizedMac, []);
+          }
+
+          const sensorData = this.data.get(normalizedMac);
+          const now = Math.floor(Date.now() / 1000);
+          const timeWindow = this.getTimeWindow();
+
+          if (this.aggregated && sensorData.length > 0) {
+            // Find the current bucket for real-time updates
+            const bucketStart =
+              Math.floor(data.timestamp / this.bucketSize) * this.bucketSize;
+            const lastBucket = sensorData[sensorData.length - 1];
+
+            if (lastBucket && lastBucket.timestamp === bucketStart) {
+              // Update existing current bucket with running average
+              const totalPoints = lastBucket.dataPoints + 1;
+              lastBucket.temperature =
+                (lastBucket.temperature * lastBucket.dataPoints +
+                  data.temperature) /
+                totalPoints;
+              if (data.humidity !== null && lastBucket.humidity !== null) {
+                lastBucket.humidity =
+                  (lastBucket.humidity * lastBucket.dataPoints +
+                    data.humidity) /
+                  totalPoints;
+              }
+              lastBucket.dataPoints = totalPoints;
+              lastBucket.maxTemperature = Math.max(
+                lastBucket.maxTemperature || data.temperature,
+                data.temperature,
+              );
+              lastBucket.minTemperature = Math.min(
+                lastBucket.minTemperature || data.temperature,
+                data.temperature,
+              );
+            } else if (bucketStart >= lastBucket?.timestamp) {
+              // Only add new bucket if it's newer than the last one (edge of time window)
+              const newBucket = {
+                timestamp: bucketStart,
+                temperature: data.temperature,
+                minTemperature: data.temperature,
+                maxTemperature: data.temperature,
+                humidity: data.humidity,
+                minHumidity: data.humidity,
+                maxHumidity: data.humidity,
+                dataPoints: 1,
+                isAggregated: true,
+              };
+              sensorData.push(newBucket);
+
+              // Keep only data within time window (maintain fixed window)
+              const cutoff = now - timeWindow;
+              while (
+                sensorData.length > 0 &&
+                sensorData[0].timestamp < cutoff
+              ) {
+                sensorData.shift();
+              }
+            }
+          } else {
+            // Raw data mode - only add if it's at the edge of our time window
+            const dataPoint = {
+              timestamp: data.timestamp,
+              temperature: data.temperature,
+              humidity: data.humidity === null ? null : data.humidity,
+              isAggregated: false,
+            };
+
+            // Insert at correct position (usually at the end for real-time data)
+            const insertIndex = sensorData.findIndex(
+              (p) => p.timestamp > data.timestamp,
+            );
+            if (insertIndex === -1) {
+              sensorData.push(dataPoint);
+            } else {
+              sensorData.splice(insertIndex, 0, dataPoint);
+            }
+
+            // Maintain fixed time window
+            const cutoff = now - timeWindow;
+            while (sensorData.length > 0 && sensorData[0].timestamp < cutoff) {
+              sensorData.shift();
+            }
+
+            // Limit total points to prevent memory bloat
+            const maxPoints = this.getMaxPointsForRange();
+            if (sensorData.length > maxPoints) {
+              sensorData.splice(0, sensorData.length - maxPoints);
+            }
+          }
+        }
+
+        handleBucketUpdate(bucketData) {
+          // ZERO POLLING: Handle bucket updates from server
+          if (bucketData.timeRange !== this.range) {
+            return; // Ignore updates for different time ranges
+          }
+
+          const normalizedMac = bucketData.sensorMac.toLowerCase();
+          console.log(
+            `🪣 Bucket update: ${normalizedMac} (${bucketData.timeRange}) bucket ${new Date(bucketData.timestamp * 1000).toLocaleTimeString()}`,
+          );
+
+          if (!this.data.has(normalizedMac)) {
+            this.data.set(normalizedMac, []);
+          }
+
+          const sensorData = this.data.get(normalizedMac);
+          const bucket = bucketData.bucketData;
+
+          // Find and update the existing bucket or add new one
+          const bucketIndex = sensorData.findIndex(
+            (p) => p.timestamp === bucket.timestamp,
+          );
+
+          const bucketPoint = {
+            timestamp: bucket.timestamp,
+            temperature: bucket.avgTemperature,
+            minTemperature: bucket.minTemperature,
+            maxTemperature: bucket.maxTemperature,
+            humidity: bucket.avgHumidity,
+            minHumidity: bucket.minHumidity,
+            maxHumidity: bucket.maxHumidity,
+            dataPoints: bucket.dataPoints,
+            isAggregated: true,
+          };
+
+          if (bucketIndex !== -1) {
+            // Update existing bucket
+            sensorData[bucketIndex] = bucketPoint;
+          } else {
+            // Add new bucket at correct position
+            const insertIndex = sensorData.findIndex(
+              (p) => p.timestamp > bucket.timestamp,
+            );
+            if (insertIndex === -1) {
+              sensorData.push(bucketPoint);
+            } else {
+              sensorData.splice(insertIndex, 0, bucketPoint);
+            }
+          }
+
+          this.scheduleRender();
+        }
+
+        getMaxPointsForRange() {
+          // Prevent memory bloat by limiting points per time range
+          const limits = {
+            hour: 200, // 5-min buckets = 12 per hour, raw data = ~200 points
+            day: 500, // 1-hour buckets = 24 per day, raw data = ~500 points
+            week: 300, // 6-hour buckets = 28 per week
+            month: 200, // 1-day buckets = ~30 per month
+            year: 400, // 30-day buckets = 12 per year
+          };
+          return limits[this.range] || 500;
+        }
+
+        getTimeWindow() {
+          const ranges = {
+            hour: 1,
+            day: 24,
+            week: 168,
+            month: 720,
+            year: 8760,
+          };
+          return ranges[this.range] * 60 * 60;
+        }
+
+        formatTimeLabel(timestamp, range) {
+          const date = new Date(timestamp * 1000);
+
+          switch (range) {
+            case "hour":
+              return date.toLocaleTimeString("en-US", {
+                hour12: false,
+                hour: "2-digit",
+                minute: "2-digit",
+              });
+            case "day":
+              return date.toLocaleTimeString("en-US", {
+                hour12: false,
+                hour: "2-digit",
+                minute: "2-digit",
+              });
+            case "week":
+              return (
+                date.toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                }) +
+                " " +
+                date.toLocaleTimeString("en-US", {
+                  hour12: false,
+                  hour: "2-digit",
+                })
+              );
+            case "month":
+              return date.toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+              });
+            case "year":
+              return date.toLocaleDateString("en-US", { month: "short" });
+            default:
+              return date.toLocaleTimeString("en-US", { hour12: false });
+          }
+        }
+
+        scheduleRender() {
+          if (!this.needsRender) {
+            this.needsRender = true;
+            requestAnimationFrame(() => this.performRender());
+          }
+        }
+
+        performRender() {
+          if (!this.needsRender || this.isRendering) return;
+
+          const now = performance.now();
+          if (now - this.lastRenderTime < this.renderThrottleMs) {
+            requestAnimationFrame(() => this.performRender());
+            return;
+          }
+
+          this.isRendering = true;
+          this.needsRender = false;
+          this.lastRenderTime = now;
+
+          try {
+            this.render();
+          } catch (error) {
+            console.error("Render error:", error);
+          } finally {
+            this.isRendering = false;
+          }
+        }
+
+        // Data preparation helper functions
+        prepareChartData(startTime, timeWindow) {
+          const preparedData = new Map();
+          this.data.forEach((points, sensorMac) => {
+            const filteredPoints = points.filter(
+              (p) => p.timestamp >= startTime,
+            );
+            if (filteredPoints.length > 0) {
+              preparedData.set(sensorMac, filteredPoints);
+            }
+          });
+          return preparedData;
+        }
+
+        render() {
+          const rect = this.canvas.getBoundingClientRect();
+          const width = rect.width;
+          const height = rect.height;
+
+          this.ctx.clearRect(0, 0, width, height);
+
+          if (this.data.size === 0) {
+            return;
+          }
+
+          const now = Math.floor(Date.now() / 1000);
+          const timeWindow = this.getTimeWindow();
+          const startTime = now - timeWindow;
+
+          // Calculate data bounds
+          let dataMinTemp = Infinity,
+            dataMaxTemp = -Infinity;
+          let minHum = Infinity,
+            maxHum = -Infinity;
+          let pointsInWindow = 0;
+
+          this.data.forEach((points, sensorMac) => {
+            points.forEach((p) => {
+              if (this.aggregated || p.timestamp >= startTime) {
+                pointsInWindow++;
+                if (p.isAggregated) {
+                  dataMinTemp = Math.min(
+                    dataMinTemp,
+                    p.minTemperature || p.temperature,
+                  );
+                  dataMaxTemp = Math.max(
+                    dataMaxTemp,
+                    p.maxTemperature || p.temperature,
+                  );
+                  if (p.minHumidity !== null && p.maxHumidity !== null) {
+                    minHum = Math.min(minHum, p.minHumidity);
+                    maxHum = Math.max(maxHum, p.maxHumidity);
                   }
-              });
-              return preparedData;
-          }
-
-
-
-          render() {
-              const rect = this.canvas.getBoundingClientRect();
-              const width = rect.width;
-              const height = rect.height;
-
-              this.ctx.clearRect(0, 0, width, height);
-
-              if (this.data.size === 0) {
-                  return;
+                } else {
+                  dataMinTemp = Math.min(dataMinTemp, p.temperature);
+                  dataMaxTemp = Math.max(dataMaxTemp, p.temperature);
+                  if (p.humidity !== null && p.humidity !== undefined) {
+                    minHum = Math.min(minHum, p.humidity);
+                    maxHum = Math.max(maxHum, p.humidity);
+                  }
+                }
               }
+            });
+          });
 
-              const now = Math.floor(Date.now() / 1000);
-              const timeWindow = this.getTimeWindow();
-              const startTime = now - timeWindow;
-
-              // Calculate data bounds
-              let dataMinTemp = Infinity, dataMaxTemp = -Infinity;
-              let minHum = Infinity, maxHum = -Infinity;
-              let pointsInWindow = 0;
-
-              this.data.forEach((points, sensorMac) => {
-                  points.forEach(p => {
-                      if (this.aggregated || p.timestamp >= startTime) {
-                          pointsInWindow++;
-                          if (p.isAggregated) {
-                              dataMinTemp = Math.min(dataMinTemp, p.minTemperature || p.temperature);
-                              dataMaxTemp = Math.max(dataMaxTemp, p.maxTemperature || p.temperature);
-                              if (p.minHumidity !== null && p.maxHumidity !== null) {
-                                  minHum = Math.min(minHum, p.minHumidity);
-                                  maxHum = Math.max(maxHum, p.maxHumidity);
-                              }
-                          } else {
-                              dataMinTemp = Math.min(dataMinTemp, p.temperature);
-                              dataMaxTemp = Math.max(dataMaxTemp, p.temperature);
-                              if (p.humidity !== null && p.humidity !== undefined) {
-                                  minHum = Math.min(minHum, p.humidity);
-                                  maxHum = Math.max(maxHum, p.humidity);
-                              }
-                          }
-                      }
-                  });
-              });
-
-              if (pointsInWindow === 0) {
-                  return;
-              }
-
-              // Set temperature range (expandable from 0-25°C default)
-              const minTemp = Math.min(0, dataMinTemp !== Infinity ? dataMinTemp : 0);
-              const maxTemp = Math.max(25, dataMaxTemp !== -Infinity ? dataMaxTemp : 25);
-
-              // Fixed humidity range
-              const humMin = 0;
-              const humMax = 100;
-
-              const padding = 80;
-              const chartWidth = width - padding * 2;
-              const chartHeight = height - padding * 2;
-
-              // Split chart area: temperature (top 60%) and humidity (bottom 40%)
-              const tempChartHeight = Math.floor(chartHeight * 0.6);
-              const humChartHeight = Math.floor(chartHeight * 0.4);
-              const humChartTop = padding + tempChartHeight;
-
-              // Initialize chart components
-              if (!this.temperatureChart) {
-                  this.temperatureChart = new ChartComponent(this.canvas, this.ctx, {
-                      type: 'temperature',
-                      area: { x: padding, y: padding, width: chartWidth, height: tempChartHeight },
-                      scale: { min: minTemp, max: maxTemp },
-                      color: '#4a9eff',
-                      opacity: 1.0,
-                      lineWidth: 3,
-                      lineStyle: 'solid',
-                      unit: '°C',
-                      gridLines: 5,
-                      showGrid: true,
-                      showLabels: true
-                  });
-              }
-
-              if (!this.humidityChart) {
-                  this.humidityChart = new ChartComponent(this.canvas, this.ctx, {
-                      type: 'humidity',
-                      area: { x: padding, y: humChartTop, width: chartWidth, height: humChartHeight },
-                      scale: { min: humMin, max: humMax },
-                      color: '#ff6b6b',
-                      opacity: 0.9,
-                      lineWidth: 3,
-                      lineStyle: 'dashed',
-                      unit: '%',
-                      gridLines: 4,
-                      showGrid: true,
-                      showLabels: true
-                  });
-</edits>
-              }
-
-              // Update chart configurations with current data bounds
-              this.temperatureChart.config.scale = { min: minTemp, max: maxTemp };
-              this.temperatureChart.config.area = { x: padding, y: padding, width: chartWidth, height: tempChartHeight };
-              
-              this.humidityChart.config.scale = { min: humMin, max: humMax };
-              this.humidityChart.config.area = { x: padding, y: humChartTop, width: chartWidth, height: humChartHeight };
-
-              // Draw main axes
-              this.ctx.strokeStyle = '#444';
-              this.ctx.lineWidth = 1;
-              this.ctx.beginPath();
-              this.ctx.moveTo(padding, padding);
-              this.ctx.lineTo(padding, height - padding);
-              this.ctx.lineTo(width - padding, height - padding);
-              this.ctx.stroke();
-
-              // Draw separator line between temperature and humidity
-              this.ctx.strokeStyle = '#555';
-              this.ctx.beginPath();
-              this.ctx.moveTo(padding, humChartTop);
-              this.ctx.lineTo(width - padding, humChartTop);
-              this.ctx.stroke();
-
-              // Draw time axis labels
-              this.ctx.fillStyle = '#888';
-              this.ctx.font = '10px sans-serif';
-              const timeSteps = 6;
-
-              for (let i = 0; i <= timeSteps; i++) {
-                  const timeProgress = i / timeSteps;
-                  const timestamp = startTime + (timeWindow * timeProgress);
-                  const x = padding + (chartWidth * timeProgress);
-                  const label = this.formatTimeLabel(timestamp, this.range);
-
-                  this.ctx.save();
-                  this.ctx.translate(x, height - padding + 15);
-                  this.ctx.rotate(-Math.PI / 4);
-                  this.ctx.fillText(label, 0, 0);
-                  this.ctx.restore();
-
-                  // Draw tick marks
-                  this.ctx.strokeStyle = '#444';
-                  this.ctx.beginPath();
-                  this.ctx.moveTo(x, height - padding);
-                  this.ctx.lineTo(x, height - padding + 5);
-                  this.ctx.stroke();
-              }
-
-              // Prepare chart data
-              const preparedData = this.prepareChartData(startTime, timeWindow);
-
-              // Render each sensor's data using both chart components
-              let colorIndex = 0;
-              preparedData.forEach((points, sensorMac) => {
-                  const baseColor = this.colors[colorIndex % this.colors.length];
-                  const isHovered = this.hoveredSensor === sensorMac;
-                  const isOtherHovered = this.hoveredSensor && this.hoveredSensor !== sensorMac;
-
-                  // Update colors for this sensor
-                  this.temperatureChart.config.color = baseColor;
-                  this.humidityChart.config.color = baseColor;
-
-                  // Render temperature chart
-                  this.temperatureChart.render(points, startTime, timeWindow, isHovered, isOtherHovered);
-                  
-                  // Render humidity chart
-                  this.humidityChart.render(points, startTime, timeWindow, isHovered, isOtherHovered);
-
-                  colorIndex++;
-              });
+          if (pointsInWindow === 0) {
+            return;
           }
 
-          getOldestTimestamp() {
-              let oldest = Infinity;
-              this.data.forEach(points => {
-                  points.forEach(p => {
-                      oldest = Math.min(oldest, p.timestamp);
-                  });
-              });
-              return oldest;
+          // Set temperature range (expandable from 0-25°C default)
+          const minTemp = Math.min(
+            0,
+            dataMinTemp !== Infinity ? dataMinTemp : 0,
+          );
+          const maxTemp = Math.max(
+            25,
+            dataMaxTemp !== -Infinity ? dataMaxTemp : 25,
+          );
+
+          // Fixed humidity range
+          const humMin = 0;
+          const humMax = 100;
+
+          const padding = 80;
+          const chartWidth = width - padding * 2;
+          const chartHeight = height - padding * 2;
+
+          // Split chart area: temperature (top 60%) and humidity (bottom 40%)
+          const tempChartHeight = Math.floor(chartHeight * 0.6);
+          const humChartHeight = Math.floor(chartHeight * 0.4);
+          const humChartTop = padding + tempChartHeight;
+
+          // Initialize chart components
+          if (!this.temperatureChart) {
+            this.temperatureChart = new ChartComponent(this.canvas, this.ctx, {
+              type: "temperature",
+              area: {
+                x: padding,
+                y: padding,
+                width: chartWidth,
+                height: tempChartHeight,
+              },
+              scale: { min: minTemp, max: maxTemp },
+              color: "#4a9eff",
+              opacity: 1.0,
+              lineWidth: 3,
+              lineStyle: "solid",
+              unit: "°C",
+              gridLines: 5,
+              showGrid: true,
+              showLabels: true,
+            });
           }
 
-          getDataTimeSpan() {
-              let oldest = Infinity, newest = -Infinity;
-              this.data.forEach(points => {
-                  points.forEach(p => {
-                      oldest = Math.min(oldest, p.timestamp);
-                      newest = Math.max(newest, p.timestamp);
-                  });
-              });
-              return Math.max(newest - oldest, this.bucketSize); // Minimum bucket size span
+          if (!this.humidityChart) {
+            this.humidityChart = new ChartComponent(this.canvas, this.ctx, {
+              type: "humidity",
+              area: {
+                x: padding,
+                y: humChartTop,
+                width: chartWidth,
+                height: humChartHeight,
+              },
+              scale: { min: humMin, max: humMax },
+              color: "#ff6b6b",
+              opacity: 0.9,
+              lineWidth: 3,
+              lineStyle: "dashed",
+              unit: "%",
+              gridLines: 4,
+              showGrid: true,
+              showLabels: true,
+            });
           }
 
-          getNewestTimestamp() {
-              let newest = -Infinity;
-              this.data.forEach(points => {
-                  points.forEach(p => {
-                      newest = Math.max(newest, p.timestamp);
-                  });
-              });
-              return newest !== -Infinity ? newest : Math.floor(Date.now() / 1000);
+          // Update chart configurations with current data bounds
+          this.temperatureChart.config.scale = { min: minTemp, max: maxTemp };
+          this.temperatureChart.config.area = {
+            x: padding,
+            y: padding,
+            width: chartWidth,
+            height: tempChartHeight,
+          };
+
+          this.humidityChart.config.scale = { min: humMin, max: humMax };
+          this.humidityChart.config.area = {
+            x: padding,
+            y: humChartTop,
+            width: chartWidth,
+            height: humChartHeight,
+          };
+
+          // Draw main axes
+          this.ctx.strokeStyle = "#444";
+          this.ctx.lineWidth = 1;
+          this.ctx.beginPath();
+          this.ctx.moveTo(padding, padding);
+          this.ctx.lineTo(padding, height - padding);
+          this.ctx.lineTo(width - padding, height - padding);
+          this.ctx.stroke();
+
+          // Draw separator line between temperature and humidity
+          this.ctx.strokeStyle = "#555";
+          this.ctx.beginPath();
+          this.ctx.moveTo(padding, humChartTop);
+          this.ctx.lineTo(width - padding, humChartTop);
+          this.ctx.stroke();
+
+          // Draw time axis labels
+          this.ctx.fillStyle = "#888";
+          this.ctx.font = "10px sans-serif";
+          const timeSteps = 6;
+
+          for (let i = 0; i <= timeSteps; i++) {
+            const timeProgress = i / timeSteps;
+            const timestamp = startTime + timeWindow * timeProgress;
+            const x = padding + chartWidth * timeProgress;
+            const label = this.formatTimeLabel(timestamp, this.range);
+
+            this.ctx.save();
+            this.ctx.translate(x, height - padding + 15);
+            this.ctx.rotate(-Math.PI / 4);
+            this.ctx.fillText(label, 0, 0);
+            this.ctx.restore();
+
+            // Draw tick marks
+            this.ctx.strokeStyle = "#444";
+            this.ctx.beginPath();
+            this.ctx.moveTo(x, height - padding);
+            this.ctx.lineTo(x, height - padding + 5);
+            this.ctx.stroke();
           }
 
-          loadLatestReadings(readings) {
-              this.latestReadings.clear();
-              readings.forEach(reading => {
-                  this.latestReadings.set(reading.sensorMac.toLowerCase(), reading);
-              });
-              this.renderLatestReadings();
+          // Prepare chart data
+          const preparedData = this.prepareChartData(startTime, timeWindow);
+
+          // Render each sensor's data using both chart components
+          let colorIndex = 0;
+          preparedData.forEach((points, sensorMac) => {
+            const baseColor = this.colors[colorIndex % this.colors.length];
+            const isHovered = this.hoveredSensor === sensorMac;
+            const isOtherHovered =
+              this.hoveredSensor && this.hoveredSensor !== sensorMac;
+
+            // Update colors for this sensor
+            this.temperatureChart.config.color = baseColor;
+            this.humidityChart.config.color = baseColor;
+
+            // Render temperature chart
+            this.temperatureChart.render(
+              points,
+              startTime,
+              timeWindow,
+              isHovered,
+              isOtherHovered,
+            );
+
+            // Render humidity chart
+            this.humidityChart.render(
+              points,
+              startTime,
+              timeWindow,
+              isHovered,
+              isOtherHovered,
+            );
+
+            colorIndex++;
+          });
+        }
+
+        getOldestTimestamp() {
+          let oldest = Infinity;
+          this.data.forEach((points) => {
+            points.forEach((p) => {
+              oldest = Math.min(oldest, p.timestamp);
+            });
+          });
+          return oldest;
+        }
+
+        getDataTimeSpan() {
+          let oldest = Infinity,
+            newest = -Infinity;
+          this.data.forEach((points) => {
+            points.forEach((p) => {
+              oldest = Math.min(oldest, p.timestamp);
+              newest = Math.max(newest, p.timestamp);
+            });
+          });
+          return Math.max(newest - oldest, this.bucketSize); // Minimum bucket size span
+        }
+
+        getNewestTimestamp() {
+          let newest = -Infinity;
+          this.data.forEach((points) => {
+            points.forEach((p) => {
+              newest = Math.max(newest, p.timestamp);
+            });
+          });
+          return newest !== -Infinity ? newest : Math.floor(Date.now() / 1000);
+        }
+
+        loadLatestReadings(readings) {
+          this.latestReadings.clear();
+          readings.forEach((reading) => {
+            this.latestReadings.set(reading.sensorMac.toLowerCase(), reading);
+          });
+          this.renderLatestReadings();
+        }
+
+        loadSensorNames(names) {
+          this.sensorNames.clear();
+          names.forEach((item) => {
+            this.sensorNames.set(item.sensorMac.toLowerCase(), item.customName);
+          });
+          this.renderLatestReadings();
+        }
+
+        promptAdminAuth() {
+          const password = prompt("Enter admin password:");
+          if (password) {
+            this.ws.send(
+              JSON.stringify({
+                type: "adminAuth",
+                password: password,
+              }),
+            );
+          }
+        }
+
+        handleAdminAuthResult(msg) {
+          if (msg.success) {
+            this.isAdmin = true;
+            this.adminToken = msg.token;
+            document.getElementById("admin-btn").textContent = "Logout";
+            document.getElementById("admin-btn").style.background = "#ff6b6b";
+            this.renderLatestReadings();
+          } else {
+            alert(msg.message || "Authentication failed");
+          }
+        }
+
+        logout() {
+          this.isAdmin = false;
+          this.adminToken = null;
+          document.getElementById("admin-btn").textContent = "Admin";
+          document.getElementById("admin-btn").style.background = "#333";
+          this.renderLatestReadings();
+        }
+
+        editSensorName(sensorMac) {
+          const currentName =
+            this.sensorNames.get(sensorMac) ||
+            sensorMac.slice(-8).toUpperCase();
+          const newName = prompt(
+            `Enter name for sensor ${sensorMac.slice(-8).toUpperCase()}:`,
+            currentName,
+          );
+
+          if (newName && newName.trim() !== currentName) {
+            this.ws.send(
+              JSON.stringify({
+                type: "setSensorName",
+                sensorMac: sensorMac,
+                customName: newName.trim(),
+                adminToken: this.adminToken,
+              }),
+            );
+          }
+        }
+
+        updateLatestReading(data) {
+          this.throttledLatestUpdate(data);
+        }
+
+        performLatestUpdate(data) {
+          const normalizedMac = data.sensorMac.toLowerCase();
+          const now = Math.floor(Date.now() / 1000);
+          this.latestReadings.set(normalizedMac, {
+            sensorMac: normalizedMac,
+            temperature: data.temperature,
+            humidity: data.humidity,
+            timestamp: data.timestamp,
+            secondsAgo: now - data.timestamp,
+          });
+          this.updateSensorCard(normalizedMac);
+        }
+
+        updateSensorCard(sensorMac) {
+          const container = document.getElementById("latest-readings");
+          const reading = this.latestReadings.get(sensorMac);
+          if (!reading) return;
+
+          // Find existing card or determine insertion point
+          let existingCard = container.querySelector(
+            `[data-sensor-mac="${sensorMac}"]`,
+          );
+
+          // Avoid updating cards that are currently being hovered to prevent twitching
+          if (
+            existingCard &&
+            (existingCard.matches(":hover") || this.hoveredSensor === sensorMac)
+          ) {
+            // Schedule update for later when hover ends
+            if (!this.pendingCardUpdates) this.pendingCardUpdates = new Set();
+            this.pendingCardUpdates.add(sensorMac);
+            return;
           }
 
-          loadSensorNames(names) {
-              this.sensorNames.clear();
-              names.forEach(item => {
-                  this.sensorNames.set(item.sensorMac.toLowerCase(), item.customName);
-              });
-              this.renderLatestReadings();
-          }
+          const now = Math.floor(Date.now() / 1000);
+          const secondsAgo =
+            reading.secondsAgo !== undefined
+              ? reading.secondsAgo
+              : now - reading.timestamp;
+          const isOffline = secondsAgo > 300; // 5 minutes
 
-          promptAdminAuth() {
-              const password = prompt('Enter admin password:');
-              if (password) {
-                  this.ws.send(JSON.stringify({
-                      type: 'adminAuth',
-                      password: password
-                  }));
-              }
-          }
+          // Get color and display info
+          const sortedReadings = Array.from(this.latestReadings.values()).sort(
+            (a, b) => a.sensorMac.localeCompare(b.sensorMac),
+          );
+          const sensorIndex = sortedReadings.findIndex(
+            (r) => r.sensorMac === sensorMac,
+          );
+          const sensorColor = this.colors[sensorIndex % this.colors.length];
+          const customName = this.sensorNames.get(sensorMac);
+          const displayName = customName || sensorMac.slice(-8).toUpperCase();
+          const ageText = this.formatAge(secondsAgo);
 
-          handleAdminAuthResult(msg) {
-              if (msg.success) {
-                  this.isAdmin = true;
-                  this.adminToken = msg.token;
-                  document.getElementById('admin-btn').textContent = 'Logout';
-                  document.getElementById('admin-btn').style.background = '#ff6b6b';
-                  this.renderLatestReadings();
+          if (existingCard) {
+            // Check if significant data has changed to avoid unnecessary updates
+            const currentTemp =
+              existingCard.querySelector(".sensor-temp")?.textContent;
+            const newTemp = `${reading.temperature.toFixed(1)}°C`;
+            const currentAge =
+              existingCard.querySelector(".sensor-age")?.textContent;
+
+            // Only update if temperature changed by more than 0.1°C or age changed significantly
+            if (currentTemp === newTemp && currentAge === ageText) {
+              return; // No meaningful change, skip update
+            }
+
+            // Update existing card content without rebuilding
+            existingCard.className = `sensor-item ${isOffline ? "sensor-offline" : ""}`;
+            existingCard.style.borderLeftColor = sensorColor;
+
+            // Update temperature
+            const tempElement = existingCard.querySelector(".sensor-temp");
+            if (tempElement) tempElement.textContent = newTemp;
+
+            // Update humidity
+            const humidityElement =
+              existingCard.querySelector(".sensor-humidity");
+            if (reading.humidity !== null) {
+              if (humidityElement) {
+                humidityElement.textContent = `${reading.humidity.toFixed(1)}%`;
               } else {
-                  alert(msg.message || 'Authentication failed');
+                // Add humidity element if it didn't exist
+                const sensorLeft = existingCard.querySelector(".sensor-left");
+                const humidityDiv = document.createElement("div");
+                humidityDiv.className = "sensor-humidity";
+                humidityDiv.textContent = `${reading.humidity.toFixed(1)}%`;
+                sensorLeft.appendChild(humidityDiv);
               }
-          }
+            } else if (humidityElement) {
+              // Remove humidity element if no humidity data
+              humidityElement.remove();
+            }
 
-          logout() {
-              this.isAdmin = false;
-              this.adminToken = null;
-              document.getElementById('admin-btn').textContent = 'Admin';
-              document.getElementById('admin-btn').style.background = '#333';
-              this.renderLatestReadings();
-          }
+            // Update age
+            const ageElement = existingCard.querySelector(".sensor-age");
+            if (ageElement) ageElement.textContent = ageText;
 
-          editSensorName(sensorMac) {
-              const currentName = this.sensorNames.get(sensorMac) || sensorMac.slice(-8).toUpperCase();
-              const newName = prompt(`Enter name for sensor ${sensorMac.slice(-8).toUpperCase()}:`, currentName);
-
-              if (newName && newName.trim() !== currentName) {
-                  this.ws.send(JSON.stringify({
-                      type: 'setSensorName',
-                      sensorMac: sensorMac,
-                      customName: newName.trim(),
-                      adminToken: this.adminToken
-                  }));
-              }
-          }
-
-          updateLatestReading(data) {
-              this.throttledLatestUpdate(data);
-          }
-
-          performLatestUpdate(data) {
-              const normalizedMac = data.sensorMac.toLowerCase();
-              const now = Math.floor(Date.now() / 1000);
-              this.latestReadings.set(normalizedMac, {
-                  sensorMac: normalizedMac,
-                  temperature: data.temperature,
-                  humidity: data.humidity,
-                  timestamp: data.timestamp,
-                  secondsAgo: now - data.timestamp
-              });
-              this.updateSensorCard(normalizedMac);
-          }
-
-          updateSensorCard(sensorMac) {
-              const container = document.getElementById('latest-readings');
-              const reading = this.latestReadings.get(sensorMac);
-              if (!reading) return;
-
-              // Find existing card or determine insertion point
-              let existingCard = container.querySelector(`[data-sensor-mac="${sensorMac}"]`);
-              
-              // Avoid updating cards that are currently being hovered to prevent twitching
-              if (existingCard && (existingCard.matches(':hover') || this.hoveredSensor === sensorMac)) {
-                  // Schedule update for later when hover ends
-                  if (!this.pendingCardUpdates) this.pendingCardUpdates = new Set();
-                  this.pendingCardUpdates.add(sensorMac);
-                  return;
-              }
-
-              const now = Math.floor(Date.now() / 1000);
-              const secondsAgo = reading.secondsAgo !== undefined ? reading.secondsAgo : (now - reading.timestamp);
-              const isOffline = secondsAgo > 300; // 5 minutes
-
-              // Get color and display info
-              const sortedReadings = Array.from(this.latestReadings.values())
-                  .sort((a, b) => a.sensorMac.localeCompare(b.sensorMac));
-              const sensorIndex = sortedReadings.findIndex(r => r.sensorMac === sensorMac);
-              const sensorColor = this.colors[sensorIndex % this.colors.length];
-              const customName = this.sensorNames.get(sensorMac);
-              const displayName = customName || sensorMac.slice(-8).toUpperCase();
-              const ageText = this.formatAge(secondsAgo);
-
-              if (existingCard) {
-                  // Check if significant data has changed to avoid unnecessary updates
-                  const currentTemp = existingCard.querySelector('.sensor-temp')?.textContent;
-                  const newTemp = `${reading.temperature.toFixed(1)}°C`;
-                  const currentAge = existingCard.querySelector('.sensor-age')?.textContent;
-                  
-                  // Only update if temperature changed by more than 0.1°C or age changed significantly
-                  if (currentTemp === newTemp && currentAge === ageText) {
-                      return; // No meaningful change, skip update
-                  }
-
-                  // Update existing card content without rebuilding
-                  existingCard.className = `sensor-item ${isOffline ? 'sensor-offline' : ''}`;
-                  existingCard.style.borderLeftColor = sensorColor;
-                  
-                  // Update temperature
-                  const tempElement = existingCard.querySelector('.sensor-temp');
-                  if (tempElement) tempElement.textContent = newTemp;
-                  
-                  // Update humidity
-                  const humidityElement = existingCard.querySelector('.sensor-humidity');
-                  if (reading.humidity !== null) {
-                      if (humidityElement) {
-                          humidityElement.textContent = `${reading.humidity.toFixed(1)}%`;
-                      } else {
-                          // Add humidity element if it didn't exist
-                          const sensorLeft = existingCard.querySelector('.sensor-left');
-                          const humidityDiv = document.createElement('div');
-                          humidityDiv.className = 'sensor-humidity';
-                          humidityDiv.textContent = `${reading.humidity.toFixed(1)}%`;
-                          sensorLeft.appendChild(humidityDiv);
-                      }
-                  } else if (humidityElement) {
-                      // Remove humidity element if no humidity data
-                      humidityElement.remove();
-                  }
-                  
-                  // Update age
-                  const ageElement = existingCard.querySelector('.sensor-age');
-                  if (ageElement) ageElement.textContent = ageText;
-                  
-                  // Update name if admin state might have changed
-                  const nameElement = existingCard.querySelector('.sensor-mac');
-                  if (nameElement) {
-                      nameElement.textContent = displayName;
-                      if (this.isAdmin) {
-                          nameElement.style.cursor = 'pointer';
-                          nameElement.style.textDecoration = 'underline';
-                      } else {
-                          nameElement.style.cursor = '';
-                          nameElement.style.textDecoration = '';
-                      }
-                  }
+            // Update name if admin state might have changed
+            const nameElement = existingCard.querySelector(".sensor-mac");
+            if (nameElement) {
+              nameElement.textContent = displayName;
+              if (this.isAdmin) {
+                nameElement.style.cursor = "pointer";
+                nameElement.style.textDecoration = "underline";
               } else {
-                  // Create new card (full rebuild only for this sensor)
-                  this.renderLatestReadings();
+                nameElement.style.cursor = "";
+                nameElement.style.textDecoration = "";
               }
+            }
+          } else {
+            // Create new card (full rebuild only for this sensor)
+            this.renderLatestReadings();
+          }
+        }
+
+        renderLatestReadings() {
+          const container = document.getElementById("latest-readings");
+          container.innerHTML = "";
+
+          if (this.latestReadings.size === 0) {
+            container.innerHTML =
+              '<div style="color: #666; text-align: center; padding: 20px;">No sensor data</div>';
+            return;
           }
 
-          renderLatestReadings() {
-              const container = document.getElementById('latest-readings');
-              container.innerHTML = '';
+          const now = Math.floor(Date.now() / 1000);
+          const sortedReadings = Array.from(this.latestReadings.values()).sort(
+            (a, b) => a.sensorMac.localeCompare(b.sensorMac),
+          );
 
-              if (this.latestReadings.size === 0) {
-                  container.innerHTML = '<div style="color: #666; text-align: center; padding: 20px;">No sensor data</div>';
-                  return;
-              }
+          sortedReadings.forEach((reading, index) => {
+            const secondsAgo =
+              reading.secondsAgo !== undefined
+                ? reading.secondsAgo
+                : now - reading.timestamp;
+            const isOffline = secondsAgo > 300; // 5 minutes
+            const sensorColor = this.colors[index % this.colors.length];
+            const customName = this.sensorNames.get(reading.sensorMac);
+            const displayName =
+              customName || reading.sensorMac.slice(-8).toUpperCase();
 
-              const now = Math.floor(Date.now() / 1000);
-              const sortedReadings = Array.from(this.latestReadings.values())
-                  .sort((a, b) => a.sensorMac.localeCompare(b.sensorMac));
+            const item = document.createElement("div");
+            item.className = `sensor-item ${isOffline ? "sensor-offline" : ""}`;
+            item.style.borderLeftColor = sensorColor;
+            item.setAttribute("data-sensor-mac", reading.sensorMac);
 
-              sortedReadings.forEach((reading, index) => {
-                  const secondsAgo = reading.secondsAgo !== undefined ? reading.secondsAgo : (now - reading.timestamp);
-                  const isOffline = secondsAgo > 300; // 5 minutes
-                  const sensorColor = this.colors[index % this.colors.length];
-                  const customName = this.sensorNames.get(reading.sensorMac);
-                  const displayName = customName || reading.sensorMac.slice(-8).toUpperCase();
+            const ageText = this.formatAge(secondsAgo);
 
-                  const item = document.createElement('div');
-                  item.className = `sensor-item ${isOffline ? 'sensor-offline' : ''}`;
-                  item.style.borderLeftColor = sensorColor;
-                  item.setAttribute('data-sensor-mac', reading.sensorMac);
-
-                  const ageText = this.formatAge(secondsAgo);
-
-                  item.innerHTML = `
+            item.innerHTML = `
                       <div class="sensor-left">
-                          <div class="sensor-mac" ${this.isAdmin ? 'style="cursor: pointer; text-decoration: underline;"' : ''}>${displayName}</div>
+                          <div class="sensor-mac" ${this.isAdmin ? 'style="cursor: pointer; text-decoration: underline;"' : ""}>${displayName}</div>
                           <div class="sensor-temp">${reading.temperature.toFixed(1)}°C</div>
-                          ${reading.humidity !== null ? `<div class="sensor-humidity">${reading.humidity.toFixed(1)}%</div>` : ''}
+                          ${reading.humidity !== null ? `<div class="sensor-humidity">${reading.humidity.toFixed(1)}%</div>` : ""}
                       </div>
                       <div class="sensor-age">${ageText}</div>
                   `;
 
-                  // Add hover event listeners for graph highlighting
-                  item.addEventListener('mouseenter', () => {
-                      this.hoveredSensor = reading.sensorMac;
-                      this.scheduleRender();
-                  });
+            // Add hover event listeners for graph highlighting
+            item.addEventListener("mouseenter", () => {
+              this.hoveredSensor = reading.sensorMac;
+              this.scheduleRender();
+            });
 
-                  item.addEventListener('mouseleave', () => {
-                      this.hoveredSensor = null;
-                      this.scheduleRender();
-                      
-                      // Process any pending card updates for this sensor
-                      if (this.pendingCardUpdates && this.pendingCardUpdates.has(reading.sensorMac)) {
-                          this.pendingCardUpdates.delete(reading.sensorMac);
-                          // Delay the update slightly to ensure smooth transition
-                          setTimeout(() => this.updateSensorCard(reading.sensorMac), 50);
-                      }
-                  });
+            item.addEventListener("mouseleave", () => {
+              this.hoveredSensor = null;
+              this.scheduleRender();
 
-                  // Add touch event listeners for mobile devices
-                  item.addEventListener('touchstart', () => {
-                      this.hoveredSensor = reading.sensorMac;
-                      this.scheduleRender();
-                  });
+              // Process any pending card updates for this sensor
+              if (
+                this.pendingCardUpdates &&
+                this.pendingCardUpdates.has(reading.sensorMac)
+              ) {
+                this.pendingCardUpdates.delete(reading.sensorMac);
+                // Delay the update slightly to ensure smooth transition
+                setTimeout(() => this.updateSensorCard(reading.sensorMac), 50);
+              }
+            });
 
-                  // Add click handler for admin name editing
-                  if (this.isAdmin) {
-                      const macElement = item.querySelector('.sensor-mac');
-                      macElement.addEventListener('click', (e) => {
-                          e.stopPropagation();
-                          this.editSensorName(reading.sensorMac);
-                      });
-                  }
+            // Add touch event listeners for mobile devices
+            item.addEventListener("touchstart", () => {
+              this.hoveredSensor = reading.sensorMac;
+              this.scheduleRender();
+            });
 
-                  container.appendChild(item);
+            // Add click handler for admin name editing
+            if (this.isAdmin) {
+              const macElement = item.querySelector(".sensor-mac");
+              macElement.addEventListener("click", (e) => {
+                e.stopPropagation();
+                this.editSensorName(reading.sensorMac);
               });
-          }
+            }
 
-          formatAge(seconds) {
-              // Handle negative values (clock drift, future timestamps)
-              if (seconds <= 0) return 'now';
-              
-              // Round to nearest second for display
-              seconds = Math.round(seconds);
-              
-              if (seconds < 60) return `${seconds}s ago`;
-              if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-              if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-              return `${Math.floor(seconds / 86400)}d ago`;
-          }
+            container.appendChild(item);
+          });
+        }
 
-          debounce(func, wait) {
-              let timeout;
-              return function executedFunction(...args) {
-                  const later = () => {
-                      clearTimeout(timeout);
-                      func(...args);
-                  };
-                  clearTimeout(timeout);
-                  timeout = setTimeout(later, wait);
-              };
-          }
+        formatAge(seconds) {
+          // Handle negative values (clock drift, future timestamps)
+          if (seconds <= 0) return "now";
 
-          throttle(func, limit) {
-              let inThrottle;
-              return function(...args) {
-                  if (!inThrottle) {
-                      func.apply(this, args);
-                      inThrottle = true;
-                      setTimeout(() => inThrottle = false, limit);
-                  }
-              };
-          }
+          // Round to nearest second for display
+          seconds = Math.round(seconds);
+
+          if (seconds < 60) return `${seconds}s ago`;
+          if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+          if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+          return `${Math.floor(seconds / 86400)}d ago`;
+        }
+
+        debounce(func, wait) {
+          let timeout;
+          return function executedFunction(...args) {
+            const later = () => {
+              clearTimeout(timeout);
+              func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+          };
+        }
+
+        throttle(func, limit) {
+          let inThrottle;
+          return function (...args) {
+            if (!inThrottle) {
+              func.apply(this, args);
+              inThrottle = true;
+              setTimeout(() => (inThrottle = false), limit);
+            }
+          };
+        }
       }
 
       // PWA Service Worker
-      if ('serviceWorker' in navigator) {
-          navigator.serviceWorker.register('/sw.js').catch(console.error);
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("/sw.js").catch(console.error);
       }
 
       // Initialize app
