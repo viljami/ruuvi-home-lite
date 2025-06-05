@@ -1,4 +1,4 @@
-.PHONY: help build clean install setup setup-docker dev start stop logs lint test migrate migrate-status migrate-rollback migrate-health cleanup docker-simple docker-secure docker-stop docker-logs docker-status docker-reset
+.PHONY: help build clean install setup setup-docker dev start stop logs lint test migrate migrate-status migrate-rollback migrate-health cleanup cleanup-force launcher docker-simple docker-secure docker-stop docker-logs docker-status docker-reset docker-deploy docker-quick
 
 # Detect Docker Compose command
 DOCKER_COMPOSE := $(shell if command -v docker-compose >/dev/null 2>&1; then echo "docker-compose"; elif docker compose version >/dev/null 2>&1; then echo "docker compose"; else echo "docker-compose"; fi)
@@ -6,6 +6,9 @@ DOCKER_COMPOSE := $(shell if command -v docker-compose >/dev/null 2>&1; then ech
 # Default target
 help:
 	@echo "Ruuvi Home Lite - Available targets:"
+	@echo ""
+	@echo "🚀 QUICK START:"
+	@echo "  launcher      - Interactive script launcher (recommended)"
 	@echo ""
 	@echo "📦 NATIVE DEPLOYMENT:"
 	@echo "  install       - Install dependencies"
@@ -20,6 +23,8 @@ help:
 	@echo "  setup-docker  - Setup environment for Docker deployment"
 	@echo "  docker-simple - Start simple Docker deployment (HTTP, no TLS)"
 	@echo "  docker-secure - Start secure Docker deployment (HTTPS, TLS)"
+	@echo "  docker-deploy - Interactive Docker deployment menu"
+	@echo "  docker-quick  - Quick Docker start (simple deployment)"
 	@echo "  docker-stop   - Stop all Docker services"
 	@echo "  docker-logs   - View Docker container logs"
 	@echo "  docker-status - Check Docker deployment status"
@@ -28,11 +33,14 @@ help:
 	@echo "🛠️  MAINTENANCE:"
 	@echo "  clean         - Clean build artifacts"
 	@echo "  cleanup       - Remove installation (interactive)"
+	@echo "  cleanup-force - Force removal (non-interactive)"
 	@echo "  lint          - Run linting"
 	@echo "  test          - Run tests"
 	@echo "  migrate       - Run database migrations"
 	@echo "  migrate-status- Check migration status"
 	@echo "  migrate-health- Check database health"
+	@echo ""
+	@echo "💡 TIP: Run 'make launcher' for an interactive menu with all options"
 
 install:
 	npm install
@@ -41,9 +49,11 @@ build: install
 	npm run build
 
 setup: build
+	@echo "🚀 Running native setup through standardized workflow..."
 	./setup.sh
 
 setup-docker:
+	@echo "🐳 Running Docker setup through standardized workflow..."
 	./setup-docker.sh
 
 dev: build
@@ -66,7 +76,13 @@ clean:
 	rm -f data/ruuvi.db
 
 lint:
-	@echo "Linting placeholder - add tools as needed"
+	@echo "🔍 Linting TypeScript code..."
+	@if [ -f .eslintrc.js ]; then \
+		npx eslint src/**/*.ts || echo "⚠️  ESLint found issues"; \
+	else \
+		echo "⚠️  No ESLint configuration found"; \
+	fi
+	@echo "✅ Linting completed"
 
 test-unit: build
 	@echo "Running unit tests..."
@@ -104,33 +120,50 @@ migrate-health: build
 	npm run migrate:health
 
 cleanup:
-	chmod +x scripts/cleanup.sh
-	./scripts/cleanup.sh
+	@echo "🧹 Running interactive cleanup..."
+	@chmod +x scripts/cleanup.sh
+	@scripts/cleanup.sh
 
 cleanup-force:
-	chmod +x scripts/remove.sh
-	./scripts/remove.sh
+	@echo "🗑️  Running force cleanup..."
+	@chmod +x scripts/remove.sh
+	@scripts/remove.sh
 
-# Docker deployment targets
+launcher:
+	@echo "🛠️  Starting script launcher..."
+	@chmod +x scripts-launcher.sh
+	@./scripts-launcher.sh
+
+# Docker deployment targets - DRY implementation
 docker-simple:
 	@echo "🚀 Starting simple Docker deployment..."
-	$(DOCKER_COMPOSE) -f docker-compose.simple.yml up --build -d
+	@$(DOCKER_COMPOSE) -f docker-compose.simple.yml up --build -d
 	@echo "✅ Simple deployment started"
 	@echo "🌐 Web interface: http://localhost:3000"
 	@echo "📡 MQTT broker: localhost:1883 (no auth required)"
 
 docker-secure: setup-docker
 	@echo "🔐 Starting secure Docker deployment..."
-	$(DOCKER_COMPOSE) up --build -d
+	@$(DOCKER_COMPOSE) up --build -d
 	@echo "✅ Secure deployment started"
 	@echo "🌐 Web interface: https://localhost:3000"
 	@echo "📡 MQTT broker: localhost:8883 (auth required)"
 
 docker-stop:
 	@echo "🛑 Stopping Docker services..."
-	$(DOCKER_COMPOSE) down 2>/dev/null || true
-	$(DOCKER_COMPOSE) -f docker-compose.simple.yml down 2>/dev/null || true
+	@$(DOCKER_COMPOSE) down 2>/dev/null || true
+	@$(DOCKER_COMPOSE) -f docker-compose.simple.yml down 2>/dev/null || true
 	@echo "✅ Docker services stopped"
+
+docker-deploy:
+	@echo "🐳 Starting interactive Docker deployment..."
+	@chmod +x scripts/docker-deploy.sh
+	@scripts/docker-deploy.sh
+
+docker-quick:
+	@echo "⚡ Running Docker quick start..."
+	@chmod +x scripts/docker-quick-start.sh
+	@scripts/docker-quick-start.sh
 
 docker-logs:
 	@echo "📖 Docker container logs:"

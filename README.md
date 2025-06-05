@@ -9,69 +9,36 @@ Minimal Ruuvi sensor data visualization with real-time graphs. A lightweight, se
 
 **This project is designed for local network deployment only. Never expose to the internet without proper security hardening.**
 
-## 🚀 Production Setup
+## 🚀 Quick Start
 
-### Native Deployment (Raspberry Pi)
+### Interactive Setup (Recommended)
 
 ```bash
-# Clone and setup for native deployment
 git clone https://github.com/your-username/ruuvi-home-lite.git
 cd ruuvi-home-lite
-./setup.sh    # Creates .env, certificates, MQTT broker
-make start    # Deploy with PM2
+make launcher    # Interactive menu with all options
 ```
 
-### Docker Deployment
+### Direct Commands
 
 ```bash
-# Clone and setup for Docker deployment
-git clone https://github.com/your-username/ruuvi-home-lite.git
-cd ruuvi-home-lite
-./setup-docker.sh              # Creates .env.docker with credentials
-docker-compose up --build -d   # Deploy with Docker
+# Native Deployment (Raspberry Pi)
+make setup && make start
+
+# Docker Deployment  
+make setup-docker && make docker-secure
+
+# Development
+make dev
 ```
 </edits>
 
 <old_text>
-## 🔒 Production Security Features
+## 🔒 Security Features
 
-Both setup scripts automatically:
+**⚠️ Local Network Only**: Designed for internal use - never expose to internet
 
-- Create environment configuration (`.env` or `.env.docker`)
-- Generate strong random MQTT passwords (16 characters)
-- Detect local network IP addresses
-- Set proper file permissions (environment files mode 600)
-
-**Native deployment** (`./setup.sh`) additionally:
-- Creates TLS certificates for encrypted communication
-- Configures secure MQTT broker with authentication
-- Sets up firewall rules for local network access
-
-**Docker deployment** (`./setup-docker.sh`) relies on:
-- Docker container isolation for security
-- Docker Compose managed MQTT broker
-- Volume-mounted certificates and configuration
-
-## 💻 Development Setup (Local Machine)
-
-```bash
-# Clone and setup for development
-git clone https://github.com/your-username/ruuvi-home-lite.git
-cd ruuvi-home-lite
-npm install         # Install all dependencies (including dev tools)
-npm run build       # Build TypeScript
-npm run dev         # Start in development mode
-```
-
-## 🔒 Production Security Features
-
-The `./setup.sh` script automatically:
-
-- Creates `.env` configuration from template
-- Generates strong random MQTT passwords (16 characters)
-- Creates TLS certificates for encrypted communication
-- Sets proper file permissions (`.env` mode 600)
-- Configures secure MQTT broker with authentication
+See `SECURITY.md` for complete security documentation and best practices.
 
 ## ✨ Features
 
@@ -84,31 +51,23 @@ The `./setup.sh` script automatically:
 - 🐳 **Docker support** for containerized deployment
 - 🛠️ **Comprehensive scripts** for setup, maintenance, and troubleshooting
 
-## 📁 Script Organization
+## 🛠️ Available Commands
 
-All setup and maintenance scripts are located in the `scripts/` directory:
+### Quick Access
+- `make launcher` - Interactive menu with all options
+- `make help` - Show all available make targets
 
-- **`setup.sh`** - Complete native installation (Raspberry Pi)
-- **`setup-docker.sh`** - Environment setup for Docker deployment
-- **`cleanup.sh`** - Interactive removal and cleanup
-- **`fix-certificates.sh`** - TLS certificate troubleshooting
-- **`troubleshoot-mosquitto.sh`** - MQTT broker diagnostics
+### Core Operations
+- `make setup` / `make setup-docker` - Environment setup
+- `make start` / `make docker-secure` - Production deployment  
+- `make dev` - Development mode
+- `make cleanup` - Interactive removal
 
-See `scripts/README.md` for detailed documentation of all available scripts.
-- 🐳 **Docker support** for containerized deployment
-- 🛠️ **Comprehensive scripts** for setup, maintenance, and troubleshooting
+### Troubleshooting
+- `make docker-status` - Check Docker deployment
+- `scripts/troubleshoot-mosquitto.sh` - MQTT diagnostics
 
-## 📁 Script Organization
-
-All setup and maintenance scripts are located in the `scripts/` directory:
-
-- **`setup.sh`** - Complete native installation (Raspberry Pi)
-- **`setup-docker.sh`** - Environment setup for Docker deployment
-- **`cleanup.sh`** - Interactive removal and cleanup
-- **`fix-certificates.sh`** - TLS certificate troubleshooting
-- **`troubleshoot-mosquitto.sh`** - MQTT broker diagnostics
-
-See `scripts/README.md` for detailed documentation of all available scripts.
+**📖 Complete documentation**: `scripts/README.md` | **🔒 Security guide**: `SECURITY.md`
 </edits>
 
 </thinking>

@@ -342,6 +342,33 @@
               this.ctx.scale(devicePixelRatio, devicePixelRatio);
               this.canvas.style.width = rect.width + 'px';
               this.canvas.style.height = rect.height + 'px';
+              
+              // Add mouse leave event to reset highlighting when leaving the main content area
+              const mainContent = document.querySelector('.main-content');
+              if (mainContent && !mainContent.hasAttribute('data-mouse-events-setup')) {
+                  mainContent.setAttribute('data-mouse-events-setup', 'true');
+                  mainContent.addEventListener('mouseleave', () => {
+                      if (this.hoveredSensor !== null) {
+                          this.hoveredSensor = null;
+                          this.scheduleRender();
+                      }
+                  });
+                  
+                  // Add touch events for mobile devices
+                  mainContent.addEventListener('touchend', () => {
+                      if (this.hoveredSensor !== null) {
+                          this.hoveredSensor = null;
+                          this.scheduleRender();
+                      }
+                  });
+                  
+                  mainContent.addEventListener('touchcancel', () => {
+                      if (this.hoveredSensor !== null) {
+                          this.hoveredSensor = null;
+                          this.scheduleRender();
+                      }
+                  });
+              }
           }
 
           loadData(rows) {
@@ -635,9 +662,9 @@
                   });
               });
 
-              // Set fixed temperature range (-20 to +40) but expand if data exceeds
-              const minTemp = Math.min(-20, dataMinTemp !== Infinity ? dataMinTemp : -20);
-              const maxTemp = Math.max(40, dataMaxTemp !== -Infinity ? dataMaxTemp : 40);
+              // Set default temperature range (0 to +25) but expand if data exceeds
+              const minTemp = Math.min(0, dataMinTemp !== Infinity ? dataMinTemp : 0);
+              const maxTemp = Math.max(25, dataMaxTemp !== -Infinity ? dataMaxTemp : 25);
 
               // Fixed humidity range (0 to 100)
               if (minHum === Infinity) minHum = 0;
@@ -1007,12 +1034,13 @@
 
           performLatestUpdate(data) {
               const normalizedMac = data.sensorMac.toLowerCase();
+              const now = Math.floor(Date.now() / 1000);
               this.latestReadings.set(normalizedMac, {
                   sensorMac: normalizedMac,
                   temperature: data.temperature,
                   humidity: data.humidity,
                   timestamp: data.timestamp,
-                  secondsAgo: 0
+                  secondsAgo: now - data.timestamp
               });
               this.renderLatestReadings();
           }
@@ -1031,7 +1059,7 @@
                   .sort((a, b) => a.sensorMac.localeCompare(b.sensorMac));
 
               sortedReadings.forEach((reading, index) => {
-                  const secondsAgo = now - reading.timestamp;
+                  const secondsAgo = reading.secondsAgo !== undefined ? reading.secondsAgo : (now - reading.timestamp);
                   const isOffline = secondsAgo > 300; // 5 minutes
                   const sensorColor = this.colors[index % this.colors.length];
                   const customName = this.sensorNames.get(reading.sensorMac);
@@ -1063,6 +1091,12 @@
                       this.scheduleRender();
                   });
 
+                  // Add touch event listeners for mobile devices
+                  item.addEventListener('touchstart', () => {
+                      this.hoveredSensor = reading.sensorMac;
+                      this.scheduleRender();
+                  });
+
                   // Add click handler for admin name editing
                   if (this.isAdmin) {
                       const macElement = item.querySelector('.sensor-mac');
@@ -1077,6 +1111,12 @@
           }
 
           formatAge(seconds) {
+              // Handle negative values (clock drift, future timestamps)
+              if (seconds <= 0) return 'now';
+              
+              // Round to nearest second for display
+              seconds = Math.round(seconds);
+              
               if (seconds < 60) return `${seconds}s ago`;
               if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
               if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
