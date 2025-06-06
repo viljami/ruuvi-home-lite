@@ -1,42 +1,66 @@
 {
   "name": "ruuvi-home-lite",
   "version": "1.0.0",
-  "description": "Minimal Ruuvi sensor data visualization",
-  "main": "dist/server.js",
+  "description": "Minimal Ruuvi sensor data visualization - Monorepo",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/server.js",
-    "dev": "tsc && node dist/server.js",
-    "pm2": "pm2 start ecosystem.config.js",
-    "test": "tsc && node tests/test-decoder.js",
-    "test:unit": "tsc && node tests/test-decoder.js",
-    "test:integration": "tsc && node tests/test-mqtt.js",
-    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.js\"",
-    "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.js\"",
-    "lint": "eslint src/**/*.ts",
-    "lint:fix": "eslint src/**/*.ts --fix",
-    "prepare": "echo no-hooks",
-    "clean": "rm -rf dist/",
-    "migrate": "tsc && node dist/cli/migrate.js migrate",
-    "migrate:status": "tsc && node dist/cli/migrate.js status",
-    "migrate:rollback": "tsc && node dist/cli/migrate.js rollback",
-    "migrate:health": "tsc && node dist/cli/migrate.js health"
-  },
-  "dependencies": {
-    "mqtt": "^5.3.4",
-    "sqlite3": "^5.1.6",
-    "ws": "^8.16.0"
+    "build": "npm run build:shared && npm run build:backend && npm run build:frontend",
+    "build:all": "npm run build:shared && concurrently \"npm run build:backend\" \"npm run build:frontend\"",
+    "build:deps": "npm run build:shared",
+    "build:clean": "npm run clean && npm run build",
+    "build:shared": "npm run build --workspace=@ruuvi-home/shared",
+    "build:frontend": "npm run build --workspace=@ruuvi-home/frontend",
+    "build:backend": "npm run build --workspace=@ruuvi-home/backend",
+    "dev": "npm run build:shared && concurrently --kill-others-on-fail \"npm run dev:shared\" \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:shared": "npm run dev --workspace=@ruuvi-home/shared",
+    "dev:frontend": "npm run dev --workspace=@ruuvi-home/frontend",
+    "dev:backend": "npm run dev --workspace=@ruuvi-home/backend",
+    "test": "npm run test --workspaces",
+    "test:unit": "npm run test --workspaces",
+    "type-check": "npm run type-check --workspaces",
+    "clean": "npm run clean --workspaces --if-present && rm -rf node_modules/.cache && rm -rf .tsbuildinfo",
+    "clean:full": "npm run clean && rm -rf node_modules && rm -rf packages/*/node_modules",
+    "format": "prettier --write \"packages/**/*.{ts,js,json}\"",
+    "format:check": "prettier --check \"packages/**/*.{ts,js,json}\"",
+    "lint": "eslint \"packages/**/*.ts\"",
+    "lint:fix": "eslint \"packages/**/*.ts\" --fix",
+    "start": "npm run build:backend && npm run start --workspace=@ruuvi-home/backend",
+    "preview": "npm run preview --workspace=@ruuvi-home/frontend",
+    "migrate": "npm run migrate --workspace=@ruuvi-home/backend",
+    "migrate:status": "npm run migrate:status --workspace=@ruuvi-home/backend",
+    "migrate:health": "npm run migrate:health --workspace=@ruuvi-home/backend",
+    "docker:build": "docker build -t ruuvi-home-lite .",
+    "docker:run": "docker run -p 3001:3001 -p 3000:3000 ruuvi-home-lite"
   },
   "devDependencies": {
-    "typescript": "^5.3.3",
-    "@types/node": "^20.10.6",
-    "@types/ws": "^8.5.10",
-    "prettier": "^3.1.1",
-    "eslint": "^8.56.0",
+    "@types/node": "^20.10.0",
     "@typescript-eslint/eslint-plugin": "^6.17.0",
-    "@typescript-eslint/parser": "^6.17.0"
+    "@typescript-eslint/parser": "^6.17.0",
+    "concurrently": "^8.2.2",
+    "eslint": "^8.56.0",
+    "prettier": "^3.1.1",
+    "typescript": "^5.3.3"
   },
   "engines": {
-    "node": ">=18"
-  }
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-repo/ruuvi-home-lite"
+  },
+  "keywords": [
+    "ruuvi",
+    "sensor",
+    "iot",
+    "mqtt",
+    "typescript",
+    "monorepo"
+  ],
+  "author": "",
+  "license": "MIT"
 }

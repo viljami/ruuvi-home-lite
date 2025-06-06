@@ -1,13 +1,14 @@
 #!/bin/bash
 set -e
 
-echo "🧹 Ruuvi Home Lite - Complete Cleanup Script"
-echo "============================================"
+echo "🧹 Ruuvi Home Lite - Complete Cleanup Script (Monorepo)"
+echo "======================================================="
 echo ""
 echo "⚠️  WARNING: This will completely remove Ruuvi Home Lite installation!"
-echo "    - Stop all services (PM2, Mosquitto)"
+echo "    - Stop all services (PM2, Mosquitto, Docker)"
 echo "    - Remove certificates and credentials"
 echo "    - Remove databases and logs"
+echo "    - Remove build artifacts from all packages"
 echo "    - Remove system configurations"
 echo "    - Optionally remove installed packages"
 echo ""

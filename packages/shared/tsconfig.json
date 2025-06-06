@@ -3,37 +3,34 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "node",
+    "declaration": true,
+    "declarationMap": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
+    "noEmitOnError": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "exactOptionalPropertyTypes": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
     "composite": true,
-    "declaration": true,
-    "declarationMap": true,
     "incremental": true,
-    "lib": ["ES2022"]
+    "tsBuildInfoFile": "./dist/.tsbuildinfo"
   },
-  "files": [],
-  "include": [],
-  "references": [
-    {
-      "path": "./packages/shared"
-    },
-    {
-      "path": "./packages/backend"
-    },
-    {
-      "path": "./packages/frontend"
-    }
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.ts",
+    "**/*.spec.ts"
   ]
 }

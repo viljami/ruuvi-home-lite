@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 
-import * as sqlite3 from 'sqlite3';
-import { MigrationManager } from '../migration-manager';
-import * as path from 'path';
+import * as sqlite3 from "sqlite3";
+import { MigrationManager } from "../migration-manager";
 
-const DEFAULT_DB_PATH = process.env.DB_PATH || 'ruuvi.db';
+const DEFAULT_DB_PATH = process.env.DB_PATH || "ruuvi.db";
 
 class MigrateCLI {
   private db: sqlite3.Database;
@@ -18,56 +17,60 @@ class MigrateCLI {
   async status(): Promise<void> {
     try {
       const status = await this.migrationManager.getStatus();
-      
-      console.log('📊 Migration Status');
-      console.log('==================');
-      console.log(`Database is up to date: ${status.isUpToDate ? '✅ Yes' : '❌ No'}`);
+
+      console.log("📊 Migration Status");
+      console.log("==================");
+      console.log(
+        `Database is up to date: ${status.isUpToDate ? "✅ Yes" : "❌ No"}`,
+      );
       console.log(`Applied migrations: ${status.appliedMigrations.length}`);
       console.log(`Pending migrations: ${status.pendingMigrations.length}`);
-      
+
       if (status.lastMigration) {
         console.log(`Last migration: ${status.lastMigration}`);
       }
-      
+
       if (status.appliedMigrations.length > 0) {
-        console.log('\n📋 Applied Migrations:');
-        status.appliedMigrations.forEach(id => console.log(`  ✅ ${id}`));
+        console.log("\n📋 Applied Migrations:");
+        status.appliedMigrations.forEach((id) => console.log(`  ✅ ${id}`));
       }
-      
+
       if (status.pendingMigrations.length > 0) {
-        console.log('\n⏳ Pending Migrations:');
-        status.pendingMigrations.forEach(id => console.log(`  ⏳ ${id}`));
+        console.log("\n⏳ Pending Migrations:");
+        status.pendingMigrations.forEach((id) => console.log(`  ⏳ ${id}`));
       }
     } catch (error) {
-      console.error('❌ Failed to get migration status:', error);
+      console.error("❌ Failed to get migration status:", error);
       process.exit(1);
     }
   }
 
   async migrate(): Promise<void> {
     try {
-      console.log('🔄 Running database migrations...');
+      console.log("🔄 Running database migrations...");
       const applied = await this.migrationManager.runMigrations();
-      
+
       if (applied.length === 0) {
-        console.log('✅ Database is already up to date');
+        console.log("✅ Database is already up to date");
       } else {
         console.log(`✅ Successfully applied ${applied.length} migrations:`);
-        applied.forEach(id => console.log(`  ✅ ${id}`));
+        applied.forEach((id) => console.log(`  ✅ ${id}`));
       }
     } catch (error) {
-      console.error('❌ Migration failed:', error);
+      console.error("❌ Migration failed:", error);
       process.exit(1);
     }
   }
 
   async rollback(migrationId?: string): Promise<void> {
     try {
-      console.log(`🔄 Rolling back migration${migrationId ? ` ${migrationId}` : ''}...`);
+      console.log(
+        `🔄 Rolling back migration${migrationId ? ` ${migrationId}` : ""}...`,
+      );
       await this.migrationManager.rollback(migrationId);
-      console.log('✅ Rollback completed successfully');
+      console.log("✅ Rollback completed successfully");
     } catch (error) {
-      console.error('❌ Rollback failed:', error);
+      console.error("❌ Rollback failed:", error);
       process.exit(1);
     }
   }
@@ -75,13 +78,15 @@ class MigrateCLI {
   async health(): Promise<void> {
     try {
       const isHealthy = await this.migrationManager.checkHealth();
-      console.log(`🏥 Database Health: ${isHealthy ? '✅ Healthy' : '❌ Unhealthy'}`);
-      
+      console.log(
+        `🏥 Database Health: ${isHealthy ? "✅ Healthy" : "❌ Unhealthy"}`,
+      );
+
       if (!isHealthy) {
         process.exit(1);
       }
     } catch (error) {
-      console.error('❌ Health check failed:', error);
+      console.error("❌ Health check failed:", error);
       process.exit(1);
     }
   }
@@ -99,7 +104,7 @@ Usage: node dist/cli/migrate.js [command] [options]
 
 Commands:
   status                    Show migration status
-  migrate                   Run pending migrations  
+  migrate                   Run pending migrations
   rollback [migration_id]   Rollback latest or specific migration
   health                    Check database health
 
@@ -118,37 +123,39 @@ Examples:
 
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
-  
-  if (args.includes('--help') || args.includes('-h')) {
+
+  if (args.includes("--help") || args.includes("-h")) {
     printUsage();
     return;
   }
 
-  const dbPathIndex = args.indexOf('--db-path');
-  const dbPath = dbPathIndex !== -1 && args[dbPathIndex + 1] 
-    ? args[dbPathIndex + 1] 
-    : DEFAULT_DB_PATH;
+  const dbPathIndex = args.indexOf("--db-path");
+  const dbPath =
+    dbPathIndex !== -1 && args[dbPathIndex + 1]
+      ? args[dbPathIndex + 1]
+      : DEFAULT_DB_PATH;
 
   const command = args[0];
-  const cli = new MigrateCLI(dbPath);
+  const cli = new MigrateCLI(dbPath || DEFAULT_DB_PATH);
 
   try {
     switch (command) {
-      case 'status':
+      case "status":
         await cli.status();
         break;
-      case 'migrate':
+      case "migrate":
         await cli.migrate();
         break;
-      case 'rollback':
-        const migrationId = args[1] && !args[1].startsWith('--') ? args[1] : undefined;
+      case "rollback":
+        const migrationId =
+          args[1] && !args[1].startsWith("--") ? args[1] : undefined;
         await cli.rollback(migrationId);
         break;
-      case 'health':
+      case "health":
         await cli.health();
         break;
       default:
-        console.error(`❌ Unknown command: ${command || '(none)'}`);
+        console.error(`❌ Unknown command: ${command || "(none)"}`);
         printUsage();
         process.exit(1);
     }
@@ -158,8 +165,8 @@ async function main(): Promise<void> {
 }
 
 if (require.main === module) {
-  main().catch(error => {
-    console.error('❌ Unexpected error:', error);
+  main().catch((error) => {
+    console.error("❌ Unexpected error:", error);
     process.exit(1);
   });
 }

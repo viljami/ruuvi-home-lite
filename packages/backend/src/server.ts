@@ -1,11 +1,13 @@
 import { Database, SensorData } from "./db";
 import { MQTTClient, SensorDataEvent } from "./mqtt-client";
 import { WebServer, ClientData } from "./web-server";
+import { SensorService } from "./sensor-service";
 
 class RuuviServer {
   private database!: Database;
   private mqttClient!: MQTTClient;
   private webServer!: WebServer;
+  private sensorService!: SensorService;
   private isShuttingDown: boolean = false;
 
   constructor() {
@@ -25,16 +27,21 @@ class RuuviServer {
       this.database = new Database(process.env.DB_PATH || "data/ruuvi.db");
       await this.database.initialize();
 
+      console.log("🔐 Initializing sensor service...");
+      this.sensorService = new SensorService(this.database);
+
       console.log("📡 Initializing MQTT client...");
       this.mqttClient = new MQTTClient();
 
       console.log("🌐 Initializing web server...");
-      this.webServer = new WebServer(this.database);
+      this.webServer = new WebServer(this.database, this.sensorService);
 
       this.setupEventHandlers();
 
       console.log("✅ Server initialization complete");
-      console.log("🚀 ZERO POLLING ARCHITECTURE: All updates are event-driven from MQTT data");
+      console.log(
+        "🚀 ZERO POLLING ARCHITECTURE: All updates are event-driven from MQTT data",
+      );
     } catch (error) {
       console.error("❌ Server initialization failed:", error);
       process.exit(1);
@@ -83,6 +90,7 @@ class RuuviServer {
       this.shutdown(1);
     });
   }
+
   private setupEventHandlers(): void {
     // Handle sensor data from MQTT
     this.mqttClient.on("sensorData", (sensorData: SensorDataEvent) => {
@@ -128,7 +136,9 @@ class RuuviServer {
         try {
           // This triggers immediate real-time updates, latest readings, and bucket updates
           this.webServer.broadcastToClients(clientData);
-          console.log(`📡 Event-driven update: ${sensorData.sensorMac} - ${sensorData.temperature}°C → ${this.webServer.getConnectedClients()} clients`);
+          console.log(
+            `📡 Event-driven update: ${sensorData.sensorMac} - ${sensorData.temperature}°C → ${this.webServer.getConnectedClients()} clients`,
+          );
         } catch (wsError) {
           console.error("Failed to broadcast to web clients:", wsError);
         }
@@ -160,7 +170,9 @@ class RuuviServer {
     // Handle MQTT connection
     this.mqttClient.on("connect", () => {
       console.log("🟢 MQTT connected successfully");
-      console.log("📡 Event-driven updates ready: MQTT → Server → WebSocket (ZERO POLLING)");
+      console.log(
+        "📡 Event-driven updates ready: MQTT → Server → WebSocket (ZERO POLLING)",
+      );
     });
   }
 

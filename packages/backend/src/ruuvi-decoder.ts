@@ -38,8 +38,6 @@ export class RuuviDecoder {
       const accX = this.getAccelerationX(data);
       const accY = this.getAccelerationY(data);
       const accZ = this.getAccelerationZ(data);
-      const acceleration = (accX !== null && accY !== null && accZ !== null) 
-        ? Math.sqrt(accX * accX + accY * accY + accZ * accZ) : null;
 
       return {
         dataFormat: 5,
@@ -77,40 +75,50 @@ export class RuuviDecoder {
   }
 
   private static getTemperature(data: number[]): number | null {
-    if (data[1] === -32768) {
+    const value = data[1];
+    if (value === undefined || value === -32768) {
       return null;
     }
-    return parseFloat((data[1] / 200).toFixed(2));
+    return parseFloat((value / 200).toFixed(2));
   }
 
   private static getHumidity(data: number[]): number | null {
-    if (data[2] === 65535) {
+    const value = data[2];
+    if (value === undefined || value === 65535) {
       return null;
     }
-    return parseFloat((data[2] / 400).toFixed(2));
+    return parseFloat((value / 400).toFixed(2));
   }
 
   private static getPressure(data: number[]): number | null {
-    if (data[3] === 0xFFFF) {
+    const value = data[3];
+    if (value === undefined || value === 0xFFFF) {
       return null;
     }
-    return parseFloat(((data[3] + 50000) / 100).toFixed(2));
+    return parseFloat(((value + 50000) / 100).toFixed(2));
   }
 
   private static getAccelerationX(data: number[]): number | null {
-    return data[4] === -32768 ? null : data[4];
+    const value = data[4];
+    return value === undefined || value === -32768 ? null : value;
   }
 
   private static getAccelerationY(data: number[]): number | null {
-    return data[5] === -32768 ? null : data[5];
+    const value = data[5];
+    return value === undefined || value === -32768 ? null : value;
   }
 
   private static getAccelerationZ(data: number[]): number | null {
-    return data[6] === -32768 ? null : data[6];
+    const value = data[6];
+    return value === undefined || value === -32768 ? null : value;
   }
 
   private static getBattery(data: number[]): number | null {
-    const batteryVoltage = data[7] >> 5;
+    const value = data[7];
+    if (value === undefined) {
+      return null;
+    }
+    const batteryVoltage = value >> 5;
     if (batteryVoltage === 0b11111111111) {
       return null;
     }
@@ -118,7 +126,11 @@ export class RuuviDecoder {
   }
 
   private static getTxPower(data: number[]): number | null {
-    const txPower = data[7] & 0x001F;
+    const value = data[7];
+    if (value === undefined) {
+      return null;
+    }
+    const txPower = value & 0x001F;
     if (txPower === 0b11111) {
       return null;
     }
@@ -126,11 +138,13 @@ export class RuuviDecoder {
   }
 
   private static getMovementCounter(data: number[]): number | null {
-    return data[8] === 255 ? null : data[8];
+    const value = data[8];
+    return value === undefined || value === 255 ? null : value;
   }
 
   private static getMeasurementSequenceNumber(data: number[]): number | null {
-    return data[9] === 65535 ? null : data[9];
+    const value = data[9];
+    return value === undefined || value === 65535 ? null : value;
   }
 
   private static getMac(data: number[]): string {

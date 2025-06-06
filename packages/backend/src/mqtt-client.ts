@@ -1,21 +1,10 @@
 import * as mqtt from "mqtt";
 import { EventEmitter } from "events";
 import { RuuviDecoder } from "./ruuvi-decoder";
+import type { ExtendedSensorReading } from '@ruuvi-home/shared';
 
-export interface SensorDataEvent {
-  sensorMac: string;
-  temperature: number;
-  humidity: number | null;
-  timestamp: number;
-  pressure: number | null;
-  batteryVoltage: number | null;
-  txPower: number | null;
-  movementCounter: number | null;
-  measurementSequence: number | null;
-  accelerationX: number | null;
-  accelerationY: number | null;
-  accelerationZ: number | null;
-}
+// Type alias for backward compatibility
+export type SensorDataEvent = ExtendedSensorReading;
 
 export class MQTTClient extends EventEmitter {
   private mqttClient!: mqtt.MqttClient;
@@ -132,10 +121,11 @@ export class MQTTClient extends EventEmitter {
         // ruuvi/sensor_mac (legacy)
         if (
           topicParts.length >= 3 &&
-          (topicParts[0] === "ruuvi" || topicParts[0] === "gateway")
+          (topicParts[0] === "ruuvi" || topicParts[0] === "gateway") &&
+          topicParts[2]
         ) {
           sensorMac = topicParts[2].toLowerCase(); // Use MAC from topic, normalize to lowercase
-        } else if (topicParts.length === 2 && topicParts[0] === "ruuvi") {
+        } else if (topicParts.length === 2 && topicParts[0] === "ruuvi" && topicParts[1]) {
           sensorMac = topicParts[1].toLowerCase(); // Legacy format, normalize to lowercase
         }
 

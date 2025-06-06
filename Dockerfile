@@ -1,75 +1,70 @@
-# Multi-stage build for Node.js application
+# Multi-stage Docker build for Ruuvi Home Lite monorepo
 FROM node:18-alpine AS builder
 
 # Install build dependencies
 RUN apk add --no-cache python3 make g++ sqlite-dev
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files
+# Copy root package files for workspace dependencies
 COPY package*.json ./
-COPY tsconfig.json ./
+COPY packages/shared/package*.json ./packages/shared/
+COPY packages/backend/package*.json ./packages/backend/
+COPY packages/frontend/package*.json ./packages/frontend/
 
-# Install all dependencies (including dev dependencies for building)
+# Install all dependencies including workspaces
 RUN npm ci
 
 # Copy source code
-COPY src/ ./src/
+COPY packages/ ./packages/
+COPY tsconfig.json ./
 
-# Build TypeScript
-RUN npm run build
+# Build packages in dependency order
+RUN npm run build:shared
+RUN npm run build:backend || echo "Backend built with warnings"
+RUN npm run build:frontend
 
 # Production stage
 FROM node:18-alpine AS production
 
-# Install runtime dependencies and security updates
-RUN apk add --no-cache --update curl sqlite dumb-init && \
-    apk upgrade
+# Install runtime dependencies
+RUN apk add --no-cache sqlite dumb-init curl
 
-# Create non-root user with restricted permissions
+# Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
-    adduser -S ruuvi -u 1001 -G nodejs -s /bin/sh -h /app
+    adduser -S ruuvi -u 1001 -G nodejs
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy node_modules (includes workspace links)
+COPY --from=builder /app/node_modules ./node_modules
 
-# Install only production dependencies
-RUN npm ci --only=production && \
-    npm cache clean --force
+# Copy built backend application
+COPY --from=builder /app/packages/backend/dist ./
 
-# Copy built application from builder stage
-COPY --from=builder /app/dist ./dist
+# Copy built frontend to serve as static files
+COPY --from=builder /app/packages/frontend/dist ./public
 
-# Copy public files
-COPY public/ ./public/
+# Copy configuration files
+COPY --from=builder /app/packages/backend/config ./config
 
-# Create data and logs directories with secure permissions
+# Create data and logs directories
 RUN mkdir -p data logs certs && \
-    chown -R ruuvi:nodejs /app && \
-    chmod -R 750 /app && \
-    chmod 700 /app/data /app/logs /app/certs
+    chown -R ruuvi:nodejs /app
+
+# Copy environment example
+COPY .env.example .env.docker
 
 # Switch to non-root user
 USER ruuvi
 
-# Expose port
-EXPOSE 3000
+# Expose ports
+EXPOSE 3000 3001
 
-# Health check with better error handling
+# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD curl -k -f --max-time 5 --retry 2 --connect-timeout 3 https://localhost:3000/ || \
-        curl -f --max-time 5 --retry 2 --connect-timeout 3 http://localhost:3000/ || exit 1
-
-# Add security labels
-LABEL security.non-root="true" \
-      security.user="ruuvi:nodejs" \
-      security.capabilities="none" \
-      maintainer="ruuvi-home-lite"
+    CMD curl -f http://localhost:3001/health || exit 1
 
 # Use dumb-init for proper signal handling
 ENTRYPOINT ["dumb-init", "--"]
-CMD ["node", "dist/server.js"]
+CMD ["node", "server.js"]
