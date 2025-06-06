@@ -22,6 +22,7 @@ import type {
 } from "@ruuvi-home/shared";
 
 const __dirname = path.resolve(path.dirname(""));
+console.log(__dirname);
 
 // Type alias for backward compatibility
 export type ClientData = SensorReading;
@@ -228,12 +229,15 @@ export class WebServer extends EventEmitter {
       return;
     }
 
-    const fullPath = join(__dirname, "../public", filePath);
-
+    const fullPath = join(__dirname, "../../public", filePath);
+    console.log(fullPath);
     // Ensure the resolved path stays within public directory
-    const publicDir = join(__dirname, "../public");
+    const publicDir = join(__dirname, "../../public");
     const resolvedPath = path.resolve(fullPath);
     const resolvedPublicDir = path.resolve(publicDir);
+    console.log("fullPath", fullPath);
+    console.log("resolvedPath", resolvedPath);
+    console.log("resolvedPublicDir", resolvedPublicDir);
 
     if (!resolvedPath.startsWith(resolvedPublicDir)) {
       res.writeHead(403, corsHeaders);
