@@ -1,4 +1,10 @@
-import { SensorReading, SensorReadingWithAge, AggregatedSensorData, TimeRange } from '../types/sensor.js';
+import {
+  SensorName,
+  SensorReading,
+  SensorReadingWithAge,
+  AggregatedSensorData,
+  TimeRange,
+} from "../types/sensor.js";
 
 // Base message interface
 export interface BaseMessage {
@@ -7,27 +13,27 @@ export interface BaseMessage {
 
 // Client to Server Messages
 export interface GetDataMessage extends BaseMessage {
-  type: 'getData';
+  type: "getData";
   timeRange: TimeRange;
 }
 
 export interface GetSensorNamesMessage extends BaseMessage {
-  type: 'getSensorNames';
+  type: "getSensorNames";
 }
 
 export interface AdminAuthMessage extends BaseMessage {
-  type: 'adminAuth';
+  type: "adminAuth";
   password: string;
 }
 
 export interface SetSensorNameMessage extends BaseMessage {
-  type: 'setSensorName';
+  type: "setSensorName";
   sensorMac: string;
   customName: string;
   adminToken: string;
 }
 
-export type ClientMessage = 
+export type ClientMessage =
   | GetDataMessage
   | GetSensorNamesMessage
   | AdminAuthMessage
@@ -35,7 +41,7 @@ export type ClientMessage =
 
 // Server to Client Messages
 export interface HistoricalDataMessage extends BaseMessage {
-  type: 'historicalData';
+  type: "historicalData";
   data: AggregatedSensorData[];
   bucketSize: number;
   aggregated: boolean;
@@ -44,18 +50,18 @@ export interface HistoricalDataMessage extends BaseMessage {
 }
 
 export interface SensorDataMessage extends BaseMessage {
-  type: 'sensorData';
+  type: "sensorData";
   data: SensorReading;
 }
 
 export interface LatestReadingsMessage extends BaseMessage {
-  type: 'latestReadings';
+  type: "latestReadings";
   data: SensorReadingWithAge[];
   timestamp: number;
 }
 
 export interface BucketUpdateMessage extends BaseMessage {
-  type: 'bucketUpdate';
+  type: "bucketUpdate";
   data: {
     sensorMac: string;
     timeRange: TimeRange;
@@ -66,36 +72,36 @@ export interface BucketUpdateMessage extends BaseMessage {
 }
 
 export interface AdminAuthResultMessage extends BaseMessage {
-  type: 'adminAuthResult';
+  type: "adminAuthResult";
   success: boolean;
   token?: string;
   message?: string;
 }
 
 export interface SensorNamesMessage extends BaseMessage {
-  type: 'sensorNames';
-  data: any[]; // Array of SensorName objects
+  type: "sensorNames";
+  data: SensorName[]; // Array of SensorName objects
 }
 
 export interface SensorNameSetMessage extends BaseMessage {
-  type: 'sensorNameSet';
+  type: "sensorNameSet";
   success: boolean;
   sensorMac: string;
   customName: string;
 }
 
 export interface SensorNameDeletedMessage extends BaseMessage {
-  type: 'sensorNameDeleted';
+  type: "sensorNameDeleted";
   success: boolean;
   sensorMac: string;
 }
 
 export interface ErrorMessage extends BaseMessage {
-  type: 'error';
+  type: "error";
   message: string;
 }
 
-export type ServerMessage = 
+export type ServerMessage =
   | HistoricalDataMessage
   | SensorDataMessage
   | LatestReadingsMessage
@@ -109,10 +115,26 @@ export type ServerMessage =
 export type WebSocketMessage = ClientMessage | ServerMessage;
 
 // Type guards
-export function isClientMessage(message: WebSocketMessage): message is ClientMessage {
-  return ['getData', 'getSensorNames', 'adminAuth', 'setSensorName'].includes(message.type);
+export function isClientMessage(
+  message: WebSocketMessage,
+): message is ClientMessage {
+  return ["getData", "getSensorNames", "adminAuth", "setSensorName"].includes(
+    message.type,
+  );
 }
 
-export function isServerMessage(message: WebSocketMessage): message is ServerMessage {
-  return ['historicalData', 'sensorData', 'latestReadings', 'bucketUpdate', 'adminAuthResult', 'sensorNames', 'sensorNameSet', 'sensorNameDeleted', 'error'].includes(message.type);
+export function isServerMessage(
+  message: WebSocketMessage,
+): message is ServerMessage {
+  return [
+    "historicalData",
+    "sensorData",
+    "latestReadings",
+    "bucketUpdate",
+    "adminAuthResult",
+    "sensorNames",
+    "sensorNameSet",
+    "sensorNameDeleted",
+    "error",
+  ].includes(message.type);
 }

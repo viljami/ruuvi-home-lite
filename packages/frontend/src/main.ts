@@ -148,8 +148,8 @@ class RuuviApp {
 
   private handleSensorNames(message: SensorNamesMessage): void {
     this.sensorNames.clear();
-    Object.entries(message.data).forEach(([mac, name]) => {
-      this.sensorNames.set(mac.toLowerCase(), name);
+    Object.entries(message.data).forEach(([mac, sensorNameObj]) => {
+      this.sensorNames.set(mac.toLowerCase(), sensorNameObj.customName || mac);
     });
     this.renderLatestReadings();
   }

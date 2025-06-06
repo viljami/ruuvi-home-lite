@@ -43,10 +43,10 @@ print_status "TypeScript compilation passed"
 
 # 2. Run unit tests
 echo "🧪 Running unit tests..."
-if ! make test-unit > /dev/null 2>&1; then
-    print_error "Unit tests failed"
+if ! make test > /dev/null 2>&1; then
+    print_error "Tests failed"
 fi
-print_status "Unit tests passed"
+print_status "Tests passed"
 
 # 3. Check for common issues
 echo "🔍 Checking for common issues..."
