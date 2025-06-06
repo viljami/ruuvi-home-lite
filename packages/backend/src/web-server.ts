@@ -21,8 +21,8 @@ import type {
   ErrorMessage,
 } from "@ruuvi-home/shared";
 
-const __dirname = path.resolve(path.dirname(""));
-console.log(__dirname);
+const { PUBLIC_DIR = "" } = process.env;
+const resolvedPublicDir = path.resolve(PUBLIC_DIR);
 
 // Type alias for backward compatibility
 export type ClientData = SensorReading;
@@ -229,15 +229,10 @@ export class WebServer extends EventEmitter {
       return;
     }
 
-    const fullPath = join(__dirname, "../../public", filePath);
-    console.log(fullPath);
+    const fullPath = join(PUBLIC_DIR, filePath);
     // Ensure the resolved path stays within public directory
-    const publicDir = join(__dirname, "../../public");
+
     const resolvedPath = path.resolve(fullPath);
-    const resolvedPublicDir = path.resolve(publicDir);
-    console.log("fullPath", fullPath);
-    console.log("resolvedPath", resolvedPath);
-    console.log("resolvedPublicDir", resolvedPublicDir);
 
     if (!resolvedPath.startsWith(resolvedPublicDir)) {
       res.writeHead(403, corsHeaders);
@@ -288,7 +283,7 @@ export class WebServer extends EventEmitter {
     const timestamp =
       typeof data.timestamp === "number" && data.timestamp > 0
         ? data.timestamp
-        : Date.now();
+        : Math.floor(Date.now() / 1000);
 
     // Only send minimal data to clients (temperature, humidity, timestamp, sensorMac)
     const clientData = {
