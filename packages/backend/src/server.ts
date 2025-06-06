@@ -1,7 +1,7 @@
-import { Database, SensorData } from "./db";
-import { MQTTClient, SensorDataEvent } from "./mqtt-client";
-import { WebServer, ClientData } from "./web-server";
-import { SensorService } from "./sensor-service";
+import { Database, SensorData } from "./db.js";
+import { MQTTClient, SensorDataEvent } from "./mqtt-client.js";
+import { WebServer, ClientData } from "./web-server.js";
+import { SensorService } from "./sensor-service.js";
 
 class RuuviServer {
   private database!: Database;

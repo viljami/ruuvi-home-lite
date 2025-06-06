@@ -1,7 +1,7 @@
 import * as sqlite3 from "sqlite3";
 import * as fs from "fs";
 import * as path from "path";
-import { MigrationManager, MigrationStatus } from "./migration-manager";
+import { MigrationManager, MigrationStatus } from "./migration-manager.js";
 import type {
   ExtendedSensorReading,
   ExtendedSensorReadingWithAge,

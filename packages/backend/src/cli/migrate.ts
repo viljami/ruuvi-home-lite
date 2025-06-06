@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import * as sqlite3 from "sqlite3";
-import { MigrationManager } from "../migration-manager";
+import { MigrationManager } from "../migration-manager.js";
 
 const DEFAULT_DB_PATH = process.env.DB_PATH || "ruuvi.db";
 

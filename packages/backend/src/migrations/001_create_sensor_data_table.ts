@@ -1,8 +1,8 @@
-import { Migration } from '../migration-manager';
+import { Migration } from "../migration-manager.js";
 
 const migration: Migration = {
-  id: '001_create_sensor_data_table',
-  description: 'Create sensor_data table with indexes',
+  id: "001_create_sensor_data_table",
+  description: "Create sensor_data table with indexes",
   up: `
     CREATE TABLE sensor_data (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -19,7 +19,7 @@ const migration: Migration = {
       accelerationY REAL,
       accelerationZ REAL
     );
-    
+
     CREATE INDEX idx_timestamp ON sensor_data(timestamp);
     CREATE INDEX idx_sensor ON sensor_data(sensorMac);
   `,
@@ -27,7 +27,7 @@ const migration: Migration = {
     DROP INDEX IF EXISTS idx_sensor;
     DROP INDEX IF EXISTS idx_timestamp;
     DROP TABLE IF EXISTS sensor_data;
-  `
+  `,
 };
 
 export default migration;

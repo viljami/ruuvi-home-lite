@@ -5,8 +5,8 @@ import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 import * as path from "path";
 import { EventEmitter } from "events";
-import { Database } from "./db";
-import { SensorService } from "./sensor-service";
+import { Database } from "./db.js";
+import { SensorService } from "./sensor-service.js";
 import type {
   SensorReading,
   TimeRange,

@@ -28,7 +28,7 @@
     "format:check": "prettier --check \"packages/**/*.{ts,js,json}\"",
     "lint": "eslint \"packages/**/*.ts\"",
     "lint:fix": "eslint \"packages/**/*.ts\" --fix",
-    "start": "npm run build:backend && npm run start --workspace=@ruuvi-home/backend",
+    "start": "npm run build:backend && npm run start --experimental-specifier-resolution=node --workspace=@ruuvi-home/backend",
     "preview": "npm run preview --workspace=@ruuvi-home/frontend",
     "migrate": "npm run migrate --workspace=@ruuvi-home/backend",
     "migrate:status": "npm run migrate:status --workspace=@ruuvi-home/backend",

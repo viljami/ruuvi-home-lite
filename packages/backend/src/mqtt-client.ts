@@ -1,7 +1,7 @@
 import * as mqtt from "mqtt";
 import { EventEmitter } from "events";
-import { RuuviDecoder } from "./ruuvi-decoder";
-import type { ExtendedSensorReading } from '@ruuvi-home/shared';
+import { RuuviDecoder } from "./ruuvi-decoder.js";
+import type { ExtendedSensorReading } from "@ruuvi-home/shared";
 
 // Type alias for backward compatibility
 export type SensorDataEvent = ExtendedSensorReading;
@@ -125,14 +125,18 @@ export class MQTTClient extends EventEmitter {
           topicParts[2]
         ) {
           sensorMac = topicParts[2].toLowerCase(); // Use MAC from topic, normalize to lowercase
-        } else if (topicParts.length === 2 && topicParts[0] === "ruuvi" && topicParts[1]) {
+        } else if (
+          topicParts.length === 2 &&
+          topicParts[0] === "ruuvi" &&
+          topicParts[1]
+        ) {
           sensorMac = topicParts[1].toLowerCase(); // Legacy format, normalize to lowercase
         }
 
         if (decoded && decoded.temperature !== null) {
           // Use Ruuvi timestamp in seconds, fallback to current time in seconds
           const timestamp = gatewayData.ts || Math.floor(Date.now() / 1000);
-          
+
           const sensorData: SensorDataEvent = {
             sensorMac: sensorMac,
             temperature: decoded.temperature,
