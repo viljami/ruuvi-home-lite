@@ -1,6 +1,6 @@
-import * as sqlite3 from 'sqlite3';
-import * as fs from 'fs';
-import * as path from 'path';
+import * as sqlite3 from "sqlite3";
+import * as fs from "fs";
+import * as path from "path";
 
 export interface Migration {
   id: string;
@@ -20,7 +20,10 @@ export class MigrationManager {
   private db: sqlite3.Database;
   private migrationsPath: string;
 
-  constructor(db: sqlite3.Database, migrationsPath: string = './dist/migrations') {
+  constructor(
+    db: sqlite3.Database,
+    migrationsPath: string = "./dist/migrations",
+  ) {
     this.db = db;
     this.migrationsPath = path.resolve(migrationsPath);
     this.ensureMigrationsTable();
@@ -36,27 +39,30 @@ export class MigrationManager {
         )
       `);
     } catch (error) {
-      console.error('Failed to create schema_migrations table:', error);
+      console.error("Failed to create schema_migrations table:", error);
       throw error;
     }
   }
 
-  private loadMigrations(): Migration[] {
+  private async loadMigrations(): Promise<Migration[]> {
     const migrations: Migration[] = [];
-    
+
     if (!fs.existsSync(this.migrationsPath)) {
       return migrations;
     }
 
-    const files = fs.readdirSync(this.migrationsPath)
-      .filter(file => file.endsWith('.js'))
+    const files = fs
+      .readdirSync(this.migrationsPath)
+      .filter((file) => file.endsWith(".js"))
       .sort();
 
     for (const file of files) {
       try {
         const migrationPath = path.join(this.migrationsPath, file);
-        const migration = require(migrationPath).default || require(migrationPath);
-        
+        const migration =
+          (await import(migrationPath)).default ||
+          (await import(migrationPath));
+
         if (migration && migration.id && migration.up) {
           migrations.push(migration);
         }
@@ -68,46 +74,47 @@ export class MigrationManager {
     return migrations;
   }
 
-  getStatus(): Promise<MigrationStatus> {
-    return new Promise((resolve, reject) => {
-      const allMigrations = this.loadMigrations();
-      
+  async getStatus(): Promise<MigrationStatus> {
+    return new Promise(async (resolve, reject) => {
+      const allMigrations = await this.loadMigrations();
+
       this.db.all(
-        'SELECT id FROM schema_migrations ORDER BY applied_at',
+        "SELECT id FROM schema_migrations ORDER BY applied_at",
         (err, rows) => {
           if (err) {
             reject(err);
             return;
           }
 
-          const appliedIds = (rows as any[]).map(row => row.id);
-          const allIds = allMigrations.map(m => m.id);
-          const pendingIds = allIds.filter(id => !appliedIds.includes(id));
+          const appliedIds = (rows as any[]).map((row) => row.id);
+          const allIds = allMigrations.map((m) => m.id);
+          const pendingIds = allIds.filter((id) => !appliedIds.includes(id));
 
           resolve({
             isUpToDate: pendingIds.length === 0,
             appliedMigrations: appliedIds,
             pendingMigrations: pendingIds,
-            lastMigration: appliedIds.length > 0 ? appliedIds[appliedIds.length - 1] : null
+            lastMigration:
+              appliedIds.length > 0 ? appliedIds[appliedIds.length - 1] : null,
           });
-        }
+        },
       );
     });
   }
 
-  runMigrations(): Promise<string[]> {
+  async runMigrations(): Promise<string[]> {
     return new Promise(async (resolve, reject) => {
       try {
         const status = await this.getStatus();
-        
+
         if (status.isUpToDate) {
           resolve([]);
           return;
         }
 
-        const allMigrations = this.loadMigrations();
-        const pendingMigrations = allMigrations.filter(m => 
-          status.pendingMigrations.includes(m.id)
+        const allMigrations = await this.loadMigrations();
+        const pendingMigrations = allMigrations.filter((m) =>
+          status.pendingMigrations.includes(m.id),
         );
 
         const appliedMigrations: string[] = [];
@@ -116,9 +123,14 @@ export class MigrationManager {
           try {
             await this.runSingleMigration(migration);
             appliedMigrations.push(migration.id);
-            console.log(`✅ Applied migration: ${migration.id} - ${migration.description}`);
+            console.log(
+              `✅ Applied migration: ${migration.id} - ${migration.description}`,
+            );
           } catch (error) {
-            console.error(`❌ Failed to apply migration ${migration.id}:`, error);
+            console.error(
+              `❌ Failed to apply migration ${migration.id}:`,
+              error,
+            );
             reject(new Error(`Migration failed: ${migration.id}`));
             return;
           }
@@ -134,53 +146,53 @@ export class MigrationManager {
   private runSingleMigration(migration: Migration): Promise<void> {
     return new Promise((resolve, reject) => {
       this.db.serialize(() => {
-        this.db.run('BEGIN TRANSACTION');
-        
+        this.db.run("BEGIN TRANSACTION");
+
         this.db.run(migration.up, (err) => {
           if (err) {
-            this.db.run('ROLLBACK');
+            this.db.run("ROLLBACK");
             reject(err);
             return;
           }
 
           this.db.run(
-            'INSERT INTO schema_migrations (id, description) VALUES (?, ?)',
+            "INSERT INTO schema_migrations (id, description) VALUES (?, ?)",
             [migration.id, migration.description],
             (err) => {
               if (err) {
-                this.db.run('ROLLBACK');
+                this.db.run("ROLLBACK");
                 reject(err);
                 return;
               }
 
-              this.db.run('COMMIT', (err) => {
+              this.db.run("COMMIT", (err) => {
                 if (err) {
                   reject(err);
                 } else {
                   resolve();
                 }
               });
-            }
+            },
           );
         });
       });
     });
   }
 
-  rollback(migrationId?: string): Promise<void> {
+  async rollback(migrationId?: string): Promise<void> {
     return new Promise(async (resolve, reject) => {
       try {
         const status = await this.getStatus();
         const targetId = migrationId || status.lastMigration;
-        
+
         if (!targetId) {
-          reject(new Error('No migrations to rollback'));
+          reject(new Error("No migrations to rollback"));
           return;
         }
 
-        const allMigrations = this.loadMigrations();
-        const migration = allMigrations.find(m => m.id === targetId);
-        
+        const allMigrations = await this.loadMigrations();
+        const migration = allMigrations.find((m) => m.id === targetId);
+
         if (!migration) {
           reject(new Error(`Migration not found: ${targetId}`));
           return;
@@ -192,26 +204,26 @@ export class MigrationManager {
         }
 
         this.db.serialize(() => {
-          this.db.run('BEGIN TRANSACTION');
-          
+          this.db.run("BEGIN TRANSACTION");
+
           this.db.run(migration.down!, (err) => {
             if (err) {
-              this.db.run('ROLLBACK');
+              this.db.run("ROLLBACK");
               reject(err);
               return;
             }
 
             this.db.run(
-              'DELETE FROM schema_migrations WHERE id = ?',
+              "DELETE FROM schema_migrations WHERE id = ?",
               [targetId],
               (err) => {
                 if (err) {
-                  this.db.run('ROLLBACK');
+                  this.db.run("ROLLBACK");
                   reject(err);
                   return;
                 }
 
-                this.db.run('COMMIT', (err) => {
+                this.db.run("COMMIT", (err) => {
                   if (err) {
                     reject(err);
                   } else {
@@ -219,7 +231,7 @@ export class MigrationManager {
                     resolve();
                   }
                 });
-              }
+              },
             );
           });
         });
@@ -239,7 +251,7 @@ export class MigrationManager {
           } else {
             resolve(row.count === 1);
           }
-        }
+        },
       );
     });
   }

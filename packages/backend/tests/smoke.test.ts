@@ -23,7 +23,7 @@ describe("Backend Smoke Tests", () => {
     // Clean up
     if (database) {
       try {
-        await database.close();
+        database.close();
       } catch (error) {
         // Ignore close errors in tests
       }

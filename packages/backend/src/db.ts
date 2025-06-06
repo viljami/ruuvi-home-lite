@@ -1,4 +1,7 @@
-import * as sqlite3 from "sqlite3";
+import sqlite, {
+  Database as LiteDatabase,
+  Statement as LiteStatement,
+} from "sqlite3";
 import * as fs from "fs";
 import * as path from "path";
 import { MigrationManager, MigrationStatus } from "./migration-manager.js";
@@ -9,6 +12,7 @@ import type {
   AggregatedSensorData,
   SensorName,
 } from "@ruuvi-home/shared";
+const { Database: LiteDatabaseValue } = sqlite;
 
 // Type aliases for backward compatibility
 export type SensorData = ExtendedSensorReading;
@@ -25,13 +29,13 @@ export interface AggregatedDataRow
 }
 
 export class Database {
-  private db!: sqlite3.Database;
+  private db!: LiteDatabase;
   private migrationManager!: MigrationManager;
-  private insertStatement!: sqlite3.Statement;
-  private latestReadingsStatement!: sqlite3.Statement;
-  private getSensorNamesStatement!: sqlite3.Statement;
-  private setSensorNameStatement!: sqlite3.Statement;
-  private deleteSensorNameStatement!: sqlite3.Statement;
+  private insertStatement!: LiteStatement;
+  private latestReadingsStatement!: LiteStatement;
+  private getSensorNamesStatement!: LiteStatement;
+  private setSensorNameStatement!: LiteStatement;
+  private deleteSensorNameStatement!: LiteStatement;
 
   constructor(dbPath: string = "ruuvi.db") {
     const validatedPath = this.validateAndSecurePath(dbPath);
@@ -70,7 +74,7 @@ export class Database {
 
   private initializeDatabase(dbPath: string): void {
     try {
-      this.db = new sqlite3.Database(dbPath);
+      this.db = new LiteDatabaseValue(dbPath);
 
       // Set secure file permissions (owner read/write only)
       if (fs.existsSync(dbPath)) {

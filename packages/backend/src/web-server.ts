@@ -1,4 +1,4 @@
-import * as WebSocket from "ws";
+import WebSocket from "ws";
 import { createServer as createHttpsServer } from "https";
 import { createServer as createHttpServer } from "http";
 import { readFileSync, existsSync } from "fs";
@@ -20,6 +20,8 @@ import type {
   SensorNameDeletedMessage,
   ErrorMessage,
 } from "@ruuvi-home/shared";
+
+const __dirname = path.resolve(path.dirname(""));
 
 // Type alias for backward compatibility
 export type ClientData = SensorReading;
