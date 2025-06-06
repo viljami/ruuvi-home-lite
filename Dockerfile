@@ -1,5 +1,5 @@
 # Multi-stage Docker build for Ruuvi Home Lite monorepo
-FROM node:18-alpine AS builder
+FROM node:22-alpine AS builder
 
 # Install build dependencies
 RUN apk add --no-cache python3 make g++ sqlite-dev
@@ -16,16 +16,14 @@ COPY packages/frontend/package*.json ./packages/frontend/
 RUN npm ci
 
 # Copy source code
-COPY packages/ ./packages/
+COPY packages/ ./packages
 COPY tsconfig.json ./
 
 # Build packages in dependency order
-RUN npm run build:shared
-RUN npm run build:backend || echo "Backend built with warnings"
-RUN npm run build:frontend
+RUN npm run build
 
 # Production stage
-FROM node:18-alpine AS production
+FROM node:22-alpine AS production
 
 # Install runtime dependencies
 RUN apk add --no-cache sqlite dumb-init curl
