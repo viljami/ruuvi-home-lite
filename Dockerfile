@@ -35,20 +35,20 @@ RUN addgroup -g 1001 -S nodejs && \
 WORKDIR /app
 
 # Copy node_modules (includes workspace links)
-COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder --chown=ruuvi:nodejs /app/node_modules ./node_modules
 
 # Copy built backend application
-COPY --from=builder /app/packages/backend/dist ./
+COPY --from=builder --chown=ruuvi:nodejs /app/packages/backend/dist ./
 
 # Copy built frontend to serve as static files
-COPY --from=builder /app/packages/frontend/dist ./public
+COPY --from=builder --chown=ruuvi:nodejs /app/packages/frontend/dist ./public
 
 # Copy configuration files
-COPY --from=builder /app/packages/backend/config ./config
+COPY --from=builder --chown=ruuvi:nodejs /app/packages/backend/config ./config
 
 # Create data and logs directories
 RUN mkdir -p data logs certs && \
-    chown -R ruuvi:nodejs /app
+    chown -R ruuvi:nodejs /app/*
 
 # Copy environment example
 COPY .env.example .env.docker
