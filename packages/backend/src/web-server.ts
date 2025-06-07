@@ -49,8 +49,8 @@ export class WebServer extends EventEmitter {
   }
 
   private setupHttpServer(): void {
-    const webCertPath = join(__dirname, "../certs/web-server.crt");
-    const webKeyPath = join(__dirname, "../certs/web-server.key");
+    const webCertPath = join(PUBLIC_DIR, "../certs/web-server.crt");
+    const webKeyPath = join(PUBLIC_DIR, "../certs/web-server.key");
 
     // Try to use HTTPS with separate web certificates
     if (existsSync(webCertPath) && existsSync(webKeyPath)) {
@@ -231,7 +231,6 @@ export class WebServer extends EventEmitter {
 
     const fullPath = join(PUBLIC_DIR, filePath);
     // Ensure the resolved path stays within public directory
-
     const resolvedPath = path.resolve(fullPath);
 
     if (!resolvedPath.startsWith(resolvedPublicDir)) {

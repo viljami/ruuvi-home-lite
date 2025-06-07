@@ -20,10 +20,7 @@ export class MigrationManager {
   private db: sqlite3.Database;
   private migrationsPath: string;
 
-  constructor(
-    db: sqlite3.Database,
-    migrationsPath: string = "./dist/migrations",
-  ) {
+  constructor(db: sqlite3.Database, migrationsPath: string = "./migrations") {
     this.db = db;
     this.migrationsPath = path.resolve(migrationsPath);
     this.ensureMigrationsTable();

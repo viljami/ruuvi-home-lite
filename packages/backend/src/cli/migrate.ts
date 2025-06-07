@@ -121,7 +121,7 @@ Examples:
 `);
 }
 
-async function main(): Promise<void> {
+export async function main(): Promise<void> {
   const args = process.argv.slice(2);
 
   if (args.includes("--help") || args.includes("-h")) {
@@ -162,11 +162,4 @@ async function main(): Promise<void> {
   } finally {
     cli.close();
   }
-}
-
-if (require.main === module) {
-  main().catch((error) => {
-    console.error("❌ Unexpected error:", error);
-    process.exit(1);
-  });
 }

@@ -12,11 +12,12 @@ const __dirname = path.dirname(__filename);
 
 describe("Backend Smoke Tests", () => {
   let testDbPath: string;
+  let migrationPath: string;
   let database: Database;
 
   beforeEach(() => {
-    // Create a temporary test database
     testDbPath = path.join(__dirname, `test-${Date.now()}.db`);
+    migrationPath = path.join(__dirname, "../dist/migrations");
   });
 
   afterEach(async () => {
@@ -40,12 +41,12 @@ describe("Backend Smoke Tests", () => {
 
   describe("Database", () => {
     it("should initialize successfully", async () => {
-      database = new Database(testDbPath);
+      database = new Database(testDbPath, migrationPath);
       await expect(database.initialize()).resolves.not.toThrow();
     });
 
     it("should save and retrieve sensor data", async () => {
-      database = new Database(testDbPath);
+      database = new Database(testDbPath, migrationPath);
       await database.initialize();
 
       const testData: ExtendedSensorReading = {
@@ -75,7 +76,7 @@ describe("Backend Smoke Tests", () => {
     });
 
     it("should handle sensor names", async () => {
-      database = new Database(testDbPath);
+      database = new Database(testDbPath, migrationPath);
       await database.initialize();
 
       const sensorMac = "AA:BB:CC:DD:EE:FF";
@@ -97,7 +98,7 @@ describe("Backend Smoke Tests", () => {
     });
 
     it("should aggregate historical data", async () => {
-      database = new Database(testDbPath);
+      database = new Database(testDbPath, migrationPath);
       await database.initialize();
 
       // Insert multiple data points
@@ -148,7 +149,7 @@ describe("Backend Smoke Tests", () => {
 
   describe("Web Server", () => {
     it("should create web server instance", async () => {
-      database = new Database(testDbPath);
+      database = new Database(testDbPath, migrationPath);
       await database.initialize();
 
       const sensorService = new SensorService(database);
@@ -161,7 +162,7 @@ describe("Backend Smoke Tests", () => {
 
   describe("Sensor Service", () => {
     it("should handle admin authentication", async () => {
-      database = new Database(testDbPath);
+      database = new Database(testDbPath, migrationPath);
       await database.initialize();
 
       // Set admin password
@@ -189,7 +190,7 @@ describe("Backend Smoke Tests", () => {
 
   describe("Migration Manager", () => {
     it("should check database health", async () => {
-      database = new Database(testDbPath);
+      database = new Database(testDbPath, migrationPath);
       await database.initialize();
 
       const health = await database.checkDatabaseHealth();
@@ -197,7 +198,7 @@ describe("Backend Smoke Tests", () => {
     });
 
     it("should get migration status", async () => {
-      database = new Database(testDbPath);
+      database = new Database(testDbPath, migrationPath);
       await database.initialize();
 
       const status = await database.getMigrationStatus();

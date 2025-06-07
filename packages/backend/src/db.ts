@@ -37,9 +37,9 @@ export class Database {
   private setSensorNameStatement!: LiteStatement;
   private deleteSensorNameStatement!: LiteStatement;
 
-  constructor(dbPath: string = "ruuvi.db") {
+  constructor(dbPath: string = "ruuvi.db", migrationPath?: string) {
     const validatedPath = this.validateAndSecurePath(dbPath);
-    this.initializeDatabase(validatedPath);
+    this.initializeDatabase(validatedPath, migrationPath);
   }
 
   async initialize(): Promise<void> {
@@ -72,7 +72,7 @@ export class Database {
     return resolvedPath;
   }
 
-  private initializeDatabase(dbPath: string): void {
+  private initializeDatabase(dbPath: string, migrationPath?: string): void {
     try {
       this.db = new LiteDatabaseValue(dbPath);
 
@@ -84,7 +84,7 @@ export class Database {
       // Performance optimizations
       this.configureDatabaseSettings();
 
-      this.migrationManager = new MigrationManager(this.db);
+      this.migrationManager = new MigrationManager(this.db, migrationPath);
       console.log(`Database connection established: ${dbPath}`);
     } catch (error) {
       console.error("Database initialization failed:", error);
@@ -505,7 +505,7 @@ export class Database {
     });
   }
 
-  cleanOldData(daysToKeep: number = 365): Promise<number> {
+  cleanOldData(daysToKeep: number = 365 * 2): Promise<number> {
     return new Promise((resolve, reject) => {
       const cutoffTime =
         Math.floor(Date.now() / 1000) - daysToKeep * 24 * 60 * 60;

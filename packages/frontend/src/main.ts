@@ -54,7 +54,7 @@ class RuuviApp {
   private updateConnectionStatus(status: string): void {
     const statusElement = document.getElementById("status");
     if (statusElement) {
-      statusElement.textContent = status;
+      statusElement.textContent = status === "connected" ? "real time" : status;
     }
   }
 
