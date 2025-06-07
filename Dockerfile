@@ -48,7 +48,7 @@ COPY --from=builder --chown=ruuvi:nodejs /app/packages/backend/config ./config
 
 # Create data and logs directories
 RUN mkdir -p data logs certs && \
-    chown -R ruuvi:nodejs /app/*
+    chown -R ruuvi:nodejs /app/data /app/logs /app/certs
 
 # Copy environment example
 COPY .env.example .env.docker
