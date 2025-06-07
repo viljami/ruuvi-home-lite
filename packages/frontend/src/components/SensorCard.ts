@@ -1,5 +1,5 @@
-import type { SensorReadingWithAge } from '../types/index.js';
-import { TimeFormatter } from '../utils/TimeFormatter.js';
+import type { SensorReadingWithAge } from "../types/index.js";
+import { TimeFormatter } from "../utils/TimeFormatter.js";
 
 export interface SensorCardConfig {
   reading: SensorReadingWithAge;
@@ -23,32 +23,41 @@ export class SensorCard extends HTMLElement {
   }
 
   static get observedAttributes() {
-    return ['data-sensor-mac'];
+    return ["data-sensor-mac"];
   }
 
   get sensorColor(): string {
-    return this.config.colors[this.config.sensorIndex % this.config.colors.length] || '#4a9eff';
+    return (
+      this.config.colors[this.config.sensorIndex % this.config.colors.length] ||
+      "#4a9eff"
+    );
   }
 
   get displayName(): string {
-    const customName = this.config.sensorNames.get(this.config.reading.sensorMac);
+    const customName =
+      this.config.sensorNames.get(
+        this.config.reading.sensorMac.toLowerCase(),
+      ) ||
+      this.config.sensorNames.get(this.config.reading.sensorMac.toUpperCase());
     return customName || this.config.reading.sensorMac.slice(-8).toUpperCase();
   }
 
   get isOffline(): boolean {
     const now = Math.floor(Date.now() / 1000);
-    const secondsAgo = this.config.reading.secondsAgo !== undefined 
-      ? this.config.reading.secondsAgo 
-      : now - this.config.reading.timestamp;
+    const secondsAgo =
+      this.config.reading.secondsAgo !== undefined
+        ? this.config.reading.secondsAgo
+        : now - this.config.reading.timestamp;
     return secondsAgo > 300; // 5 minutes
   }
 
   private render(): void {
     const now = Math.floor(Date.now() / 1000);
-    const secondsAgo = this.config.reading.secondsAgo !== undefined 
-      ? this.config.reading.secondsAgo 
-      : now - this.config.reading.timestamp;
-    
+    const secondsAgo =
+      this.config.reading.secondsAgo !== undefined
+        ? this.config.reading.secondsAgo
+        : now - this.config.reading.timestamp;
+
     this.className = `sensor-item ${this.isOffline ? "sensor-offline" : ""}`;
     this.style.borderLeftColor = this.sensorColor;
     this.setAttribute("data-sensor-mac", this.config.reading.sensorMac);
@@ -73,7 +82,7 @@ export class SensorCard extends HTMLElement {
 
     this.addEventListener("mouseleave", () => {
       this.config.onHover(null);
-      
+
       // Process pending update if any
       if (this.pendingUpdate) {
         this.pendingUpdate = false;
@@ -106,9 +115,10 @@ export class SensorCard extends HTMLElement {
     this.config = { ...this.config, ...newConfig };
 
     const now = Math.floor(Date.now() / 1000);
-    const secondsAgo = this.config.reading.secondsAgo !== undefined 
-      ? this.config.reading.secondsAgo 
-      : now - this.config.reading.timestamp;
+    const secondsAgo =
+      this.config.reading.secondsAgo !== undefined
+        ? this.config.reading.secondsAgo
+        : now - this.config.reading.timestamp;
 
     // Check if significant data has changed
     const currentTemp = this.querySelector(".sensor-temp")?.textContent;
@@ -117,8 +127,11 @@ export class SensorCard extends HTMLElement {
     const newAge = TimeFormatter.formatAge(secondsAgo);
 
     // Only update if there are meaningful changes
-    if (currentTemp === newTemp && currentAge === newAge && 
-        this.isOffline === (secondsAgo > 300)) {
+    if (
+      currentTemp === newTemp &&
+      currentAge === newAge &&
+      this.isOffline === secondsAgo > 300
+    ) {
       return;
     }
 
@@ -135,4 +148,4 @@ export class SensorCard extends HTMLElement {
 }
 
 // Register the custom element
-customElements.define('sensor-card', SensorCard);
+customElements.define("sensor-card", SensorCard);

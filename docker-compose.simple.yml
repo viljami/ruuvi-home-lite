@@ -33,22 +33,6 @@ services:
       retries: 3
       start_period: 10s
 
-  sqlitebrowser:
-    image: lscr.io/linuxserver/sqlitebrowser:latest
-    container_name: sqlitebrowser
-    security_opt:
-      - seccomp:unconfined #optional
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Etc/UTC
-    volumes:
-      - app_data:/config
-    ports:
-      - 4000:3000
-      - 4001:3001
-    restart: unless-stopped
-
   ruuvi-app:
     build:
       context: .
