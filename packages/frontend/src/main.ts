@@ -18,12 +18,15 @@ class RuuviApp {
   private latestReadings = new Map<string, SensorReadingWithAge>();
   private sensorNames = new Map<string, string>();
   private colors = [
-    "#4a9eff",
-    "#ff6b6b",
-    "#4ecdc4",
-    "#45b7d1",
-    "#96ceb4",
-    "#ffeaa7",
+    "#4a9eff", // bright blue
+    "#ff6b6b", // coral red
+    "#4ecdc4", // cyan green
+    "#ff9f40", // bright orange
+    "#c7ff6b", // lime yellow
+    "#ffeaa7", // light yellow
+    "#b48eff", // soft purple / lavender
+    "#ff4fa3", // hot pink / magenta
+    "#7dff72", // neon green
   ];
   private chart: SensorChart | null = null;
   private currentTimeRange: TimeRange = "day";
