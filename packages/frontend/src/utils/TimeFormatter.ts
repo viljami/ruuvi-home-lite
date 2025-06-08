@@ -6,36 +6,39 @@ export class TimeFormatter {
 
     switch (range) {
       case "hour":
+        // Format as HH:MM with clean 10-minute intervals
+        // Already aligned to 10-minute intervals from the chart calculation
         return date.toLocaleTimeString("en-US", {
           hour12: false,
           hour: "2-digit",
           minute: "2-digit",
         });
       case "day":
+        // Format as HH:00 for 3-hour intervals
         return date.toLocaleTimeString("en-US", {
           hour12: false,
           hour: "2-digit",
-          minute: "2-digit",
-        });
+        }) + ":00";
       case "week":
+        // Format as Day 12:00 for noon labels
         return (
           date.toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
+            weekday: "short",
           }) +
-          " " +
-          date.toLocaleTimeString("en-US", {
-            hour12: false,
-            hour: "2-digit",
-          })
+          " 12:00"
         );
       case "month":
+        // Format as Month Day for 5-day intervals
         return date.toLocaleDateString("en-US", {
           month: "short",
           day: "numeric",
         });
       case "year":
-        return date.toLocaleDateString("en-US", { month: "short" });
+        // Format as Month 1 for first of each month
+        return date.toLocaleDateString("en-US", { 
+          month: "short", 
+          day: "numeric"
+        });
       default:
         return date.toLocaleTimeString("en-US", { hour12: false });
     }
@@ -62,15 +65,15 @@ export class TimeFormatter {
   static getBucketSize(range: TimeRange, verticalLineCount: number): number {
     switch (range) {
       case "hour":
-        return Math.ceil(3600 / verticalLineCount);
+        return 10 * 60; // 10 minute intervals
       case "day":
-        return Math.ceil(86400 / verticalLineCount);
+        return 3 * 60 * 60; // 3 hour intervals
       case "week":
-        return Math.ceil(604800 / verticalLineCount);
+        return 24 * 60 * 60; // Daily intervals at noon
       case "month":
-        return Math.ceil(2592000 / verticalLineCount);
+        return 5 * 24 * 60 * 60; // 5 day intervals
       case "year":
-        return Math.ceil(31536000 / verticalLineCount);
+        return 30 * 24 * 60 * 60; // Monthly intervals (approx)
       default:
         return Math.ceil(3600 / verticalLineCount);
     }

@@ -298,14 +298,22 @@ export class SensorChart {
       this.ctx.stroke();
     }
 
-    // Vertical grid lines
-    for (let i = 0; i <= gridLines.vertical; i++) {
-      const x = padding.left + (i * chartWidth) / gridLines.vertical;
-      this.ctx.beginPath();
-      this.ctx.moveTo(x, padding.top);
-      this.ctx.lineTo(x, height - padding.bottom);
-      this.ctx.stroke();
-    }
+    // Vertical grid lines - aligned with exact time intervals
+    const timeBoundaries = this.calculateTimeBoundaries();
+    
+    timeBoundaries.forEach(timestamp => {
+      // Calculate x position based on timestamp
+      const x = padding.left + ((timestamp - this.timeBounds.minX) / 
+        (this.timeBounds.maxX - this.timeBounds.minX)) * chartWidth;
+      
+      // Only draw if within chart area
+      if (x >= padding.left && x <= width - padding.right) {
+        this.ctx.beginPath();
+        this.ctx.moveTo(x, padding.top);
+        this.ctx.lineTo(x, height - padding.bottom);
+        this.ctx.stroke();
+      }
+    });
 
     this.ctx.setLineDash([]);
   }
@@ -318,18 +326,22 @@ export class SensorChart {
     this.ctx.fillStyle = "#999";
     this.ctx.font = "11px monospace";
 
-    // X-axis labels (time)
+    // X-axis labels (time) - aligned with exact time intervals
     this.ctx.textAlign = "center";
     this.ctx.textBaseline = "top";
-    for (let i = 0; i <= gridLines.vertical; i++) {
-      const x = padding.left + (i * chartWidth) / gridLines.vertical;
-      const timestamp =
-        this.timeBounds.minX +
-        (i * (this.timeBounds.maxX - this.timeBounds.minX)) /
-          gridLines.vertical;
-      const label = TimeFormatter.formatTimeLabel(timestamp, this.timeRange);
-      this.ctx.fillText(label, x, height - padding.bottom + 5);
-    }
+    const timeBoundaries = this.calculateTimeBoundaries();
+    
+    timeBoundaries.forEach(timestamp => {
+      // Calculate x position based on timestamp
+      const x = padding.left + ((timestamp - this.timeBounds.minX) / 
+        (this.timeBounds.maxX - this.timeBounds.minX)) * chartWidth;
+      
+      // Only draw if within chart area
+      if (x >= padding.left && x <= width - padding.right) {
+        const label = TimeFormatter.formatTimeLabel(timestamp, this.timeRange);
+        this.ctx.fillText(label, x, height - padding.bottom + 5);
+      }
+    });
 
     // Temperature Y-axis labels (left side)
     this.ctx.textAlign = "right";
@@ -511,6 +523,110 @@ export class SensorChart {
 
     this.ctx.globalAlpha = 1;
     this.ctx.setLineDash([]);
+  }
+
+  private calculateTimeBoundaries(): number[] {
+    const boundaries: number[] = [];
+    const minTime = this.timeBounds.minX;
+    const maxTime = this.timeBounds.maxX;
+    
+    let interval: number;
+    let roundTo: number;
+    let startOffset: number = 0;
+    
+    // Set interval based on time range
+    switch (this.timeRange) {
+      case "hour":
+        // Every 10 minutes
+        interval = 10 * 60; // 10 minutes in seconds
+        roundTo = 60; // Round to nearest minute
+        break;
+        
+      case "day":
+        // Every 3 hours
+        interval = 3 * 60 * 60; // 3 hours in seconds
+        roundTo = 60 * 60; // Round to nearest hour
+        break;
+        
+      case "week":
+        // Noon each day
+        interval = 24 * 60 * 60; // 24 hours in seconds
+        roundTo = 60 * 60; // Round to nearest hour
+        
+        // Find the noon timestamp for each day
+        const dayStart = new Date(minTime * 1000);
+        dayStart.setHours(12, 0, 0, 0); // Set to noon
+        startOffset = (dayStart.getTime() / 1000) - minTime;
+        break;
+        
+      case "month":
+        // Every 5 days
+        interval = 5 * 24 * 60 * 60; // 5 days in seconds
+        roundTo = 24 * 60 * 60; // Round to nearest day
+        
+        // Find the start of the day
+        const monthStart = new Date(minTime * 1000);
+        monthStart.setHours(0, 0, 0, 0);
+        
+        // Get to a day divisible by 5
+        const dayOfMonth = monthStart.getDate();
+        const daysToAdd = 5 - (dayOfMonth % 5);
+        if (daysToAdd < 5) {
+          monthStart.setDate(dayOfMonth + daysToAdd);
+        }
+        
+        startOffset = (monthStart.getTime() / 1000) - minTime;
+        break;
+        
+      case "year":
+        // First day of each month
+        interval = 30 * 24 * 60 * 60; // ~30 days in seconds (approximate)
+        
+        // Find the 1st of the next month
+        const yearStart = new Date(minTime * 1000);
+        yearStart.setDate(1); // Set to 1st of month
+        yearStart.setHours(0, 0, 0, 0);
+        
+        // Move to next month if we're already past the 1st
+        if (yearStart.getTime() / 1000 < minTime) {
+          yearStart.setMonth(yearStart.getMonth() + 1);
+        }
+        
+        startOffset = (yearStart.getTime() / 1000) - minTime;
+        
+        // For year view, we need to generate timestamps for the 1st of each month
+        const endDate = new Date(maxTime * 1000);
+        const currentDate = new Date(yearStart.getTime());
+        
+        while (currentDate <= endDate) {
+          boundaries.push(currentDate.getTime() / 1000);
+          currentDate.setMonth(currentDate.getMonth() + 1);
+        }
+        
+        return boundaries; // Return early for year view
+        
+      default:
+        interval = 60 * 60; // Default to hourly
+        roundTo = 60;
+    }
+    
+    // Calculate the start time rounded to the appropriate interval
+    let startTime: number;
+    
+    if (startOffset > 0) {
+      // If we have a specific offset (like noon for week view)
+      startTime = minTime + startOffset;
+    } else {
+      // Otherwise round to the nearest interval
+      startTime = Math.ceil(minTime / roundTo) * roundTo;
+    }
+    
+    // Generate boundaries
+    for (let t = startTime; t <= maxTime; t += interval) {
+      boundaries.push(t);
+    }
+    
+    return boundaries;
   }
 
   resize(): void {

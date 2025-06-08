@@ -62,7 +62,9 @@ export class MQTTClient extends EventEmitter {
 
         // Security: Validate topic format
         if (!this.isValidTopic(topic)) {
-          console.warn(`Invalid topic format: ${topic}: {message}`);
+          console.warn(
+            `Invalid topic format: ${topic}: ${message.toString("utf8")}`,
+          );
           return;
         }
 
