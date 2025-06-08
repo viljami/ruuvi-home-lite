@@ -605,11 +605,13 @@ export class SensorChart {
     const sensorMac = humidityPoints[0]!.sensorMac;
     const isActive = this.activeSensors.has(sensorMac);
 
-    // Increase opacity for active or hovered sensor
-    const effectiveOpacity = isActive || isHovered ? 1.0 : opacity;
+    // Reduce overall opacity for humidity to make it secondary to temperature
+    // Humidity should still be visible but clearly secondary
+    const baseOpacity = 0.7; // Base multiplier for all humidity visualization
+    const effectiveOpacity = isActive || isHovered ? baseOpacity : opacity * baseOpacity;
 
-    // Increase line width for hovered or active sensors
-    const lineWidth = isHovered ? 2.5 : isActive ? 2 : 1.5;
+    // Slightly reduce line width compared to temperature for visual hierarchy
+    const lineWidth = isHovered ? 2 : isActive ? 1.75 : 1.25;
 
     // Apply line width to canvas context
     this.ctx.lineWidth = lineWidth;
@@ -667,17 +669,18 @@ export class SensorChart {
       // Close and fill the path
       this.ctx.closePath();
       this.ctx.fillStyle = color;
-      this.ctx.globalAlpha = effectiveOpacity * 0.2; // Transparent fill for the area
+      this.ctx.globalAlpha = effectiveOpacity * 0.15; // More transparent fill for humidity area
       this.ctx.fill();
     }
 
     // Draw main line
     this.ctx.strokeStyle = color;
-    this.ctx.globalAlpha = effectiveOpacity * 0.7; // Humidity lines are more transparent
-    this.ctx.lineWidth = isHovered || isActive ? 3 : 2;
+    this.ctx.globalAlpha = effectiveOpacity * 0.6; // More transparent for secondary priority
+    this.ctx.lineWidth = isHovered || isActive ? 2.5 : 1.75; // Thinner than temperature lines
     this.ctx.lineJoin = "round";
     this.ctx.lineCap = "round";
-    this.ctx.setLineDash([4, 2]); // Dashed lines for humidity
+    // More pronounced dash pattern for better visibility
+    this.ctx.setLineDash(isHovered || isActive ? [8, 4] : [6, 3]); // Larger dash pattern, especially when active
 
     this.ctx.beginPath();
     humidityPoints.forEach((point, index) => {
@@ -694,13 +697,16 @@ export class SensorChart {
 
     // Draw points if hovered or active
     if (isHovered || isActive) {
+      // Reset line dash for points
+      this.ctx.setLineDash([]);
       this.ctx.fillStyle = color;
+      this.ctx.globalAlpha = effectiveOpacity * 0.8; // Make points more visible than lines but still secondary
       humidityPoints.forEach((point) => {
         const x = getX(point.timestamp);
         const y = getY(point.humidity!);
 
         this.ctx.beginPath();
-        this.ctx.arc(x, y, 4, 0, 2 * Math.PI);
+        this.ctx.arc(x, y, 3, 0, 2 * Math.PI); // Slightly smaller points than temperature
         this.ctx.fill();
       });
     }
