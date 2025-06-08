@@ -166,11 +166,17 @@ class RuuviApp {
 
     if (adminBtn) {
       if (this.isAdmin) {
-        adminBtn.textContent = "Logout";
+        adminBtn.textContent = "⚙️";
         adminBtn.style.background = "#ff6b6b";
+        adminBtn.style.opacity = "1";
+        adminBtn.style.borderColor = "#ff6b6b";
+        adminBtn.style.boxShadow = "0 0 5px rgba(255, 107, 107, 0.5)";
       } else {
-        adminBtn.textContent = "Admin";
-        adminBtn.style.background = "#333";
+        adminBtn.textContent = "⚙️";
+        adminBtn.style.background = "transparent";
+        adminBtn.style.opacity = "0.7";
+        adminBtn.style.borderColor = "#444";
+        adminBtn.style.boxShadow = "none";
       }
     }
   }

@@ -298,17 +298,28 @@ export class SensorChart {
 
     // Draw data lines
     const sortedSensors = Array.from(this.data.keys()).sort();
+    const hasHoveredSensor = this.hoveredSensor !== null;
+
+    // Draw non-hovered, non-active sensors first (background)
     sortedSensors.forEach((sensorMac, index) => {
       const points = this.data.get(sensorMac)!;
       const color =
         this.config.colors[index % this.config.colors.length] || "#4a9eff";
       const isHovered = this.hoveredSensor === sensorMac;
       const isActive = this.activeSensors.has(sensorMac);
-      // If any sensors are active, non-active and non-hovered sensors are dimmed
-      // If no sensors are active, only apply hover effects
-      const shouldDim = this.activeSensors.size > 0 && !isActive && !isHovered;
-      // When hovering over a non-active sensor, keep active sensors highlighted
-      const opacity = shouldDim ? 0.2 : 1;
+
+      // Determine dimming logic:
+      // 1. If any sensors are active, dim non-active and non-hovered sensors
+      // 2. If no sensors are active but one is hovered, dim all other sensors
+      const shouldDim =
+        (this.activeSensors.size > 0 && !isActive && !isHovered) ||
+        (this.activeSensors.size === 0 && hasHoveredSensor && !isHovered);
+
+      // When hovering over a sensor, keep active sensors highlighted
+      const opacity = shouldDim ? 0.15 : 1;
+
+      // Skip drawing highlighted sensors on first pass
+      if (isHovered || isActive) return;
 
       // Draw temperature line (solid)
       this.drawTemperatureLine(points, color, opacity, isHovered);
@@ -316,6 +327,26 @@ export class SensorChart {
       // Draw humidity line (dotted) if enabled
       if (this.config.showHumidity) {
         this.drawHumidityLine(points, color, opacity, isHovered);
+      }
+    });
+
+    // Now draw active and hovered sensors on top (foreground)
+    sortedSensors.forEach((sensorMac, index) => {
+      const points = this.data.get(sensorMac)!;
+      const color =
+        this.config.colors[index % this.config.colors.length] || "#4a9eff";
+      const isHovered = this.hoveredSensor === sensorMac;
+      const isActive = this.activeSensors.has(sensorMac);
+
+      // Skip if not highlighted
+      if (!isHovered && !isActive) return;
+
+      // Draw temperature line (solid)
+      this.drawTemperatureLine(points, color, 1, isHovered);
+
+      // Draw humidity line (dotted) if enabled
+      if (this.config.showHumidity) {
+        this.drawHumidityLine(points, color, 1, isHovered);
       }
     });
   }
@@ -444,8 +475,13 @@ export class SensorChart {
     const isActive = this.activeSensors.has(sensorMac);
 
     // Increase opacity for active or hovered sensor
-    const effectiveOpacity =
-      isActive || isHovered ? Math.min(opacity * 1.2, 1.0) : opacity;
+    const effectiveOpacity = isActive || isHovered ? 1.0 : opacity;
+
+    // Increase line width for hovered or active sensors
+    const lineWidth = isHovered ? 3 : isActive ? 2 : 1.5;
+
+    // Apply line width to canvas context
+    this.ctx.lineWidth = lineWidth;
 
     // Function to calculate x coordinate
     const getX = (timestamp: number) =>
@@ -560,6 +596,7 @@ export class SensorChart {
     const { padding, width, height } = this.config;
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
+    // Humidity's y-axis is not as tall as the temperatures - to keep them less overlapped
     const humidityGridHeight = chartHeight / this.config.gridLines.horizontal;
     const humidityChartHeight = humidityGridHeight * 2;
     const humidityPaddingTop =
@@ -569,8 +606,13 @@ export class SensorChart {
     const isActive = this.activeSensors.has(sensorMac);
 
     // Increase opacity for active or hovered sensor
-    const effectiveOpacity =
-      isActive || isHovered ? Math.min(opacity * 1.2, 1.0) : opacity;
+    const effectiveOpacity = isActive || isHovered ? 1.0 : opacity;
+
+    // Increase line width for hovered or active sensors
+    const lineWidth = isHovered ? 2.5 : isActive ? 2 : 1.5;
+
+    // Apply line width to canvas context
+    this.ctx.lineWidth = lineWidth;
 
     // Function to calculate x coordinate
     const getX = (timestamp: number) =>
