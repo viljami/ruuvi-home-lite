@@ -1,6 +1,7 @@
 import { WebSocketManager } from "./managers/WebSocketManager.js";
 import { SensorCard } from "./components/SensorCard.js";
 import { SensorChart } from "./components/chart/SensorChart.js";
+
 import type {
   ServerMessage,
   SensorReadingWithAge,
@@ -197,6 +198,16 @@ class RuuviApp {
         this.promptAdminAuth();
       }
     });
+
+    // Clear selection button
+    const clearBtn = document.getElementById("clear-selection-btn");
+
+    clearBtn?.addEventListener("click", () => {
+      if (this.sensorChart) {
+        this.sensorChart.clearActiveSensors();
+        this.updateActiveSensorCards();
+      }
+    });
   }
 
   private promptAdminAuth(): void {
@@ -252,11 +263,19 @@ class RuuviApp {
         reading,
         sensorIndex,
         isAdmin: this.isAdmin,
+        isActive: this.sensorChart?.isSensorActive(sensorMac) || false,
         sensorNames: this.sensorNames,
       });
     } else {
       this.renderLatestReadings();
     }
+  }
+
+  private updateActiveSensorCards(): void {
+    // Update all sensor cards to reflect their active state
+    this.sensorCards.forEach((card, sensorMac) => {
+      card.setActive(this.sensorChart?.isSensorActive(sensorMac) || false);
+    });
   }
 
   private renderLatestReadings(): void {
@@ -285,9 +304,17 @@ class RuuviApp {
         colors: this.colors,
         sensorNames: this.sensorNames,
         isAdmin: this.isAdmin,
+        isActive: this.sensorChart?.isSensorActive(reading.sensorMac) || false,
         onHover: (sensorMac) => {
           if (this.sensorChart) {
             this.sensorChart.setHoveredSensor(sensorMac);
+          }
+        },
+        onClick: (sensorMac) => {
+          if (this.sensorChart) {
+            this.sensorChart.toggleSensor(sensorMac);
+            // Update active state on cards after toggling
+            this.updateActiveSensorCards();
           }
         },
         onEditName: (sensorMac) => {
@@ -306,6 +333,19 @@ class RuuviApp {
       this.sensorChart = new SensorChart(canvas, {
         colors: this.colors,
         showHumidity: true,
+      });
+
+      // Set up canvas click handler for sensor selection
+      canvas.addEventListener("click", (_event) => {
+        if (!this.sensorChart) return;
+
+        // Find which sensor line was clicked (simplified approach)
+        // In a more advanced implementation, you could check proximity to lines
+        const hoveredSensor = this.sensorChart["hoveredSensor"];
+        if (hoveredSensor) {
+          this.sensorChart.toggleSensor(hoveredSensor);
+          this.updateActiveSensorCards();
+        }
       });
 
       // Handle window resize

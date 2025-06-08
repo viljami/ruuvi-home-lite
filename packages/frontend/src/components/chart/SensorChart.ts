@@ -32,6 +32,7 @@ export class SensorChart {
   private data: Map<string, ChartDataPoint[]> = new Map();
   private timeRange: TimeRange = "day";
   private hoveredSensor: string | null = null;
+  private activeSensors: Set<string> = new Set();
   private temperatureBounds = {
     minY: 0,
     maxY: 0,
@@ -76,6 +77,7 @@ export class SensorChart {
     };
 
     this.setupCanvas();
+    this.setupEventListeners();
   }
 
   private setupCanvas(): void {
@@ -92,6 +94,10 @@ export class SensorChart {
     this.ctx.imageSmoothingEnabled = false;
   }
 
+  private setupEventListeners(): void {
+    // Click handling is managed by the main application
+  }
+
   setTimeRange(timeRange: TimeRange): void {
     this.timeRange = timeRange;
   }
@@ -99,6 +105,19 @@ export class SensorChart {
   setHoveredSensor(sensorMac: string | null): void {
     this.hoveredSensor = sensorMac;
     this.render();
+  }
+
+  toggleSensor(sensorMac: string): void {
+    if (this.activeSensors.has(sensorMac)) {
+      this.activeSensors.delete(sensorMac);
+    } else {
+      this.activeSensors.add(sensorMac);
+    }
+    this.render();
+  }
+
+  isSensorActive(sensorMac: string): boolean {
+    return this.activeSensors.has(sensorMac);
   }
 
   updateValue(
@@ -244,7 +263,12 @@ export class SensorChart {
       const color =
         this.config.colors[index % this.config.colors.length] || "#4a9eff";
       const isHovered = this.hoveredSensor === sensorMac;
-      const opacity = this.hoveredSensor && !isHovered ? 0.2 : 1;
+      const isActive = this.activeSensors.has(sensorMac);
+      // If any sensors are active, non-active and non-hovered sensors are dimmed
+      // If no sensors are active, only apply hover effects
+      const shouldDim = this.activeSensors.size > 0 && !isActive && !isHovered;
+      // When hovering over a non-active sensor, keep active sensors highlighted
+      const opacity = shouldDim ? 0.2 : 1;
 
       // Draw temperature line (solid)
       this.drawTemperatureLine(points, color, opacity, isHovered);
@@ -332,6 +356,7 @@ export class SensorChart {
         padding.top +
         humidityGridHeight * (this.config.gridLines.horizontal - 2);
       const humidityLines = Math.min(3, gridLines.horizontal);
+
       for (let i = 0; i <= humidityLines; i++) {
         const y = humidityPaddingTop + i * humidityGridHeight;
         const value =
@@ -357,9 +382,12 @@ export class SensorChart {
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
 
+    const sensorMac = tempPoints[0]!.sensorMac;
+    const isActive = this.activeSensors.has(sensorMac);
+
     this.ctx.strokeStyle = color;
     this.ctx.globalAlpha = opacity;
-    this.ctx.lineWidth = isHovered ? 3 : 2;
+    this.ctx.lineWidth = isHovered || isActive ? 3 : 2;
     this.ctx.lineJoin = "round";
     this.ctx.lineCap = "round";
     this.ctx.setLineDash([]);
@@ -386,8 +414,8 @@ export class SensorChart {
     });
     this.ctx.stroke();
 
-    // Draw points if hovered
-    if (isHovered) {
+    // Draw points if hovered or active
+    if (isHovered || isActive) {
       this.ctx.fillStyle = color;
       tempPoints.forEach((point) => {
         const x =
@@ -427,9 +455,12 @@ export class SensorChart {
     const humidityPaddingTop =
       padding.top + humidityGridHeight * (this.config.gridLines.horizontal - 2);
 
+    const sensorMac = humPoints[0]?.sensorMac;
+    const isActive = sensorMac ? this.activeSensors.has(sensorMac) : false;
+
     this.ctx.strokeStyle = color;
     this.ctx.globalAlpha = opacity * 0.7; // Make humidity lines slightly more transparent
-    this.ctx.lineWidth = isHovered ? 2 : 1;
+    this.ctx.lineWidth = isHovered || isActive ? 2 : 1;
     this.ctx.lineJoin = "round";
     this.ctx.lineCap = "round";
     this.ctx.setLineDash([5, 5]); // Dotted line for humidity
@@ -456,8 +487,8 @@ export class SensorChart {
     });
     this.ctx.stroke();
 
-    // Draw points if hovered
-    if (isHovered) {
+    // Draw points if hovered or active
+    if (isHovered || isActive) {
       this.ctx.fillStyle = color;
       this.ctx.setLineDash([]);
       humPoints.forEach((point) => {
@@ -489,6 +520,16 @@ export class SensorChart {
 
   clear(): void {
     this.data.clear();
+    this.activeSensors.clear();
     this.ctx.clearRect(0, 0, this.config.width, this.config.height);
+  }
+
+  clearActiveSensors(): void {
+    this.activeSensors.clear();
+    this.render();
+  }
+
+  getActiveSensors(): string[] {
+    return Array.from(this.activeSensors);
   }
 }

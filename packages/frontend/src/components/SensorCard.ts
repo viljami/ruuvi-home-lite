@@ -7,8 +7,10 @@ export interface SensorCardConfig {
   colors: string[];
   sensorNames: Map<string, string>;
   isAdmin: boolean;
+  isActive?: boolean;
   onHover: (sensorMac: string | null) => void;
   onEditName: (sensorMac: string) => void;
+  onClick?: (sensorMac: string) => void;
 }
 
 export class SensorCard extends HTMLElement {
@@ -58,8 +60,9 @@ export class SensorCard extends HTMLElement {
         ? this.config.reading.secondsAgo
         : now - this.config.reading.timestamp;
 
-    this.className = `sensor-item ${this.isOffline ? "sensor-offline" : ""}`;
+    this.className = `sensor-item ${this.isOffline ? "sensor-offline" : ""} ${this.config.isActive ? "sensor-active" : ""}`;
     this.style.borderLeftColor = this.sensorColor;
+    this.style.cursor = 'pointer';
     this.setAttribute("data-sensor-mac", this.config.reading.sensorMac);
 
     const ageText = TimeFormatter.formatAge(secondsAgo);
@@ -95,6 +98,13 @@ export class SensorCard extends HTMLElement {
       this.config.onHover(this.config.reading.sensorMac);
     });
 
+    // Click handler for toggling the sensor in the chart
+    if (this.config.onClick) {
+      this.addEventListener("click", () => {
+        this.config.onClick?.(this.config.reading.sensorMac);
+      });
+    }
+
     // Admin click handler for name editing
     if (this.config.isAdmin) {
       const macElement = this.querySelector(".sensor-mac");
@@ -125,12 +135,14 @@ export class SensorCard extends HTMLElement {
     const newTemp = `${this.config.reading.temperature.toFixed(1)}°C`;
     const currentAge = this.querySelector(".sensor-age")?.textContent;
     const newAge = TimeFormatter.formatAge(secondsAgo);
+    const wasActive = this.classList.contains("sensor-active");
 
     // Only update if there are meaningful changes
     if (
       currentTemp === newTemp &&
       currentAge === newAge &&
-      this.isOffline === secondsAgo > 300
+      this.isOffline === secondsAgo > 300 &&
+      wasActive === !!this.config.isActive
     ) {
       return;
     }
@@ -140,6 +152,13 @@ export class SensorCard extends HTMLElement {
 
   connectedCallback(): void {
     // Component added to DOM
+  }
+
+  setActive(isActive: boolean): void {
+    if (this.config.isActive !== isActive) {
+      this.config.isActive = isActive;
+      this.classList.toggle('sensor-active', isActive);
+    }
   }
 
   disconnectedCallback(): void {
