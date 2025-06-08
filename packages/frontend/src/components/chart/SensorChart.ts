@@ -139,8 +139,16 @@ export class SensorChart {
     const points = this.data.get(sensorMac);
     const point: ChartDataPoint = { sensorMac, timestamp };
 
-    if (temperature !== undefined) point.temperature = temperature;
-    if (humidity !== undefined) point.humidity = humidity;
+    if (temperature !== undefined) {
+      point.temperature = temperature;
+      point.temperatureMin = temperature;
+      point.temperatureMax = temperature;
+    }
+    if (humidity !== undefined) {
+      point.humidity = humidity;
+      point.humidityMin = humidity;
+      point.humidityMax = humidity;
+    }
     if (temperatureMin !== undefined) point.temperatureMin = temperatureMin;
     if (temperatureMax !== undefined) point.temperatureMax = temperatureMax;
     if (humidityMin !== undefined) point.humidityMin = humidityMin;
@@ -164,6 +172,20 @@ export class SensorChart {
 
         if (humidity !== undefined) {
           points[existingIndex].humidity = humidity;
+        }
+
+        if (point.humidityMin !== undefined) {
+          points[existingIndex].humidityMin =
+            points[existingIndex].humidityMin !== undefined
+              ? Math.min(points[existingIndex].humidityMin, point.humidityMin)
+              : point.humidityMin;
+        }
+
+        if (point.humidityMax !== undefined) {
+          points[existingIndex].humidityMax =
+            points[existingIndex].humidityMax !== undefined
+              ? Math.max(points[existingIndex].humidityMax, point.humidityMax)
+              : point.humidityMax;
         }
       } else {
         points.push(point);
@@ -608,7 +630,8 @@ export class SensorChart {
     // Reduce overall opacity for humidity to make it secondary to temperature
     // Humidity should still be visible but clearly secondary
     const baseOpacity = 0.7; // Base multiplier for all humidity visualization
-    const effectiveOpacity = isActive || isHovered ? baseOpacity : opacity * baseOpacity;
+    const effectiveOpacity =
+      isActive || isHovered ? baseOpacity : opacity * baseOpacity;
 
     // Slightly reduce line width compared to temperature for visual hierarchy
     const lineWidth = isHovered ? 2 : isActive ? 1.75 : 1.25;
