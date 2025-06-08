@@ -27,7 +27,7 @@ export class WebSocketManager {
     this.config.onStatusChange('connecting');
 
     this.ws.onopen = () => {
-      console.log('🟢 ZERO POLLING: WebSocket connected - pure event-driven updates');
+      // Successfully connected - no need to log in production
       this.connectionAttempts = 0;
       this.config.onStatusChange('connected');
       
@@ -50,7 +50,10 @@ export class WebSocketManager {
     };
 
     this.ws.onclose = (event) => {
-      console.log('🔴 WebSocket disconnected');
+      // Only log abnormal closures
+      if (event.code !== 1000) {
+        console.warn(`WebSocket disconnected with code: ${event.code}`);
+      }
       this.config.onStatusChange('disconnected');
       
       // Only reconnect for abnormal closures
@@ -79,7 +82,7 @@ export class WebSocketManager {
         this.connect();
       }, delay);
     } else {
-      console.log('❌ Maximum reconnection attempts reached');
+      console.error('Maximum reconnection attempts reached. Connection failed.');
       this.config.onStatusChange('disconnected');
     }
   }

@@ -17,7 +17,7 @@ class RuuviServer {
 
   async init(): Promise<void> {
     try {
-      console.log("🚀 Starting Ruuvi Home Lite server...");
+      console.log("Starting Ruuvi Home Lite server...");
 
       // Validate environment
       this.validateEnvironment();
@@ -38,10 +38,7 @@ class RuuviServer {
 
       this.setupEventHandlers();
 
-      console.log("✅ Server initialization complete");
-      console.log(
-        "🚀 ZERO POLLING ARCHITECTURE: All updates are event-driven from MQTT data",
-      );
+      console.log("Server initialization complete");
     } catch (error) {
       console.error("❌ Server initialization failed:", error);
       process.exit(1);
@@ -68,13 +65,13 @@ class RuuviServer {
   private setupProcessHandlers(): void {
     // Graceful shutdown on SIGTERM
     process.on("SIGTERM", () => {
-      console.log("📡 Received SIGTERM, shutting down gracefully...");
+      console.log("Received SIGTERM, shutting down gracefully...");
       this.shutdown();
     });
 
     // Graceful shutdown on SIGINT (Ctrl+C)
     process.on("SIGINT", () => {
-      console.log("📡 Received SIGINT, shutting down gracefully...");
+      console.log("Received SIGINT, shutting down gracefully...");
       this.shutdown();
     });
 
@@ -136,9 +133,12 @@ class RuuviServer {
         try {
           // This triggers immediate real-time updates, latest readings, and bucket updates
           this.webServer.broadcastToClients(clientData);
-          console.log(
-            `📡 Event-driven update: ${sensorData.sensorMac} - ${sensorData.temperature}°C → ${this.webServer.getConnectedClients()} clients`,
-          );
+          // Only log every 100th update to reduce noise
+          if (Math.random() < 0.01) {
+            console.log(
+              `A update: ${sensorData.sensorMac} - ${sensorData.temperature}°C → ${this.webServer.getConnectedClients()} clients`,
+            );
+          }
         } catch (wsError) {
           console.error("Failed to broadcast to web clients:", wsError);
         }
@@ -154,10 +154,10 @@ class RuuviServer {
       // If it's an authentication error, don't retry immediately
       if (error.message?.includes("Not authorized")) {
         console.error(
-          "❌ MQTT authentication failed. Check credentials and ACL configuration.",
+          "MQTT authentication failed. Check credentials and ACL configuration.",
         );
         console.error(
-          "💡 Run setup script again to regenerate credentials if needed.",
+          "Run setup script again to regenerate credentials if needed.",
         );
       }
     });
@@ -170,9 +170,6 @@ class RuuviServer {
     // Handle MQTT connection
     this.mqttClient.on("connect", () => {
       console.log("🟢 MQTT connected successfully");
-      console.log(
-        "📡 Event-driven updates ready: MQTT → Server → WebSocket (ZERO POLLING)",
-      );
     });
   }
 
@@ -217,8 +214,9 @@ class RuuviServer {
     const oneHour = 60 * 60;
     if (Math.abs(data.timestamp - now) > oneHour) {
       console.warn(
-        "Timestamp too far from current time:",
-        new Date(data.timestamp * 1000),
+        `Timestamp ${new Date(
+          data.timestamp * 1000,
+        ).toISOString()} too far from current time ${new Date().toISOString()}`,
       );
       return false;
     }
@@ -280,7 +278,7 @@ class RuuviServer {
       console.error("Error closing database:", error);
     }
 
-    console.log("✅ Server shutdown complete");
+    console.log("Server shutdown complete");
     process.exit(exitCode);
   }
 }

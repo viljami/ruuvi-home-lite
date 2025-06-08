@@ -63,7 +63,7 @@ export class SensorService {
       const expiry = Math.floor(Date.now() / 1000) + this.SESSION_DURATION;
       this.adminSessions.set(token, expiry);
 
-      console.log("Admin authenticated successfully");
+      // No need to log successful authentication
       return {
         success: true,
         token: token,
@@ -171,9 +171,7 @@ export class SensorService {
 
     try {
       await this.database.setSensorName(sanitizedMac, sanitizedName);
-      console.log(
-        `SensorService: Set name for ${sanitizedMac} -> ${sanitizedName}`,
-      );
+      // No need to log successful name setting
 
       return {
         success: true,
@@ -220,7 +218,7 @@ export class SensorService {
 
     try {
       await this.database.deleteSensorName(sanitizedMac);
-      console.log(`SensorService: Deleted name for ${sanitizedMac}`);
+      // No need to log successful name deletion
 
       return {
         success: true,

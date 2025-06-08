@@ -41,7 +41,7 @@ class RuuviApp {
     this.setupCharts();
     this.setupPWA();
 
-    console.log("🚀 Ruuvi Home Lite initialized with modular architecture");
+    // No need to log initialization in production
   }
 
   private initializeWebSocket(): void {
@@ -84,14 +84,15 @@ class RuuviApp {
         this.handleSensorNames(message);
         break;
       default:
-        console.log("Unknown message type:", message);
+        console.warn("Unknown message type received:", message);
     }
   }
 
   private handleHistoricalData(message: HistoricalDataMessage): void {
-    console.log(
-      `📊 Loaded ${message.data.length} historical data points (${message.timeRange})`,
-    );
+    // Only log if no data received (potential issue)
+    if (message.data.length === 0) {
+      console.warn(`No historical data received for range: ${message.timeRange}`);
+    }
 
     if (this.sensorChart) {
       this.sensorChart.setTimeRange(message.timeRange);
@@ -125,14 +126,15 @@ class RuuviApp {
       this.latestReadings.set(mac.toLowerCase(), reading);
       this.updateSensorCard(mac.toLowerCase());
     });
-    console.log(
-      `📱 Loaded ${Object.keys(message.data).length} latest readings`,
-    );
+    
+    // Only log if no readings received (potential issue)
+    if (Object.keys(message.data).length === 0) {
+      console.warn("No sensor readings received from server");
+    }
   }
 
   private handleBucketUpdate(): void {
-    console.log("📊 Bucket update received");
-
+    // Quietly process bucket updates without logging
     // For now, re-request full data to get updated chart
     // In a more optimized version, we would update just the affected bucket
     this.wsManager.send({ type: "getData", timeRange: this.currentTimeRange });
@@ -182,7 +184,7 @@ class RuuviApp {
         document.querySelector(".btn.active")?.classList.remove("active");
         btn.classList.add("active");
 
-        console.log(`📅 Time range changed to: ${newRange}`);
+        // No need to log every time range change
         this.currentTimeRange = newRange;
         this.wsManager.send({ type: "getData", timeRange: newRange });
       });

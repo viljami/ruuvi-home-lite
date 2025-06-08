@@ -89,7 +89,7 @@ export class MQTTClient extends EventEmitter {
 
         // Extract Ruuvi data from BLE advertisement
         if (!gatewayData.data || typeof gatewayData.data !== "string") {
-          console.log(
+          console.warn(
             `No valid data field in gateway payload on topic ${topic}`,
           );
           return;
@@ -103,7 +103,7 @@ export class MQTTClient extends EventEmitter {
 
         const ruuviHex = this.extractRuuviFromBLE(gatewayData.data);
         if (!ruuviHex) {
-          console.log(
+          console.warn(
             `No Ruuvi data found in BLE advertisement on topic ${topic}`,
           );
           return;
@@ -152,13 +152,11 @@ export class MQTTClient extends EventEmitter {
             accelerationZ: decoded.accelerationZ,
           };
 
-          console.log(
-            `Decoded sensor data: ${sensorMac} - ${decoded.temperature}°C${decoded.humidity !== null ? `, ${decoded.humidity}%` : " (no humidity)"}`,
-          );
+          // Success doesn't need to be logged on every data point
           this.emit("sensorData", sensorData);
         } else {
-          console.log(
-            `Invalid or incomplete Ruuvi data on topic ${topic} (no temperature data)`,
+          console.warn(
+            `Invalid Ruuvi data on topic ${topic} (missing temperature)`,
           );
         }
       } catch (error) {
