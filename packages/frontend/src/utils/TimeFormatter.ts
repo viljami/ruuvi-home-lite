@@ -15,17 +15,18 @@ export class TimeFormatter {
         });
       case "day":
         // Format as HH:00 for 3-hour intervals
-        return date.toLocaleTimeString("en-US", {
-          hour12: false,
-          hour: "2-digit",
-        }) + ":00";
+        return (
+          date.toLocaleTimeString("en-US", {
+            hour12: false,
+            hour: "2-digit",
+          }) + ":00"
+        );
       case "week":
         // Format as Day 12:00 for noon labels
         return (
           date.toLocaleDateString("en-US", {
             weekday: "short",
-          }) +
-          " 12:00"
+          }) + " 12:00"
         );
       case "month":
         // Format as Month Day for 5-day intervals
@@ -35,9 +36,9 @@ export class TimeFormatter {
         });
       case "year":
         // Format as Month 1 for first of each month
-        return date.toLocaleDateString("en-US", { 
-          month: "short", 
-          day: "numeric"
+        return date.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
         });
       default:
         return date.toLocaleTimeString("en-US", { hour12: false });
@@ -60,22 +61,5 @@ export class TimeFormatter {
 
     // Show only days from here onwards
     return `${Math.floor(seconds / 86400)}d`;
-  }
-
-  static getBucketSize(range: TimeRange, verticalLineCount: number): number {
-    switch (range) {
-      case "hour":
-        return 10 * 60; // 10 minute intervals
-      case "day":
-        return 3 * 60 * 60; // 3 hour intervals
-      case "week":
-        return 24 * 60 * 60; // Daily intervals at noon
-      case "month":
-        return 5 * 24 * 60 * 60; // 5 day intervals
-      case "year":
-        return 30 * 24 * 60 * 60; // Monthly intervals (approx)
-      default:
-        return Math.ceil(3600 / verticalLineCount);
-    }
   }
 }

@@ -16,13 +16,18 @@ export interface ChartConfig {
   };
   colors: string[];
   showHumidity: boolean;
+  showMinMaxBands: boolean;
 }
 
 export interface ChartDataPoint {
   sensorMac: string;
   timestamp: number;
   temperature?: number;
+  temperatureMin?: number;
+  temperatureMax?: number;
   humidity?: number;
+  humidityMin?: number;
+  humidityMax?: number;
 }
 
 export class SensorChart {
@@ -74,6 +79,7 @@ export class SensorChart {
         "#ffeaa7",
       ],
       showHumidity: config.showHumidity !== false,
+      showMinMaxBands: config.showMinMaxBands !== false,
     };
 
     this.setupCanvas();
@@ -125,21 +131,31 @@ export class SensorChart {
     timestamp: number,
     temperature?: number,
     humidity?: number,
-  ) {
+    temperatureMin?: number,
+    temperatureMax?: number,
+    humidityMin?: number,
+    humidityMax?: number,
+  ): void {
     const points = this.data.get(sensorMac);
     const point: ChartDataPoint = { sensorMac, timestamp };
 
     if (temperature !== undefined) point.temperature = temperature;
     if (humidity !== undefined) point.humidity = humidity;
+    if (temperatureMin !== undefined) point.temperatureMin = temperatureMin;
+    if (temperatureMax !== undefined) point.temperatureMax = temperatureMax;
+    if (humidityMin !== undefined) point.humidityMin = humidityMin;
+    if (humidityMax !== undefined) point.humidityMax = humidityMax;
 
     if (points) {
       // Find existing point at same timestamp or add new one
-      const bucketSize = TimeFormatter.getBucketSize(
-        this.timeRange,
-        this.config.gridLines.vertical,
-      );
+      const lastTimesampt = points[points.length - 1]?.timestamp;
+      const secondLastTimesampt = points[points.length - 2]?.timestamp;
+      const bucketSize =
+        lastTimesampt === undefined || secondLastTimesampt === undefined
+          ? 30
+          : lastTimesampt - secondLastTimesampt;
       const existingIndex = points.findIndex(
-        (p) => Math.abs(p.timestamp - timestamp) < bucketSize - 10,
+        (p) => timestamp - p.timestamp < bucketSize,
       );
       if (existingIndex >= 0 && points[existingIndex]) {
         if (temperature !== undefined) {
@@ -178,10 +194,34 @@ export class SensorChart {
 
       if (point.avgTemperature !== null) {
         dataPoint.temperature = point.avgTemperature;
+
+        // Add min/max temperature if available
+        if (
+          point.minTemperature !== null &&
+          point.minTemperature !== undefined
+        ) {
+          dataPoint.temperatureMin = point.minTemperature;
+        }
+
+        if (
+          point.maxTemperature !== null &&
+          point.maxTemperature !== undefined
+        ) {
+          dataPoint.temperatureMax = point.maxTemperature;
+        }
       }
 
       if (point.avgHumidity !== null && this.config.showHumidity) {
         dataPoint.humidity = point.avgHumidity;
+
+        // Add min/max humidity if available
+        if (point.minHumidity !== null && point.minHumidity !== undefined) {
+          dataPoint.humidityMin = point.minHumidity;
+        }
+
+        if (point.maxHumidity !== null && point.maxHumidity !== undefined) {
+          dataPoint.humidityMax = point.maxHumidity;
+        }
       }
 
       const points = this.data.get(point.sensorMac);
@@ -300,12 +340,15 @@ export class SensorChart {
 
     // Vertical grid lines - aligned with exact time intervals
     const timeBoundaries = this.calculateTimeBoundaries();
-    
-    timeBoundaries.forEach(timestamp => {
+
+    timeBoundaries.forEach((timestamp) => {
       // Calculate x position based on timestamp
-      const x = padding.left + ((timestamp - this.timeBounds.minX) / 
-        (this.timeBounds.maxX - this.timeBounds.minX)) * chartWidth;
-      
+      const x =
+        padding.left +
+        ((timestamp - this.timeBounds.minX) /
+          (this.timeBounds.maxX - this.timeBounds.minX)) *
+          chartWidth;
+
       // Only draw if within chart area
       if (x >= padding.left && x <= width - padding.right) {
         this.ctx.beginPath();
@@ -330,12 +373,15 @@ export class SensorChart {
     this.ctx.textAlign = "center";
     this.ctx.textBaseline = "top";
     const timeBoundaries = this.calculateTimeBoundaries();
-    
-    timeBoundaries.forEach(timestamp => {
+
+    timeBoundaries.forEach((timestamp) => {
       // Calculate x position based on timestamp
-      const x = padding.left + ((timestamp - this.timeBounds.minX) / 
-        (this.timeBounds.maxX - this.timeBounds.minX)) * chartWidth;
-      
+      const x =
+        padding.left +
+        ((timestamp - this.timeBounds.minX) /
+          (this.timeBounds.maxX - this.timeBounds.minX)) *
+          chartWidth;
+
       // Only draw if within chart area
       if (x >= padding.left && x <= width - padding.right) {
         const label = TimeFormatter.formatTimeLabel(timestamp, this.timeRange);
@@ -397,26 +443,86 @@ export class SensorChart {
     const sensorMac = tempPoints[0]!.sensorMac;
     const isActive = this.activeSensors.has(sensorMac);
 
+    // Increase opacity for active or hovered sensor
+    const effectiveOpacity =
+      isActive || isHovered ? Math.min(opacity * 1.2, 1.0) : opacity;
+
+    // Function to calculate x coordinate
+    const getX = (timestamp: number) =>
+      padding.left +
+      ((timestamp - this.timeBounds.minX) /
+        (this.timeBounds.maxX - this.timeBounds.minX)) *
+        chartWidth;
+
+    // Function to calculate y coordinate for temperature
+    const getY = (temp: number) =>
+      padding.top +
+      ((this.temperatureBounds.maxY - temp) /
+        (this.temperatureBounds.maxY - this.temperatureBounds.minY)) *
+        chartHeight;
+
+    // Draw min-max area if available and enabled
+    const hasMinMax = tempPoints.some(
+      (p) => p.temperatureMin !== undefined && p.temperatureMax !== undefined,
+    );
+
+    if (hasMinMax && this.config.showMinMaxBands) {
+      // Create area between min and max
+      this.ctx.beginPath();
+
+      // Draw forward path (max values)
+      tempPoints.forEach((point, index) => {
+        const x = getX(point.timestamp);
+        // Use max if available, otherwise fall back to the main temperature value
+        const maxTemp =
+          point.temperatureMax !== undefined
+            ? point.temperatureMax
+            : point.temperature!;
+        const y = getY(maxTemp);
+
+        if (index === 0) {
+          this.ctx.moveTo(x, y);
+        } else {
+          this.ctx.lineTo(x, y);
+        }
+      });
+
+      // Draw backward path (min values)
+      for (let i = tempPoints.length - 1; i >= 0; i--) {
+        const point = tempPoints[i]!;
+        const x = getX(point.timestamp);
+        // Use min if available, otherwise fall back to the main temperature value
+        const minTemp =
+          point.temperatureMin !== undefined
+            ? point.temperatureMin
+            : point.temperature!;
+        const y = getY(minTemp);
+
+        this.ctx.lineTo(x, y);
+      }
+
+      // Close and fill the path
+      this.ctx.closePath();
+      this.ctx.fillStyle = color;
+      this.ctx.globalAlpha = effectiveOpacity * 0.25; // Transparent fill for the area
+      this.ctx.fill();
+
+      // Reset alpha for the main line
+      this.ctx.globalAlpha = effectiveOpacity;
+    }
+
+    // Draw main line
     this.ctx.strokeStyle = color;
-    this.ctx.globalAlpha = opacity;
+    this.ctx.globalAlpha = effectiveOpacity;
     this.ctx.lineWidth = isHovered || isActive ? 3 : 2;
     this.ctx.lineJoin = "round";
     this.ctx.lineCap = "round";
     this.ctx.setLineDash([]);
 
-    // Draw line
     this.ctx.beginPath();
     tempPoints.forEach((point, index) => {
-      const x =
-        padding.left +
-        ((point.timestamp - this.timeBounds.minX) /
-          (this.timeBounds.maxX - this.timeBounds.minX)) *
-          chartWidth;
-      const y =
-        padding.top +
-        ((this.temperatureBounds.maxY - point.temperature!) /
-          (this.temperatureBounds.maxY - this.temperatureBounds.minY)) *
-          chartHeight;
+      const x = getX(point.timestamp);
+      const y = getY(point.temperature!);
 
       if (index === 0) {
         this.ctx.moveTo(x, y);
@@ -430,16 +536,8 @@ export class SensorChart {
     if (isHovered || isActive) {
       this.ctx.fillStyle = color;
       tempPoints.forEach((point) => {
-        const x =
-          padding.left +
-          ((point.timestamp - this.timeBounds.minX) /
-            (this.timeBounds.maxX - this.timeBounds.minX)) *
-            chartWidth;
-        const y =
-          padding.top +
-          ((this.temperatureBounds.maxY - point.temperature!) /
-            (this.temperatureBounds.maxY - this.temperatureBounds.minY)) *
-            chartHeight;
+        const x = getX(point.timestamp);
+        const y = getY(point.temperature!);
 
         this.ctx.beginPath();
         this.ctx.arc(x, y, 4, 0, 2 * Math.PI);
@@ -456,8 +554,8 @@ export class SensorChart {
     opacity: number,
     isHovered: boolean,
   ): void {
-    const humPoints = points.filter((p) => p.humidity !== undefined);
-    if (humPoints.length === 0) return;
+    const humidityPoints = points.filter((p) => p.humidity !== undefined);
+    if (humidityPoints.length === 0) return;
 
     const { padding, width, height } = this.config;
     const chartWidth = width - padding.left - padding.right;
@@ -467,29 +565,82 @@ export class SensorChart {
     const humidityPaddingTop =
       padding.top + humidityGridHeight * (this.config.gridLines.horizontal - 2);
 
-    const sensorMac = humPoints[0]?.sensorMac;
-    const isActive = sensorMac ? this.activeSensors.has(sensorMac) : false;
+    const sensorMac = humidityPoints[0]!.sensorMac;
+    const isActive = this.activeSensors.has(sensorMac);
 
+    // Increase opacity for active or hovered sensor
+    const effectiveOpacity =
+      isActive || isHovered ? Math.min(opacity * 1.2, 1.0) : opacity;
+
+    // Function to calculate x coordinate
+    const getX = (timestamp: number) =>
+      padding.left +
+      ((timestamp - this.timeBounds.minX) /
+        (this.timeBounds.maxX - this.timeBounds.minX)) *
+        chartWidth;
+
+    // Function to calculate y coordinate for humidity
+    const getY = (humidity: number) =>
+      humidityPaddingTop +
+      ((this.humidityBounds.maxY - humidity) /
+        (this.humidityBounds.maxY - this.humidityBounds.minY)) *
+        humidityChartHeight;
+
+    // Draw min-max area if available and enabled
+    const hasMinMax = humidityPoints.some(
+      (p) => p.humidityMin !== undefined && p.humidityMax !== undefined,
+    );
+
+    if (hasMinMax && this.config.showMinMaxBands) {
+      // Create area between min and max
+      this.ctx.beginPath();
+
+      // Draw forward path (max values)
+      humidityPoints.forEach((point, index) => {
+        const x = getX(point.timestamp);
+        // Use max if available, otherwise fall back to the main humidity value
+        const maxHumidity =
+          point.humidityMax !== undefined ? point.humidityMax : point.humidity!;
+        const y = getY(maxHumidity);
+
+        if (index === 0) {
+          this.ctx.moveTo(x, y);
+        } else {
+          this.ctx.lineTo(x, y);
+        }
+      });
+
+      // Draw backward path (min values)
+      for (let i = humidityPoints.length - 1; i >= 0; i--) {
+        const point = humidityPoints[i]!;
+        const x = getX(point.timestamp);
+        // Use min if available, otherwise fall back to the main humidity value
+        const minHumidity =
+          point.humidityMin !== undefined ? point.humidityMin : point.humidity!;
+        const y = getY(minHumidity);
+
+        this.ctx.lineTo(x, y);
+      }
+
+      // Close and fill the path
+      this.ctx.closePath();
+      this.ctx.fillStyle = color;
+      this.ctx.globalAlpha = effectiveOpacity * 0.2; // Transparent fill for the area
+      this.ctx.fill();
+    }
+
+    // Draw main line
     this.ctx.strokeStyle = color;
-    this.ctx.globalAlpha = opacity * 0.7; // Make humidity lines slightly more transparent
-    this.ctx.lineWidth = isHovered || isActive ? 2 : 1;
+    this.ctx.globalAlpha = effectiveOpacity * 0.7; // Humidity lines are more transparent
+    this.ctx.lineWidth = isHovered || isActive ? 3 : 2;
     this.ctx.lineJoin = "round";
     this.ctx.lineCap = "round";
-    this.ctx.setLineDash([5, 5]); // Dotted line for humidity
+    this.ctx.setLineDash([4, 2]); // Dashed lines for humidity
 
-    // Draw line
     this.ctx.beginPath();
-    humPoints.forEach((point, index) => {
-      const x =
-        padding.left +
-        ((point.timestamp - this.timeBounds.minX) /
-          (this.timeBounds.maxX - this.timeBounds.minX)) *
-          chartWidth;
-      const y =
-        humidityPaddingTop +
-        ((this.humidityBounds.maxY - point.humidity!) /
-          (this.humidityBounds.maxY - this.humidityBounds.minY)) *
-          humidityChartHeight;
+    humidityPoints.forEach((point, index) => {
+      const x = getX(point.timestamp);
+      const y = getY(point.humidity!);
 
       if (index === 0) {
         this.ctx.moveTo(x, y);
@@ -502,21 +653,12 @@ export class SensorChart {
     // Draw points if hovered or active
     if (isHovered || isActive) {
       this.ctx.fillStyle = color;
-      this.ctx.setLineDash([]);
-      humPoints.forEach((point) => {
-        const x =
-          padding.left +
-          ((point.timestamp - this.timeBounds.minX) /
-            (this.timeBounds.maxX - this.timeBounds.minX)) *
-            chartWidth;
-        const y =
-          humidityPaddingTop +
-          ((this.humidityBounds.maxY - point.humidity!) /
-            (this.humidityBounds.maxY - this.humidityBounds.minY)) *
-            humidityChartHeight;
+      humidityPoints.forEach((point) => {
+        const x = getX(point.timestamp);
+        const y = getY(point.humidity!);
 
         this.ctx.beginPath();
-        this.ctx.arc(x, y, 3, 0, 2 * Math.PI);
+        this.ctx.arc(x, y, 4, 0, 2 * Math.PI);
         this.ctx.fill();
       });
     }
@@ -529,11 +671,11 @@ export class SensorChart {
     const boundaries: number[] = [];
     const minTime = this.timeBounds.minX;
     const maxTime = this.timeBounds.maxX;
-    
+
     let interval: number;
     let roundTo: number;
     let startOffset: number = 0;
-    
+
     // Set interval based on time range
     switch (this.timeRange) {
       case "hour":
@@ -541,78 +683,78 @@ export class SensorChart {
         interval = 10 * 60; // 10 minutes in seconds
         roundTo = 60; // Round to nearest minute
         break;
-        
+
       case "day":
         // Every 3 hours
         interval = 3 * 60 * 60; // 3 hours in seconds
         roundTo = 60 * 60; // Round to nearest hour
         break;
-        
+
       case "week":
         // Noon each day
         interval = 24 * 60 * 60; // 24 hours in seconds
         roundTo = 60 * 60; // Round to nearest hour
-        
+
         // Find the noon timestamp for each day
         const dayStart = new Date(minTime * 1000);
         dayStart.setHours(12, 0, 0, 0); // Set to noon
-        startOffset = (dayStart.getTime() / 1000) - minTime;
+        startOffset = dayStart.getTime() / 1000 - minTime;
         break;
-        
+
       case "month":
         // Every 5 days
         interval = 5 * 24 * 60 * 60; // 5 days in seconds
         roundTo = 24 * 60 * 60; // Round to nearest day
-        
+
         // Find the start of the day
         const monthStart = new Date(minTime * 1000);
         monthStart.setHours(0, 0, 0, 0);
-        
+
         // Get to a day divisible by 5
         const dayOfMonth = monthStart.getDate();
         const daysToAdd = 5 - (dayOfMonth % 5);
         if (daysToAdd < 5) {
           monthStart.setDate(dayOfMonth + daysToAdd);
         }
-        
-        startOffset = (monthStart.getTime() / 1000) - minTime;
+
+        startOffset = monthStart.getTime() / 1000 - minTime;
         break;
-        
+
       case "year":
         // First day of each month
         interval = 30 * 24 * 60 * 60; // ~30 days in seconds (approximate)
-        
+
         // Find the 1st of the next month
         const yearStart = new Date(minTime * 1000);
         yearStart.setDate(1); // Set to 1st of month
         yearStart.setHours(0, 0, 0, 0);
-        
+
         // Move to next month if we're already past the 1st
         if (yearStart.getTime() / 1000 < minTime) {
           yearStart.setMonth(yearStart.getMonth() + 1);
         }
-        
-        startOffset = (yearStart.getTime() / 1000) - minTime;
-        
+
+        startOffset = yearStart.getTime() / 1000 - minTime;
+
         // For year view, we need to generate timestamps for the 1st of each month
         const endDate = new Date(maxTime * 1000);
         const currentDate = new Date(yearStart.getTime());
-        
+
         while (currentDate <= endDate) {
           boundaries.push(currentDate.getTime() / 1000);
           currentDate.setMonth(currentDate.getMonth() + 1);
         }
-        
+
         return boundaries; // Return early for year view
-        
+
       default:
         interval = 60 * 60; // Default to hourly
         roundTo = 60;
     }
-    
+
     // Calculate the start time rounded to the appropriate interval
     let startTime: number;
-    
+
     if (startOffset > 0) {
       // If we have a specific offset (like noon for week view)
       startTime = minTime + startOffset;
@@ -620,12 +762,12 @@ export class SensorChart {
       // Otherwise round to the nearest interval
       startTime = Math.ceil(minTime / roundTo) * roundTo;
     }
-    
+
     // Generate boundaries
     for (let t = startTime; t <= maxTime; t += interval) {
       boundaries.push(t);
     }
-    
+
     return boundaries;
   }
 

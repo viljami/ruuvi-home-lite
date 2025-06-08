@@ -351,6 +351,7 @@ class RuuviApp {
       this.sensorChart = new SensorChart(canvas, {
         colors: this.colors,
         showHumidity: true,
+        showMinMaxBands: true,
       });
 
       // Set up canvas click handler for sensor selection
