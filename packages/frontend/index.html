@@ -89,6 +89,14 @@
         background: #404040;
         transform: translateX(2px);
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        z-index: 2;
+      }
+
+      /* When any item is hovered, dim the others unless they're active */
+      .sidebar:has(.sensor-item:hover) .sensor-item:not(:hover):not(.sensor-active) {
+        opacity: 0.5;
+        transform: translateX(0);
+        transition: all 0.2s ease;
       }
       .sensor-left {
         display: flex;
@@ -123,9 +131,25 @@
         border: 1px solid #4a9eff;
         box-shadow: 0 0 5px rgba(74, 158, 255, 0.3);
         transform: translateX(2px);
+        z-index: 1;
+        opacity: 1 !important; /* Ensure active sensors don't get dimmed */
       }
       .sensor-active .sensor-temp {
         color: white;
+      }
+
+      /* Make hover effect stronger with brighter text */
+      .sensor-item:hover .sensor-temp {
+        color: white;
+      }
+      
+      .sensor-item:hover .sensor-humidity {
+        color: #ff8c8c;
+      }
+      
+      .sensor-item:hover .sensor-mac,
+      .sensor-item:hover .sensor-age {
+        color: #aaa;
       }
       .status {
         position: absolute;
@@ -171,18 +195,18 @@
         >
           <div style="display: flex; gap: 5px;">
             <button
-              id="admin-btn"
-              class="btn"
-              style="padding: 4px 8px; font-size: 10px"
-            >
-              Admin
-            </button>
-            <button
               id="clear-selection-btn"
               class="btn"
               style="padding: 4px 8px; font-size: 10px"
             >
-              Clear Selection
+              Clear
+            </button>
+            <button
+              id="admin-btn"
+              class="btn"
+              style="padding: 4px 8px; font-size: 12px; margin-left: 5px; opacity: 0.7; background: transparent; border-color: #444;"
+            >
+              ⚙️
             </button>
           </div>
         </div>
