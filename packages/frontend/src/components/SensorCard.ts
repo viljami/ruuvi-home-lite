@@ -66,11 +66,11 @@ export class SensorCard extends HTMLElement {
 
     this.innerHTML = `
       <div class="sensor-left">
-        <div class="sensor-mac" ${this.config.isAdmin ? 'style="cursor: pointer; text-decoration: underline;"' : ""}>${this.displayName}</div>
         <div class="sensor-temp">${this.config.reading.temperature.toFixed(1)}°C</div>
         ${this.config.reading.humidity !== null ? `<div class="sensor-humidity">${this.config.reading.humidity.toFixed(1)}%</div>` : ""}
+        <div class="sensor-mac" ${this.config.isAdmin ? 'style="cursor: pointer; text-decoration: underline;"' : ""}>${this.displayName}</div>
+        <div class="sensor-age">${ageText}</div>
       </div>
-      <div class="sensor-age">${ageText}</div>
     `;
   }
 

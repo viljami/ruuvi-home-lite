@@ -15,13 +15,14 @@ export interface ChartConfig {
     vertical: number;
   };
   colors: string[];
-  type: "temperature" | "humidity";
+  showHumidity: boolean;
 }
 
 export interface ChartDataPoint {
   sensorMac: string;
   timestamp: number;
-  value: number;
+  temperature?: number;
+  humidity?: number;
 }
 
 export class SensorChart {
@@ -31,11 +32,17 @@ export class SensorChart {
   private data: Map<string, ChartDataPoint[]> = new Map();
   private timeRange: TimeRange = "day";
   private hoveredSensor: string | null = null;
-  private bounds = {
-    minX: 0,
-    maxX: 0,
+  private temperatureBounds = {
     minY: 0,
     maxY: 0,
+  };
+  private humidityBounds = {
+    minY: 0,
+    maxY: 100,
+  };
+  private timeBounds = {
+    minX: 0,
+    maxX: 0,
   };
 
   constructor(canvas: HTMLCanvasElement, config: Partial<ChartConfig> = {}) {
@@ -43,11 +50,11 @@ export class SensorChart {
     this.ctx = canvas.getContext("2d")!;
 
     this.config = {
-      width: canvas.width,
-      height: canvas.height,
+      width: config.width || canvas.width,
+      height: config.height || canvas.height,
       padding: {
         top: 20,
-        right: 20,
+        right: config.showHumidity !== false ? 60 : 20,
         bottom: 40,
         left: 60,
         ...config.padding,
@@ -65,7 +72,7 @@ export class SensorChart {
         "#96ceb4",
         "#ffeaa7",
       ],
-      type: config.type || "temperature",
+      showHumidity: config.showHumidity !== false,
     };
 
     this.setupCanvas();
@@ -94,41 +101,45 @@ export class SensorChart {
     this.render();
   }
 
-  updateValue(sensorMac: string, timestamp: number, value: number) {
+  updateValue(
+    sensorMac: string,
+    timestamp: number,
+    temperature?: number,
+    humidity?: number,
+  ) {
     const points = this.data.get(sensorMac);
-    const point = { sensorMac, timestamp, value };
+    const point: ChartDataPoint = { sensorMac, timestamp };
+
+    if (temperature !== undefined) point.temperature = temperature;
+    if (humidity !== undefined) point.humidity = humidity;
 
     if (points) {
-      let firstStep = (points[1]?.timestamp || 0) - (points[0]?.timestamp || 0);
-      let lastStep =
-        (points[points.length - 1]?.timestamp || 0) -
-        (points[points.length - 2]?.timestamp || 0);
+      // Find existing point at same timestamp or add new one
+      const bucketSize = TimeFormatter.getBucketSize(
+        this.timeRange,
+        this.config.gridLines.vertical,
+      );
+      const existingIndex = points.findIndex(
+        (p) => Math.abs(p.timestamp - timestamp) < bucketSize - 10,
+      );
+      if (existingIndex >= 0 && points[existingIndex]) {
+        if (temperature !== undefined) {
+          points[existingIndex].temperature = temperature;
+        }
 
-      if (firstStep > 0 && Math.abs(firstStep - lastStep) > 10) {
-        points.pop();
+        if (humidity !== undefined) {
+          points[existingIndex].humidity = humidity;
+        }
+      } else {
+        points.push(point);
+        points.sort((a, b) => a.timestamp - b.timestamp);
       }
-
-      points.push(point);
     } else {
       this.data.set(sensorMac, [point]);
     }
 
+    this.calculateBounds();
     this.render();
-  }
-
-  isOutDated(sensorMac: string): boolean {
-    const points = this.data.get(sensorMac);
-
-    if (points) {
-      let firstStep = (points[1]?.timestamp || 0) - (points[0]?.timestamp || 0);
-      let lastStep =
-        (points[points.length - 1]?.timestamp || 0) -
-        (points[points.length - 2]?.timestamp || 0);
-
-      return firstStep <= 0 || firstStep - lastStep < 0;
-    } else {
-      return true;
-    }
   }
 
   updateData(sensorData: AggregatedSensorData[]): void {
@@ -141,17 +152,25 @@ export class SensorChart {
         this.data.set(point.sensorMac, []);
       }
 
-      const value =
-        this.config.type === "temperature"
-          ? point.avgTemperature
-          : point.avgHumidity;
+      const dataPoint: ChartDataPoint = {
+        sensorMac: point.sensorMac,
+        timestamp: point.timestamp,
+      };
 
-      if (value !== null) {
-        this.data.get(point.sensorMac)!.push({
-          sensorMac: point.sensorMac,
-          timestamp: point.timestamp,
-          value,
-        });
+      if (point.avgTemperature !== null) {
+        dataPoint.temperature = point.avgTemperature;
+      }
+
+      if (point.avgHumidity !== null && this.config.showHumidity) {
+        dataPoint.humidity = point.avgHumidity;
+      }
+
+      const points = this.data.get(point.sensorMac);
+
+      if (points) {
+        points.push(dataPoint);
+      } else {
+        this.data.set(point.sensorMac, [dataPoint]);
       }
     });
 
@@ -167,34 +186,46 @@ export class SensorChart {
   private calculateBounds(): void {
     let minX = Infinity;
     let maxX = -Infinity;
-    let minY = Infinity;
-    let maxY = -Infinity;
+    let minTempY = Infinity;
+    let maxTempY = -Infinity;
 
     this.data.forEach((points) => {
       points.forEach((point) => {
         minX = Math.min(minX, point.timestamp);
         maxX = Math.max(maxX, point.timestamp);
-        minY = Math.min(minY, point.value);
-        maxY = Math.max(maxY, point.value);
+
+        if (point.temperature !== undefined) {
+          minTempY = Math.min(minTempY, point.temperature);
+          maxTempY = Math.max(maxTempY, point.temperature);
+        }
       });
     });
 
-    // Add some padding to Y bounds
-    const yPadding = (maxY - minY) * 0.1 || 1;
-    this.bounds = {
+    // Time bounds
+    this.timeBounds = {
       minX: minX === Infinity ? Date.now() / 1000 - 86400 : minX,
       maxX: maxX === -Infinity ? Date.now() / 1000 : maxX,
-      minY: minY === Infinity ? 0 : minY - yPadding,
-      maxY: maxY === -Infinity ? 100 : maxY + yPadding,
     };
 
-    // Round Y bounds to nice numbers
-    if (this.config.type === "temperature") {
-      this.bounds.minY = Math.floor(this.bounds.minY / 5) * 5;
-      this.bounds.maxY = Math.ceil(this.bounds.maxY / 5) * 5;
-    } else {
-      this.bounds.minY = Math.max(0, Math.floor(this.bounds.minY / 10) * 10);
-      this.bounds.maxY = Math.min(100, Math.ceil(this.bounds.maxY / 10) * 10);
+    // Temperature bounds with padding
+    const tempPadding = (maxTempY - minTempY) * 0.1 || 1;
+    this.temperatureBounds = {
+      minY:
+        minTempY === Infinity
+          ? 0
+          : Math.floor((minTempY - tempPadding) / 5) * 5,
+      maxY:
+        maxTempY === -Infinity
+          ? 25
+          : Math.ceil((maxTempY + tempPadding) / 5) * 5,
+    };
+
+    // Humidity bounds (always 0-100% but can be narrowed if data allows)
+    if (this.config.showHumidity) {
+      this.humidityBounds = {
+        minY: 0.0,
+        maxY: 100.0,
+      };
     }
   }
 
@@ -215,7 +246,13 @@ export class SensorChart {
       const isHovered = this.hoveredSensor === sensorMac;
       const opacity = this.hoveredSensor && !isHovered ? 0.2 : 1;
 
-      this.drawLine(points, color, opacity, isHovered);
+      // Draw temperature line (solid)
+      this.drawTemperatureLine(points, color, opacity, isHovered);
+
+      // Draw humidity line (dotted) if enabled
+      if (this.config.showHumidity) {
+        this.drawHumidityLine(points, color, opacity, isHovered);
+      }
     });
   }
 
@@ -256,43 +293,65 @@ export class SensorChart {
 
     this.ctx.fillStyle = "#999";
     this.ctx.font = "11px monospace";
-    this.ctx.textAlign = "center";
-    this.ctx.textBaseline = "top";
 
     // X-axis labels (time)
+    this.ctx.textAlign = "center";
+    this.ctx.textBaseline = "top";
     for (let i = 0; i <= gridLines.vertical; i++) {
       const x = padding.left + (i * chartWidth) / gridLines.vertical;
       const timestamp =
-        this.bounds.minX +
-        (i * (this.bounds.maxX - this.bounds.minX)) / gridLines.vertical;
+        this.timeBounds.minX +
+        (i * (this.timeBounds.maxX - this.timeBounds.minX)) /
+          gridLines.vertical;
       const label = TimeFormatter.formatTimeLabel(timestamp, this.timeRange);
-
       this.ctx.fillText(label, x, height - padding.bottom + 5);
     }
 
-    // Y-axis labels
+    // Temperature Y-axis labels (left side)
     this.ctx.textAlign = "right";
     this.ctx.textBaseline = "middle";
-
-    const unit = this.config.type === "temperature" ? "°C" : "%";
     for (let i = 0; i <= gridLines.horizontal; i++) {
       const y = padding.top + (i * chartHeight) / gridLines.horizontal;
       const value =
-        this.bounds.maxY -
-        (i * (this.bounds.maxY - this.bounds.minY)) / gridLines.horizontal;
-      const label = `${value.toFixed(1)}${unit}`;
-
+        this.temperatureBounds.maxY -
+        (i * (this.temperatureBounds.maxY - this.temperatureBounds.minY)) /
+          gridLines.horizontal;
+      const label = `${value.toFixed(1)}°C`;
       this.ctx.fillText(label, padding.left - 8, y);
+    }
+
+    // Humidity Y-axis labels (right side)
+    if (this.config.showHumidity) {
+      this.ctx.textAlign = "left";
+      this.ctx.textBaseline = "middle";
+      this.ctx.fillStyle = "#666";
+
+      // Only show humidity labels for a subset of lines to avoid clutter
+      const humidityGridHeight = chartHeight / this.config.gridLines.horizontal;
+      const humidityPaddingTop =
+        padding.top +
+        humidityGridHeight * (this.config.gridLines.horizontal - 2);
+      const humidityLines = Math.min(3, gridLines.horizontal);
+      for (let i = 0; i <= humidityLines; i++) {
+        const y = humidityPaddingTop + i * humidityGridHeight;
+        const value =
+          this.humidityBounds.maxY -
+          (i * (this.humidityBounds.maxY - this.humidityBounds.minY)) /
+            (humidityLines - 1);
+        const label = `${value.toFixed(0)}%`;
+        this.ctx.fillText(label, width - padding.right + 8, y);
+      }
     }
   }
 
-  private drawLine(
+  private drawTemperatureLine(
     points: ChartDataPoint[],
     color: string,
     opacity: number,
     isHovered: boolean,
   ): void {
-    if (points.length === 0) return;
+    const tempPoints = points.filter((p) => p.temperature !== undefined);
+    if (tempPoints.length === 0) return;
 
     const { padding, width, height } = this.config;
     const chartWidth = width - padding.left - padding.right;
@@ -303,19 +362,20 @@ export class SensorChart {
     this.ctx.lineWidth = isHovered ? 3 : 2;
     this.ctx.lineJoin = "round";
     this.ctx.lineCap = "round";
+    this.ctx.setLineDash([]);
 
     // Draw line
     this.ctx.beginPath();
-    points.forEach((point, index) => {
+    tempPoints.forEach((point, index) => {
       const x =
         padding.left +
-        ((point.timestamp - this.bounds.minX) /
-          (this.bounds.maxX - this.bounds.minX)) *
+        ((point.timestamp - this.timeBounds.minX) /
+          (this.timeBounds.maxX - this.timeBounds.minX)) *
           chartWidth;
       const y =
         padding.top +
-        ((this.bounds.maxY - point.value) /
-          (this.bounds.maxY - this.bounds.minY)) *
+        ((this.temperatureBounds.maxY - point.temperature!) /
+          (this.temperatureBounds.maxY - this.temperatureBounds.minY)) *
           chartHeight;
 
       if (index === 0) {
@@ -329,16 +389,16 @@ export class SensorChart {
     // Draw points if hovered
     if (isHovered) {
       this.ctx.fillStyle = color;
-      points.forEach((point) => {
+      tempPoints.forEach((point) => {
         const x =
           padding.left +
-          ((point.timestamp - this.bounds.minX) /
-            (this.bounds.maxX - this.bounds.minX)) *
+          ((point.timestamp - this.timeBounds.minX) /
+            (this.timeBounds.maxX - this.timeBounds.minX)) *
             chartWidth;
         const y =
           padding.top +
-          ((this.bounds.maxY - point.value) /
-            (this.bounds.maxY - this.bounds.minY)) *
+          ((this.temperatureBounds.maxY - point.temperature!) /
+            (this.temperatureBounds.maxY - this.temperatureBounds.minY)) *
             chartHeight;
 
         this.ctx.beginPath();
@@ -348,6 +408,78 @@ export class SensorChart {
     }
 
     this.ctx.globalAlpha = 1;
+  }
+
+  private drawHumidityLine(
+    points: ChartDataPoint[],
+    color: string,
+    opacity: number,
+    isHovered: boolean,
+  ): void {
+    const humPoints = points.filter((p) => p.humidity !== undefined);
+    if (humPoints.length === 0) return;
+
+    const { padding, width, height } = this.config;
+    const chartWidth = width - padding.left - padding.right;
+    const chartHeight = height - padding.top - padding.bottom;
+    const humidityGridHeight = chartHeight / this.config.gridLines.horizontal;
+    const humidityChartHeight = humidityGridHeight * 2;
+    const humidityPaddingTop =
+      padding.top + humidityGridHeight * (this.config.gridLines.horizontal - 2);
+
+    this.ctx.strokeStyle = color;
+    this.ctx.globalAlpha = opacity * 0.7; // Make humidity lines slightly more transparent
+    this.ctx.lineWidth = isHovered ? 2 : 1;
+    this.ctx.lineJoin = "round";
+    this.ctx.lineCap = "round";
+    this.ctx.setLineDash([5, 5]); // Dotted line for humidity
+
+    // Draw line
+    this.ctx.beginPath();
+    humPoints.forEach((point, index) => {
+      const x =
+        padding.left +
+        ((point.timestamp - this.timeBounds.minX) /
+          (this.timeBounds.maxX - this.timeBounds.minX)) *
+          chartWidth;
+      const y =
+        humidityPaddingTop +
+        ((this.humidityBounds.maxY - point.humidity!) /
+          (this.humidityBounds.maxY - this.humidityBounds.minY)) *
+          humidityChartHeight;
+
+      if (index === 0) {
+        this.ctx.moveTo(x, y);
+      } else {
+        this.ctx.lineTo(x, y);
+      }
+    });
+    this.ctx.stroke();
+
+    // Draw points if hovered
+    if (isHovered) {
+      this.ctx.fillStyle = color;
+      this.ctx.setLineDash([]);
+      humPoints.forEach((point) => {
+        const x =
+          padding.left +
+          ((point.timestamp - this.timeBounds.minX) /
+            (this.timeBounds.maxX - this.timeBounds.minX)) *
+            chartWidth;
+        const y =
+          humidityPaddingTop +
+          ((this.humidityBounds.maxY - point.humidity!) /
+            (this.humidityBounds.maxY - this.humidityBounds.minY)) *
+            humidityChartHeight;
+
+        this.ctx.beginPath();
+        this.ctx.arc(x, y, 3, 0, 2 * Math.PI);
+        this.ctx.fill();
+      });
+    }
+
+    this.ctx.globalAlpha = 1;
+    this.ctx.setLineDash([]);
   }
 
   resize(): void {

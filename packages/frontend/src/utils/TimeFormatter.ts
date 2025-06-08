@@ -58,4 +58,21 @@ export class TimeFormatter {
     // Show only days from here onwards
     return `${Math.floor(seconds / 86400)}d`;
   }
+
+  static getBucketSize(range: TimeRange, verticalLineCount: number): number {
+    switch (range) {
+      case "hour":
+        return Math.ceil(3600 / verticalLineCount);
+      case "day":
+        return Math.ceil(86400 / verticalLineCount);
+      case "week":
+        return Math.ceil(604800 / verticalLineCount);
+      case "month":
+        return Math.ceil(2592000 / verticalLineCount);
+      case "year":
+        return Math.ceil(31536000 / verticalLineCount);
+      default:
+        return Math.ceil(3600 / verticalLineCount);
+    }
+  }
 }

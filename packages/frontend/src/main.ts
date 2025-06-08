@@ -28,7 +28,7 @@ class RuuviApp {
     "#ff4fa3", // hot pink / magenta
     "#7dff72", // neon green
   ];
-  private chart: SensorChart | null = null;
+  private sensorChart: SensorChart | null = null;
   private currentTimeRange: TimeRange = "day";
 
   private isAdmin = false;
@@ -37,7 +37,7 @@ class RuuviApp {
   constructor() {
     this.initializeWebSocket();
     this.setupControls();
-    this.setupChart();
+    this.setupCharts();
     this.setupPWA();
 
     console.log("🚀 Ruuvi Home Lite initialized with modular architecture");
@@ -56,6 +56,7 @@ class RuuviApp {
 
   private updateConnectionStatus(status: string): void {
     const statusElement = document.getElementById("status");
+
     if (statusElement) {
       statusElement.textContent = status === "connected" ? "real time" : status;
     }
@@ -91,9 +92,9 @@ class RuuviApp {
       `📊 Loaded ${message.data.length} historical data points (${message.timeRange})`,
     );
 
-    if (this.chart) {
-      this.chart.setTimeRange(message.timeRange);
-      this.chart.updateData(message.data);
+    if (this.sensorChart) {
+      this.sensorChart.setTimeRange(message.timeRange);
+      this.sensorChart.updateData(message.data);
     }
   }
 
@@ -107,16 +108,14 @@ class RuuviApp {
     });
 
     this.updateSensorCard(normalizedMac);
-    if (this.chart) {
-      this.chart.updateValue(
+
+    if (this.sensorChart) {
+      this.sensorChart.updateValue(
         normalizedMac,
         message.data.timestamp,
         message.data.temperature,
+        message.data.humidity || undefined,
       );
-
-      if (this.chart.isOutDated(normalizedMac)) {
-        this.handleBucketUpdate();
-      }
     }
   }
 
@@ -161,6 +160,7 @@ class RuuviApp {
 
   private updateAdminUI(): void {
     const adminBtn = document.getElementById("admin-btn");
+
     if (adminBtn) {
       if (this.isAdmin) {
         adminBtn.textContent = "Logout";
@@ -189,6 +189,7 @@ class RuuviApp {
 
     // Admin button
     const adminBtn = document.getElementById("admin-btn");
+
     adminBtn?.addEventListener("click", () => {
       if (this.isAdmin) {
         this.logout();
@@ -200,6 +201,7 @@ class RuuviApp {
 
   private promptAdminAuth(): void {
     const password = prompt("Enter admin password:");
+
     if (password) {
       this.wsManager.send({
         type: "adminAuth",
@@ -284,8 +286,8 @@ class RuuviApp {
         sensorNames: this.sensorNames,
         isAdmin: this.isAdmin,
         onHover: (sensorMac) => {
-          if (this.chart) {
-            this.chart.setHoveredSensor(sensorMac);
+          if (this.sensorChart) {
+            this.sensorChart.setHoveredSensor(sensorMac);
           }
         },
         onEditName: (sensorMac) => {
@@ -298,17 +300,17 @@ class RuuviApp {
     });
   }
 
-  private setupChart(): void {
+  private setupCharts(): void {
     const canvas = document.getElementById("chart") as HTMLCanvasElement;
     if (canvas) {
-      this.chart = new SensorChart(canvas, {
+      this.sensorChart = new SensorChart(canvas, {
         colors: this.colors,
-        type: "temperature", // Default to temperature
+        showHumidity: true,
       });
 
       // Handle window resize
       window.addEventListener("resize", () => {
-        this.chart?.resize();
+        this.sensorChart?.resize();
       });
     }
   }
