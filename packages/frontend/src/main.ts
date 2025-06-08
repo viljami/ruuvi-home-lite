@@ -201,11 +201,20 @@ class RuuviApp {
 
     // Clear selection button
     const clearBtn = document.getElementById("clear-selection-btn");
-
+    
+    // Hide clear button initially
+    if (clearBtn) {
+      clearBtn.style.display = 'none';
+    }
+    
     clearBtn?.addEventListener("click", () => {
       if (this.sensorChart) {
         this.sensorChart.clearActiveSensors();
         this.updateActiveSensorCards();
+        // Hide button after clearing
+        if (clearBtn) {
+          clearBtn.style.display = 'none';
+        }
       }
     });
   }
@@ -276,6 +285,13 @@ class RuuviApp {
     this.sensorCards.forEach((card, sensorMac) => {
       card.setActive(this.sensorChart?.isSensorActive(sensorMac) || false);
     });
+    
+    // Update clear button visibility
+    const clearBtn = document.getElementById("clear-selection-btn");
+    if (clearBtn && this.sensorChart) {
+      const hasActiveSensors = this.sensorChart.getActiveSensors().length > 0;
+      clearBtn.style.display = hasActiveSensors ? 'block' : 'none';
+    }
   }
 
   private renderLatestReadings(): void {
@@ -313,7 +329,7 @@ class RuuviApp {
         onClick: (sensorMac) => {
           if (this.sensorChart) {
             this.sensorChart.toggleSensor(sensorMac);
-            // Update active state on cards after toggling
+            // Update active state on cards and clear button visibility
             this.updateActiveSensorCards();
           }
         },
@@ -344,6 +360,7 @@ class RuuviApp {
         const hoveredSensor = this.sensorChart["hoveredSensor"];
         if (hoveredSensor) {
           this.sensorChart.toggleSensor(hoveredSensor);
+          // Update active state on cards and clear button visibility
           this.updateActiveSensorCards();
         }
       });
