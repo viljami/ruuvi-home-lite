@@ -143,30 +143,34 @@ export class SensorChart {
   updateValue(
     sensorMac: string,
     timestamp: number,
-    temperature?: number,
-    humidity?: number,
-    temperatureMin?: number,
-    temperatureMax?: number,
-    humidityMin?: number,
-    humidityMax?: number,
+    temperature?: number | null,
+    humidity?: number | null,
+    temperatureMin?: number | null,
+    temperatureMax?: number | null,
+    humidityMin?: number | null,
+    humidityMax?: number | null,
   ): void {
     const points = this.data.get(sensorMac);
     const point: ChartDataPoint = { sensorMac, timestamp };
 
-    if (temperature !== undefined) {
+    if (temperature !== undefined && temperature !== null) {
       point.temperature = temperature;
       point.temperatureMin = temperature;
       point.temperatureMax = temperature;
     }
-    if (humidity !== undefined) {
+    if (humidity !== undefined && humidity !== null) {
       point.humidity = humidity;
       point.humidityMin = humidity;
       point.humidityMax = humidity;
     }
-    if (temperatureMin !== undefined) point.temperatureMin = temperatureMin;
-    if (temperatureMax !== undefined) point.temperatureMax = temperatureMax;
-    if (humidityMin !== undefined) point.humidityMin = humidityMin;
-    if (humidityMax !== undefined) point.humidityMax = humidityMax;
+    if (temperatureMin !== undefined && temperatureMin !== null)
+      point.temperatureMin = temperatureMin;
+    if (temperatureMax !== undefined && temperatureMax !== null)
+      point.temperatureMax = temperatureMax;
+    if (humidityMin !== undefined && humidityMin !== null)
+      point.humidityMin = humidityMin;
+    if (humidityMax !== undefined && humidityMax !== null)
+      point.humidityMax = humidityMax;
 
     if (points) {
       // Find existing point at same timestamp or add new one
@@ -180,22 +184,22 @@ export class SensorChart {
         (p) => timestamp - p.timestamp < bucketSize,
       );
       if (existingIndex >= 0 && points[existingIndex]) {
-        if (temperature !== undefined) {
+        if (temperature !== undefined && temperature !== null) {
           points[existingIndex].temperature = temperature;
         }
 
-        if (humidity !== undefined) {
+        if (humidity !== undefined && humidity !== null) {
           points[existingIndex].humidity = humidity;
         }
 
-        if (point.humidityMin !== undefined) {
+        if (point.humidityMin !== undefined && point.humidityMin !== null) {
           points[existingIndex].humidityMin =
             points[existingIndex].humidityMin !== undefined
               ? Math.min(points[existingIndex].humidityMin, point.humidityMin)
               : point.humidityMin;
         }
 
-        if (point.humidityMax !== undefined) {
+        if (point.humidityMax !== undefined && point.humidityMax !== null) {
           points[existingIndex].humidityMax =
             points[existingIndex].humidityMax !== undefined
               ? Math.max(points[existingIndex].humidityMax, point.humidityMax)
@@ -518,7 +522,11 @@ export class SensorChart {
     // Adjust line widths for high-DPI displays and maintain visual hierarchy
     // We use slightly thinner lines on high-DPI displays since they're already sharper
     const baseWidth = this.devicePixelRatio > 1 ? 0.8 : 1;
-    const lineWidth = isHovered ? 3 * baseWidth : isActive ? 2 * baseWidth : 1.5 * baseWidth;
+    const lineWidth = isHovered
+      ? 3 * baseWidth
+      : isActive
+        ? 2 * baseWidth
+        : 1.5 * baseWidth;
 
     // Apply line width to canvas context
     this.ctx.lineWidth = lineWidth;
@@ -654,7 +662,11 @@ export class SensorChart {
     // Slightly reduce line width compared to temperature for visual hierarchy
     // Adjust for high-DPI displays
     const baseWidth = this.devicePixelRatio > 1 ? 0.8 : 1;
-    const lineWidth = isHovered ? 2 * baseWidth : isActive ? 1.75 * baseWidth : 1.25 * baseWidth;
+    const lineWidth = isHovered
+      ? 2 * baseWidth
+      : isActive
+        ? 1.75 * baseWidth
+        : 1.25 * baseWidth;
 
     // Apply line width to canvas context
     this.ctx.lineWidth = lineWidth;
