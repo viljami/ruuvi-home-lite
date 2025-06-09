@@ -67,9 +67,13 @@
         flex: 1;
       }
       .sidebar {
-        width: 240px;
-        padding: 15px;
+        min-width: 180px;
+        max-width: 240px;
+        width: auto;
+        padding: 10px;
         overflow-y: auto;
+        display: flex;
+        flex-direction: column;
       }
       #chart {
         width: 100%;
@@ -83,7 +87,8 @@
       }
       .sensor-item {
         background: #333;
-        margin-bottom: 6px;
+        margin-bottom: 5px;
+        margin-left: 4px;
         padding: 8px 10px;
         border-radius: 4px;
         border-left: 3px solid #4a9eff;
@@ -93,6 +98,10 @@
         font-size: 12px;
         cursor: pointer;
         transition: all 0.2s ease;
+        width: calc(100% - 4px);
+        min-width: 170px;
+        flex-wrap: nowrap;
+        overflow: hidden;
       }
       .sensor-item:hover {
         background: #404040;
@@ -111,11 +120,17 @@
         display: flex;
         align-items: center;
         gap: 8px;
+        overflow: hidden;
+        min-width: 0; /* Required for proper flex overflow handling */
+        flex: 1;
       }
       .sensor-mac {
         font-family: monospace;
         color: #888;
         font-size: 11px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
       .sensor-temp {
         font-weight: bold;
@@ -127,6 +142,10 @@
       .sensor-age {
         color: #666;
         font-size: 10px;
+        white-space: nowrap;
+        margin-left: auto;
+        padding-left: 4px;
+        min-width: fit-content;
       }
       .sensor-offline {
         border-left-color: #666;
@@ -177,14 +196,46 @@
         color: #888;
       }
       
+      /* Make more efficient use of space */
+      #latest-readings {
+        padding-right: 2px;
+        margin-left: 1px;
+        overflow-y: auto;
+        scrollbar-width: thin; /* Firefox */
+      }
+      
+      /* Add scrollbar styling for better visual appearance */
+      #latest-readings::-webkit-scrollbar {
+        width: 4px;
+      }
+      
+      #latest-readings::-webkit-scrollbar-track {
+        background: #222;
+        border-radius: 4px;
+      }
+      
+      #latest-readings::-webkit-scrollbar-thumb {
+        background: #444;
+        border-radius: 4px;
+      }
+      
+      #latest-readings::-webkit-scrollbar-thumb:hover {
+        background: #555;
+      }
+      
+      /* Handle long content in sidebar */
+      .sidebar.expanded {
+        max-width: min(300px, 90vw); /* Expand to accommodate content but don't take up too much space */
+      }
+      
       /* Mobile toggle button */
       .sidebar-toggle {
         display: none;
         position: fixed;
-        bottom: 15px;
-        right: 15px;
-        width: 40px;
-        height: 40px;
+        bottom: 12px;
+        right: 12px;
+        width: 38px;
+        height: 38px;
         background: #4a9eff;
         border: none;
         border-radius: 50%;
@@ -248,7 +299,9 @@
       }
       
       body.tablet.landscape .sidebar {
-        width: 220px;
+        min-width: 170px;
+        max-width: 220px;
+        width: auto;
         max-height: none;
         height: 100%;
         border-top: none;
@@ -273,8 +326,8 @@
       }
       
       body.mobile .header {
-        padding: 5px 10px;
-        min-height: 44px;
+        padding: 2px 6px;
+        min-height: 32px;
       }
       
       body.mobile .sidebar-toggle {
@@ -294,7 +347,7 @@
         bottom: 0;
         left: 0;
         right: 0;
-        max-height: 40vh;
+        max-height: 33vh;
         transform: translateY(100%);
         box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.5);
       }
@@ -307,7 +360,7 @@
       body.mobile.portrait .chart-container {
         min-height: 180px;
         padding: 10px;
-        height: calc(100vh - 44px); /* Match header min-height */
+        height: calc(100vh - 32px); /* Match header min-height */
       }
       
       body.mobile.portrait #chart {
@@ -325,7 +378,7 @@
       }
       
       body.mobile .btn {
-        padding: 6px 8px;
+        padding: 4px 6px;
         font-size: 10px;
         min-width: auto;
       }
@@ -341,12 +394,12 @@
       
       body.mobile.landscape .header {
         padding: 2px 5px;
-        min-height: 36px;
+        min-height: 28px;
       }
       
       body.mobile.landscape .chart-container {
         padding: 5px 10px;
-        height: calc(100vh - 36px);
+        height: calc(100vh - 28px);
         min-height: auto;
       }
       
@@ -356,10 +409,12 @@
       
       body.mobile.landscape .sidebar,
       body.tablet .sidebar.tablet-landscape {
-        top: 36px; /* Match header height */
+        top: 28px; /* Match header height */
         right: 0;
         bottom: 0;
-        width: 180px;
+        min-width: 165px;
+        max-width: 210px;
+        width: auto;
         max-height: none;
         transform: translateX(100%);
         box-shadow: -2px 0 10px rgba(0, 0, 0, 0.5);
@@ -372,7 +427,7 @@
       
       body.mobile.landscape .main-content {
         flex-direction: row;
-        height: calc(100vh - 36px);
+        height: calc(100vh - 28px);
       }
       
       body.mobile.landscape .sidebar-toggle {
@@ -448,31 +503,33 @@
       </div>
       <div class="sidebar">
               <div
-                style="
-                  display: flex;
-                  justify-content: space-between;
-                  align-items: center;
-                  margin-bottom: 10px;
-                "
-              >
-                <div style="display: flex; gap: 5px;">
-                  <button
-                    id="clear-selection-btn"
-                    class="btn"
-                    style="padding: 4px 8px; font-size: 10px"
-                  >
-                    Clear
-                  </button>
-                  <button
-                    id="admin-btn"
-                    class="btn"
-                    style="padding: 4px 8px; font-size: 12px; margin-left: 5px; opacity: 0.7; background: transparent; border-color: #444;"
-                  >
-                    ⚙️
-                  </button>
-                </div>
-              </div>
-              <div id="latest-readings"></div>
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        margin-bottom: 8px;
+                      "
+                    >
+                      <div style="display: flex; gap: 5px;">
+                        <button
+                          id="clear-selection-btn"
+                          class="btn"
+                          style="padding: 3px 6px; font-size: 10px"
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    </div>
+                    <div id="latest-readings" style="flex: 1;"></div>
+                    <div style="margin-top: 8px; text-align: center; padding-top: 6px; border-top: 1px solid #333;">
+                      <button
+                        id="admin-btn"
+                        class="btn"
+                        style="padding: 3px 6px; font-size: 11px; opacity: 0.7; background: transparent; border-color: #444; width: 100%;"
+                      >
+                        ⚙️
+                      </button>
+                    </div>
             </div>
             <button class="sidebar-toggle" id="sidebar-toggle">📊</button>
     </div>

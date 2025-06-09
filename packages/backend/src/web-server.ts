@@ -21,8 +21,13 @@ import type {
   ErrorMessage,
 } from "@ruuvi-home/shared";
 
-const { PUBLIC_DIR = "" } = process.env;
+const {
+  PUBLIC_DIR = "/Users/viljami/Documents/repos/raspberry-pi/ruuvi-home-lite/packages/frontend/dist",
+  PORT = 3000,
+} = process.env;
 const resolvedPublicDir = path.resolve(PUBLIC_DIR);
+console.log("PUBLIC_DIR", PUBLIC_DIR);
+console.log("resolvedPublicDir", resolvedPublicDir);
 
 // Type alias for backward compatibility
 export type ClientData = SensorReading;
@@ -63,10 +68,10 @@ export class WebServer extends EventEmitter {
         options,
         this.handleHttpRequest.bind(this),
       );
-      this.httpServer.listen(3000, "0.0.0.0", () => {
-        console.log("Server running on https://0.0.0.0:3000");
+      this.httpServer.listen(PORT, "0.0.0.0", () => {
+        console.log(`Server running on https://0.0.0.0:${PORT}`);
         console.log(
-          `Access from local network: https://${process.env.SERVER_IP || "localhost"}:3000`,
+          `Access from local network: https://${process.env.SERVER_IP || "localhost"}:${PORT}`,
         );
       });
     } else {
@@ -75,10 +80,10 @@ export class WebServer extends EventEmitter {
         "⚠️  Web server certificates not found, falling back to HTTP",
       );
       this.httpServer = createHttpServer(this.handleHttpRequest.bind(this));
-      this.httpServer.listen(3000, "0.0.0.0", () => {
-        console.log("Server running on http://0.0.0.0:3000");
+      this.httpServer.listen(PORT, "0.0.0.0", () => {
+        console.log(`Server running on http://0.0.0.0:${PORT}`);
         console.log(
-          `Access from local network: http://${process.env.SERVER_IP || "localhost"}:3000`,
+          `Access from local network: http://${process.env.SERVER_IP || "localhost"}:${PORT}`,
         );
       });
     }

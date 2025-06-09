@@ -46,14 +46,14 @@ class RuuviServer {
   }
 
   private validateEnvironment(): void {
-    const requiredVars = ["MQTT_HOST", "MQTT_PORT", "MQTT_USER", "MQTT_PASS"];
-    const missing = requiredVars.filter((varName) => !process.env[varName]);
+    // const requiredVars = ["MQTT_HOST", "MQTT_PORT", "MQTT_USER", "MQTT_PASS"];
+    // const missing = requiredVars.filter((varName) => !process.env[varName]);
 
-    if (missing.length > 0) {
-      throw new Error(
-        `Missing required environment variables: ${missing.join(", ")}`,
-      );
-    }
+    // if (missing.length > 0) {
+    //   throw new Error(
+    //     `Missing required environment variables: ${missing.join(", ")}`,
+    //   );
+    // }
 
     if (process.env.MQTT_PASS === "GENERATED_DURING_SETUP") {
       throw new Error(
