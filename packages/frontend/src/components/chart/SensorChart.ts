@@ -38,6 +38,7 @@ export class SensorChart {
   private timeRange: TimeRange = "day";
   private hoveredSensor: string | null = null;
   private activeSensors = new Set<string>();
+  private devicePixelRatio: number = 1;
   private temperatureBounds = {
     minY: 0,
     maxY: 0,
@@ -91,6 +92,9 @@ export class SensorChart {
     if (container) {
       // Get the device pixel ratio for high-DPI displays
       const dpr = window.devicePixelRatio || 1;
+
+      // Store dpr for line calculations
+      this.devicePixelRatio = dpr;
 
       // Set display size (css pixels)
       const containerWidth = container.clientWidth;
@@ -511,8 +515,10 @@ export class SensorChart {
     // Increase opacity for active or hovered sensor
     const effectiveOpacity = isActive || isHovered ? 1.0 : opacity;
 
-    // Increase line width for hovered or active sensors
-    const lineWidth = isHovered ? 3 : isActive ? 2 : 1.5;
+    // Adjust line widths for high-DPI displays and maintain visual hierarchy
+    // We use slightly thinner lines on high-DPI displays since they're already sharper
+    const baseWidth = this.devicePixelRatio > 1 ? 0.8 : 1;
+    const lineWidth = isHovered ? 3 * baseWidth : isActive ? 2 * baseWidth : 1.5 * baseWidth;
 
     // Apply line width to canvas context
     this.ctx.lineWidth = lineWidth;
@@ -646,7 +652,9 @@ export class SensorChart {
       isActive || isHovered ? baseOpacity : opacity * baseOpacity;
 
     // Slightly reduce line width compared to temperature for visual hierarchy
-    const lineWidth = isHovered ? 2 : isActive ? 1.75 : 1.25;
+    // Adjust for high-DPI displays
+    const baseWidth = this.devicePixelRatio > 1 ? 0.8 : 1;
+    const lineWidth = isHovered ? 2 * baseWidth : isActive ? 1.75 * baseWidth : 1.25 * baseWidth;
 
     // Apply line width to canvas context
     this.ctx.lineWidth = lineWidth;
@@ -860,6 +868,9 @@ export class SensorChart {
 
     // Clear the entire canvas at its actual pixel dimensions
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+    // Reset device pixel ratio before reconfiguring
+    this.devicePixelRatio = 1;
 
     // Reconfigure canvas with correct dimensions and scaling
     this.setupCanvas();
