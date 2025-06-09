@@ -37,7 +37,7 @@ export class SensorChart {
   private data: Map<string, ChartDataPoint[]> = new Map();
   private timeRange: TimeRange = "day";
   private hoveredSensor: string | null = null;
-  private activeSensors: Set<string> = new Set();
+  private activeSensors = new Set<string>();
   private temperatureBounds = {
     minY: 0,
     maxY: 0,
@@ -83,25 +83,35 @@ export class SensorChart {
     };
 
     this.setupCanvas();
-    this.setupEventListeners();
   }
 
   private setupCanvas(): void {
     // Set canvas size based on container
     const container = this.canvas.parentElement;
     if (container) {
-      this.canvas.width = container.clientWidth;
-      this.canvas.height = container.clientHeight;
-      this.config.width = this.canvas.width;
-      this.config.height = this.canvas.height;
+      // Get the device pixel ratio for high-DPI displays
+      const dpr = window.devicePixelRatio || 1;
+
+      // Set display size (css pixels)
+      const containerWidth = container.clientWidth;
+      const containerHeight = container.clientHeight;
+      this.canvas.style.width = `${containerWidth}px`;
+      this.canvas.style.height = `${containerHeight}px`;
+
+      // Set actual size in memory (scaled for high DPI displays)
+      this.canvas.width = Math.floor(containerWidth * dpr);
+      this.canvas.height = Math.floor(containerHeight * dpr);
+
+      // Scale all drawing operations by the dpr
+      this.ctx.scale(dpr, dpr);
+
+      // Update config dimensions to logical size (not pixel size)
+      this.config.width = containerWidth;
+      this.config.height = containerHeight;
     }
 
     // Enable crisp lines
     this.ctx.imageSmoothingEnabled = false;
-  }
-
-  private setupEventListeners(): void {
-    // Click handling is managed by the main application
   }
 
   setTimeRange(timeRange: TimeRange): void {
@@ -419,8 +429,9 @@ export class SensorChart {
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
 
-    this.ctx.fillStyle = "#999";
-    this.ctx.font = "11px monospace";
+    this.ctx.fillStyle = "#aaa";
+    this.ctx.font = "12px monospace";
+    this.ctx.textBaseline = "middle";
 
     // X-axis labels (time) - aligned with exact time intervals
     this.ctx.textAlign = "center";
@@ -459,7 +470,8 @@ export class SensorChart {
     if (this.config.showHumidity) {
       this.ctx.textAlign = "left";
       this.ctx.textBaseline = "middle";
-      this.ctx.fillStyle = "#666";
+      // Use same color as temperature labels for consistency
+      this.ctx.fillStyle = "#999";
 
       // Only show humidity labels for a subset of lines to avoid clutter
       const humidityGridHeight = chartHeight / this.config.gridLines.horizontal;
@@ -843,14 +855,27 @@ export class SensorChart {
   }
 
   resize(): void {
+    // First reset all transformations to identity matrix
+    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+    // Clear the entire canvas at its actual pixel dimensions
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+    // Reconfigure canvas with correct dimensions and scaling
     this.setupCanvas();
+
+    // Redraw the chart with the new dimensions
     this.render();
   }
 
   clear(): void {
     this.data.clear();
     this.activeSensors.clear();
-    this.ctx.clearRect(0, 0, this.config.width, this.config.height);
+
+    // Clear the entire canvas
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+    this.render();
   }
 
   clearActiveSensors(): void {
