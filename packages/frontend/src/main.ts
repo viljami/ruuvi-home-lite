@@ -2,6 +2,7 @@ import { WebSocketManager } from "./managers/WebSocketManager.js";
 import { SensorCard } from "./components/SensorCard.js";
 import { SensorChart } from "./components/chart/SensorChart.js";
 import { ViewportManager } from "./managers/ViewportManager.js";
+import { Utils } from "./utils/Utils.js";
 
 import type {
   ServerMessage,
@@ -35,9 +36,19 @@ class RuuviApp {
 
   private isAdmin = false;
   private adminToken: string | null = null;
-  private viewportManager: ViewportManager = new ViewportManager();
+  private viewportManager: ViewportManager;
+  private debouncedChartResize: (...args: any[]) => void;
 
   constructor() {
+    this.viewportManager = new ViewportManager();
+
+    // Single debounced chart resize function
+    this.debouncedChartResize = Utils.debounce(() => {
+      if (this.sensorChart) {
+        this.sensorChart.resize();
+      }
+    }, 200);
+
     this.initializeWebSocket();
     this.setupViewportManager();
     this.setupControls();
@@ -102,6 +113,7 @@ class RuuviApp {
     if (this.sensorChart) {
       this.sensorChart.setTimeRange(message.timeRange);
       this.sensorChart.updateData(message.data);
+      this.debouncedChartResize();
     }
   }
 
@@ -365,7 +377,7 @@ class RuuviApp {
         event.detail.orientationChanged ||
         event.detail.sizeChanged
       ) {
-        this.sensorChart?.resize();
+        this.debouncedChartResize();
       }
     });
   }
@@ -393,6 +405,10 @@ class RuuviApp {
         }
       });
 
+      window.addEventListener("orientationchange", () => {
+        this.debouncedChartResize();
+      });
+
       // Initial resize to ensure proper dimensions
       this.sensorChart.resize();
     }
@@ -410,6 +426,8 @@ class RuuviApp {
       .addEventListener("change", () => {
         // Force viewport update when switching to/from standalone mode
         this.viewportManager.forceUpdate();
+        // Ensure chart is properly sized in standalone mode
+        this.debouncedChartResize();
       });
   }
 }
