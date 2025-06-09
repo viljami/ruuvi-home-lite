@@ -62,7 +62,7 @@
         display: flex;
         flex-direction: column;
       }
-      
+
       #chart {
         flex: 1;
       }
@@ -99,9 +99,10 @@
         cursor: pointer;
         transition: all 0.2s ease;
         width: calc(100% - 4px);
-        min-width: 170px;
+        min-width: 0;
         flex-wrap: nowrap;
         overflow: hidden;
+        box-sizing: border-box;
       }
       .sensor-item:hover {
         background: #404040;
@@ -111,7 +112,8 @@
       }
 
       /* When any item is hovered, dim the others unless they're active */
-      .sidebar:has(.sensor-item:hover) .sensor-item:not(:hover):not(.sensor-active) {
+      .sidebar:has(.sensor-item:hover)
+        .sensor-item:not(:hover):not(.sensor-active) {
         opacity: 0.5;
         transform: translateX(0);
         transition: all 0.2s ease;
@@ -121,8 +123,9 @@
         align-items: center;
         gap: 8px;
         overflow: hidden;
-        min-width: 0; /* Required for proper flex overflow handling */
+        min-width: 0;
         flex: 1;
+        max-width: calc(100% - 40px);
       }
       .sensor-mac {
         font-family: monospace;
@@ -131,21 +134,34 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        max-width: 100%;
+        flex-shrink: 1;
+        min-width: 40px;
       }
       .sensor-temp {
         font-weight: bold;
         color: #4a9eff;
+        white-space: nowrap;
+        flex-shrink: 0;
+        min-width: 30px;
       }
+
       .sensor-humidity {
         color: #ff6b6b;
+        white-space: nowrap;
+        flex-shrink: 0;
+        min-width: 30px;
       }
+
       .sensor-age {
         color: #666;
         font-size: 10px;
         white-space: nowrap;
         margin-left: auto;
         padding-left: 4px;
-        min-width: fit-content;
+        min-width: 30px;
+        text-align: right;
+        flex-shrink: 0;
       }
       .sensor-offline {
         border-left-color: #666;
@@ -170,11 +186,11 @@
       .sensor-item:hover .sensor-temp {
         color: white;
       }
-      
+
       .sensor-item:hover .sensor-humidity {
         color: #ff8c8c;
       }
-      
+
       .sensor-item:hover .sensor-mac,
       .sensor-item:hover .sensor-age {
         color: #aaa;
@@ -195,7 +211,7 @@
         font-size: 10px;
         color: #888;
       }
-      
+
       /* Make more efficient use of space */
       #latest-readings {
         padding-right: 2px;
@@ -203,31 +219,34 @@
         overflow-y: auto;
         scrollbar-width: thin; /* Firefox */
       }
-      
+
       /* Add scrollbar styling for better visual appearance */
       #latest-readings::-webkit-scrollbar {
         width: 4px;
       }
-      
+
       #latest-readings::-webkit-scrollbar-track {
         background: #222;
         border-radius: 4px;
       }
-      
+
       #latest-readings::-webkit-scrollbar-thumb {
         background: #444;
         border-radius: 4px;
       }
-      
+
       #latest-readings::-webkit-scrollbar-thumb:hover {
         background: #555;
       }
-      
+
       /* Handle long content in sidebar */
       .sidebar.expanded {
-        max-width: min(300px, 90vw); /* Expand to accommodate content but don't take up too much space */
+        max-width: min(
+          300px,
+          90vw
+        ); /* Expand to accommodate content but don't take up too much space */
       }
-      
+
       /* Mobile toggle button */
       .sidebar-toggle {
         display: none;
@@ -244,45 +263,56 @@
         z-index: 100;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
       }
-      
+
       /* Base transitions for smooth changes */
       .main-content {
-        transition: flex-direction 0.3s ease, height 0.3s ease;
+        transition:
+          flex-direction 0.3s ease,
+          height 0.3s ease;
       }
       .sidebar {
-        transition: transform 0.3s ease, width 0.3s ease, max-height 0.3s ease;
+        transition:
+          transform 0.3s ease,
+          width 0.3s ease,
+          max-height 0.3s ease;
       }
       .chart-container {
-        transition: height 0.3s ease, padding 0.3s ease;
+        transition:
+          height 0.3s ease,
+          padding 0.3s ease;
       }
       .header {
-        transition: padding 0.3s ease, min-height 0.3s ease;
+        transition:
+          padding 0.3s ease,
+          min-height 0.3s ease;
       }
-      
+
       /* ViewportManager responsive styles - based on body classes */
-      
+
       /* Tablet (medium) styles */
       /* Default tablet styles (portrait) */
       body.tablet .main-content {
         flex-direction: column-reverse;
       }
-      
+
       body.tablet .sidebar {
         width: 100%;
         max-height: 180px;
         border-top: 1px solid #333;
+        max-width: 100%; /* Ensure full width in tablet mode */
+        min-width: 0;
       }
-      
+
       body.tablet .chart-container {
         flex: 1;
         min-height: 200px;
       }
-      
+
       body.tablet .controls {
         flex-wrap: wrap;
         justify-content: center;
       }
-      
+
       body.tablet .btn {
         padding: 8px 12px;
         margin-bottom: 5px;
@@ -291,32 +321,34 @@
         min-width: 60px;
         text-align: center;
       }
-      
+
       /* Tablet landscape specific styles */
       body.tablet.landscape .main-content {
         flex-direction: row;
         height: calc(100vh - 50px);
       }
-      
+
       body.tablet.landscape .sidebar {
-        min-width: 170px;
-        max-width: 220px;
+        min-width: 180px;
+        max-width: 250px;
         width: auto;
         max-height: none;
         height: 100%;
         border-top: none;
         border-left: 1px solid #333;
+        /* Always show the sidebar in tablet landscape mode */
+        transform: translateX(0) !important;
       }
-      
+
       body.tablet.landscape .chart-container {
         min-height: 300px;
         height: 100%;
       }
-      
+
       body.tablet.landscape #chart {
         height: 100%;
       }
-      
+
       /* Mobile (small) styles */
       body.mobile {
         height: 100%;
@@ -324,16 +356,16 @@
         width: 100%;
         overflow: hidden;
       }
-      
+
       body.mobile .header {
         padding: 2px 6px;
         min-height: 32px;
       }
-      
+
       body.mobile .sidebar-toggle {
         display: block;
       }
-      
+
       body.mobile .sidebar,
       body.tablet .sidebar.tablet-landscape,
       body.tablet .sidebar.tablet-portrait {
@@ -341,7 +373,7 @@
         z-index: 5;
         background: #1a1a1a;
       }
-      
+
       body.mobile.portrait .sidebar,
       body.tablet .sidebar.tablet-portrait {
         bottom: 0;
@@ -351,85 +383,101 @@
         transform: translateY(100%);
         box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.5);
       }
-      
+
       body.mobile.portrait .sidebar.expanded,
       body.tablet .sidebar.tablet-portrait.expanded {
         transform: translateY(0);
       }
-      
+
       body.mobile.portrait .chart-container {
         min-height: 180px;
         padding: 10px;
         height: calc(100vh - 32px); /* Match header min-height */
       }
-      
+
       body.mobile.portrait #chart {
         height: 100%;
       }
-      
+
       body.mobile .status {
         top: 15px;
         right: 15px;
         font-size: 10px;
       }
-      
+
       body.mobile .controls {
         gap: 5px;
       }
-      
+
       body.mobile .btn {
         padding: 4px 6px;
         font-size: 10px;
         min-width: auto;
       }
-      
+
       body.mobile .sensor-item {
         padding: 6px 8px;
       }
-      
+
       /* Landscape specific styles */
       body.mobile.landscape {
         overflow: hidden;
       }
-      
+
+      /* Desktop specific styles to ensure sidebar visibility */
+      @media (min-width: 992px) {
+        .sidebar {
+          min-width: 200px;
+          max-width: 280px;
+          width: auto;
+        }
+
+        .sensor-item {
+          min-width: 0;
+          padding: 10px 12px;
+        }
+
+        .sensor-mac {
+          min-width: 60px;
+        }
+      }
+
       body.mobile.landscape .header {
         padding: 2px 5px;
         min-height: 28px;
       }
-      
+
       body.mobile.landscape .chart-container {
         padding: 5px 10px;
         height: calc(100vh - 28px);
         min-height: auto;
       }
-      
+
       body.mobile.landscape #chart {
         height: 100%;
       }
-      
-      body.mobile.landscape .sidebar,
-      body.tablet .sidebar.tablet-landscape {
+
+      body.mobile.landscape .sidebar {
         top: 28px; /* Match header height */
         right: 0;
         bottom: 0;
-        min-width: 165px;
-        max-width: 210px;
+        min-width: 170px;
+        max-width: 220px;
         width: auto;
         max-height: none;
         transform: translateX(100%);
         box-shadow: -2px 0 10px rgba(0, 0, 0, 0.5);
       }
-      
-      body.mobile.landscape .sidebar.expanded,
-      body.tablet .sidebar.tablet-landscape.expanded {
+
+      body.mobile.landscape .sidebar.expanded {
         transform: translateX(0);
       }
-      
+
       body.mobile.landscape .main-content {
         flex-direction: row;
         height: calc(100vh - 28px);
       }
-      
+
       body.mobile.landscape .sidebar-toggle {
         bottom: 10px;
         right: 10px;
@@ -437,48 +485,48 @@
         height: 36px;
         font-size: 14px;
       }
-      
+
       body.mobile.landscape .status {
         top: 10px;
         right: 10px;
         font-size: 9px;
         padding: 2px 6px;
       }
-      
+
       body.mobile.landscape .controls {
         gap: 3px;
       }
-      
+
       body.mobile.landscape .btn {
         padding: 4px 6px;
         font-size: 10px;
         min-width: auto;
         margin-bottom: 0;
       }
-      
+
       /* Fallback for devices that don't run JavaScript */
       @media (max-width: 768px) {
         body:not(.mobile):not(.tablet):not(.desktop) .main-content {
           flex-direction: column-reverse;
         }
-        
+
         body:not(.mobile):not(.tablet):not(.desktop) .sidebar {
           width: 100%;
           max-height: 180px;
         }
       }
-      
+
       @media (max-width: 768px) and (orientation: landscape) {
         body:not(.mobile):not(.tablet):not(.desktop) .main-content {
           flex-direction: row;
         }
-        
+
         body:not(.mobile):not(.tablet):not(.desktop) .sidebar {
           width: 220px;
           max-height: none;
         }
       }
-      
+
       @media (max-width: 480px) {
         body:not(.mobile):not(.tablet):not(.desktop) .sidebar-toggle {
           display: block;
@@ -502,36 +550,50 @@
         <div class="status" id="status">Connecting...</div>
       </div>
       <div class="sidebar">
-              <div
-                      style="
-                        display: flex;
-                        justify-content: space-between;
-                        align-items: center;
-                        margin-bottom: 8px;
-                      "
-                    >
-                      <div style="display: flex; gap: 5px;">
-                        <button
-                          id="clear-selection-btn"
-                          class="btn"
-                          style="padding: 3px 6px; font-size: 10px"
-                        >
-                          Clear
-                        </button>
-                      </div>
-                    </div>
-                    <div id="latest-readings" style="flex: 1;"></div>
-                    <div style="margin-top: 8px; text-align: center; padding-top: 6px; border-top: 1px solid #333;">
-                      <button
-                        id="admin-btn"
-                        class="btn"
-                        style="padding: 3px 6px; font-size: 11px; opacity: 0.7; background: transparent; border-color: #444; width: 100%;"
-                      >
-                        ⚙️
-                      </button>
-                    </div>
-            </div>
-            <button class="sidebar-toggle" id="sidebar-toggle">📊</button>
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+          "
+        >
+          <div style="display: flex; gap: 5px">
+            <button
+              id="clear-selection-btn"
+              class="btn"
+              style="padding: 3px 6px; font-size: 10px"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+        <div id="latest-readings" style="flex: 1"></div>
+        <div
+          style="
+            margin-top: 8px;
+            text-align: center;
+            padding-top: 6px;
+            border-top: 1px solid #333;
+          "
+        >
+          <button
+            id="admin-btn"
+            class="btn"
+            style="
+              padding: 3px 6px;
+              font-size: 11px;
+              opacity: 0.7;
+              background: transparent;
+              border-color: #444;
+              width: 100%;
+            "
+          >
+            ⚙️
+          </button>
+        </div>
+      </div>
+      <button class="sidebar-toggle" id="sidebar-toggle">📊</button>
     </div>
 
     <script type="module" src="/src/main.ts"></script>

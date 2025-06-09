@@ -75,7 +75,7 @@ export class ViewportManager {
     // Create a single debounced handler for all viewport changes
     this.debouncedViewportChange = Utils.debounce(
       () => this.handleViewportChange(),
-      this.options.debounceTime
+      this.options.debounceTime,
     );
 
     // Setup event listeners
@@ -153,15 +153,20 @@ export class ViewportManager {
       this.options.sidebarToggleSelector,
     );
 
-    // Setup toggle button click handler
     if (this.sidebarToggleElement && this.sidebarElement) {
       this.sidebarToggleElement.addEventListener("click", () => {
         this.toggleSidebar();
       });
 
-      // Close sidebar when clicking outside
+      // Close sidebar when clicking outside - only on mobile or tablet portrait
       document.addEventListener("click", (event) => {
+        const state = this.getViewportState();
+        const shouldHandleOutsideClick =
+          state.isMobile ||
+          (state.isTablet && state.orientation === "portrait");
+
         if (
+          shouldHandleOutsideClick &&
           this.sidebarElement &&
           this.sidebarToggleElement &&
           this.isSidebarExpanded() &&
@@ -195,9 +200,21 @@ export class ViewportManager {
     // Apply state to DOM
     this.applyStateToDom(this.state);
 
-    // Close sidebar on orientation change
+    // Handle sidebar visibility on orientation change
     if (orientationChanged) {
-      this.collapseSidebar();
+      // Only collapse sidebar on mobile or tablet portrait
+      if (
+        this.state.isMobile ||
+        (this.state.isTablet && this.state.orientation === "portrait")
+      ) {
+        this.collapseSidebar();
+      } else if (
+        this.state.isTablet &&
+        this.state.orientation === "landscape"
+      ) {
+        // Ensure sidebar is visible in tablet landscape
+        this.expandSidebar();
+      }
 
       // Force a reflow to ensure transitions work properly
       void document.body.offsetHeight;
@@ -238,6 +255,17 @@ export class ViewportManager {
     if (state.isTablet) document.body.classList.add("tablet");
     if (state.isDesktop) document.body.classList.add("desktop");
 
+    // Handle initial sidebar display after class changes
+    if (
+      state.isDesktop ||
+      (state.isTablet && state.orientation === "landscape")
+    ) {
+      // Desktop and tablet landscape should always show sidebar
+      if (this.sidebarElement) {
+        this.sidebarElement.style.transform = "translateX(0)";
+      }
+    }
+
     // Toggle sidebar visibility
     this.updateSidebarVisibility(state);
   }
@@ -248,24 +276,37 @@ export class ViewportManager {
   private updateSidebarVisibility(state: ViewportState): void {
     if (!this.sidebarElement || !this.sidebarToggleElement) return;
 
-    // Show toggle button on mobile and all tablet orientations
-    if (state.isMobile || state.isTablet) {
+    // Show toggle button only on mobile and tablet portrait
+    if (
+      state.isMobile ||
+      (state.isTablet && state.orientation === "portrait")
+    ) {
       this.sidebarToggleElement.style.display = "block";
+    } else {
+      this.sidebarToggleElement.style.display = "none";
+    }
 
-      // For tablets in landscape, position the sidebar differently
-      if (state.isTablet && state.orientation === "landscape") {
+    // Handle tablet modes
+    if (state.isTablet) {
+      if (state.orientation === "landscape") {
+        // For tablets in landscape, always show sidebar
         this.sidebarElement.classList.add("tablet-landscape");
         this.sidebarElement.classList.remove("tablet-portrait");
-      }
-      // For tablets in portrait
-      else if (state.isTablet) {
+        this.expandSidebar(); // Always keep expanded in landscape
+      } else {
+        // For tablets in portrait, use collapsible sidebar
         this.sidebarElement.classList.add("tablet-portrait");
         this.sidebarElement.classList.remove("tablet-landscape");
       }
-    } else {
-      this.sidebarToggleElement.style.display = "none";
-      // Ensure sidebar is visible on desktop
-      this.sidebarElement.classList.remove("expanded");
+    } else if (state.isDesktop) {
+      // Desktop always shows sidebar
+      this.sidebarElement.classList.remove(
+        "tablet-landscape",
+        "tablet-portrait",
+        "expanded", // No need for expanded class on desktop
+      );
+    } else if (state.isMobile) {
+      // Mobile uses its own classes
       this.sidebarElement.classList.remove(
         "tablet-landscape",
         "tablet-portrait",
