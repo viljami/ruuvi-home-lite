@@ -29,11 +29,12 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        z-index: 1;
+        z-index: 10;
       }
       .controls {
         display: flex;
         gap: 10px;
+        flex-wrap: wrap;
       }
       .btn {
         background: #333;
@@ -51,11 +52,19 @@
       .main-content {
         flex: 1;
         display: flex;
+        overflow: hidden;
       }
       .chart-container {
         flex: 1;
         position: relative;
         padding: 20px;
+        min-height: 250px;
+        display: flex;
+        flex-direction: column;
+      }
+      
+      #chart {
+        flex: 1;
       }
       .sidebar {
         width: 240px;
@@ -167,6 +176,259 @@
         font-size: 10px;
         color: #888;
       }
+      
+      /* Mobile toggle button */
+      .sidebar-toggle {
+        display: none;
+        position: fixed;
+        bottom: 15px;
+        right: 15px;
+        width: 40px;
+        height: 40px;
+        background: #4a9eff;
+        border: none;
+        border-radius: 50%;
+        color: white;
+        font-size: 16px;
+        z-index: 100;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+      }
+      
+      /* Base transitions for smooth changes */
+      .main-content {
+        transition: flex-direction 0.3s ease, height 0.3s ease;
+      }
+      .sidebar {
+        transition: transform 0.3s ease, width 0.3s ease, max-height 0.3s ease;
+      }
+      .chart-container {
+        transition: height 0.3s ease, padding 0.3s ease;
+      }
+      .header {
+        transition: padding 0.3s ease, min-height 0.3s ease;
+      }
+      
+      /* ViewportManager responsive styles - based on body classes */
+      
+      /* Tablet (medium) styles */
+      /* Default tablet styles (portrait) */
+      body.tablet .main-content {
+        flex-direction: column-reverse;
+      }
+      
+      body.tablet .sidebar {
+        width: 100%;
+        max-height: 180px;
+        border-top: 1px solid #333;
+      }
+      
+      body.tablet .chart-container {
+        flex: 1;
+        min-height: 200px;
+      }
+      
+      body.tablet .controls {
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      
+      body.tablet .btn {
+        padding: 8px 12px;
+        margin-bottom: 5px;
+        font-size: 11px;
+        flex: 1;
+        min-width: 60px;
+        text-align: center;
+      }
+      
+      /* Tablet landscape specific styles */
+      body.tablet.landscape .main-content {
+        flex-direction: row;
+        height: calc(100vh - 50px);
+      }
+      
+      body.tablet.landscape .sidebar {
+        width: 220px;
+        max-height: none;
+        height: 100%;
+        border-top: none;
+        border-left: 1px solid #333;
+      }
+      
+      body.tablet.landscape .chart-container {
+        min-height: 300px;
+        height: 100%;
+      }
+      
+      body.tablet.landscape #chart {
+        height: 100%;
+      }
+      
+      /* Mobile (small) styles */
+      body.mobile {
+        height: 100%;
+        position: fixed;
+        width: 100%;
+        overflow: hidden;
+      }
+      
+      body.mobile .header {
+        padding: 5px 10px;
+        min-height: 44px;
+      }
+      
+      body.mobile .sidebar-toggle {
+        display: block;
+      }
+      
+      body.mobile .sidebar,
+      body.tablet .sidebar.tablet-landscape,
+      body.tablet .sidebar.tablet-portrait {
+        position: fixed;
+        z-index: 5;
+        background: #1a1a1a;
+      }
+      
+      body.mobile.portrait .sidebar,
+      body.tablet .sidebar.tablet-portrait {
+        bottom: 0;
+        left: 0;
+        right: 0;
+        max-height: 40vh;
+        transform: translateY(100%);
+        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.5);
+      }
+      
+      body.mobile.portrait .sidebar.expanded,
+      body.tablet .sidebar.tablet-portrait.expanded {
+        transform: translateY(0);
+      }
+      
+      body.mobile.portrait .chart-container {
+        min-height: 180px;
+        padding: 10px;
+        height: calc(100vh - 44px); /* Match header min-height */
+      }
+      
+      body.mobile.portrait #chart {
+        height: 100%;
+      }
+      
+      body.mobile .status {
+        top: 15px;
+        right: 15px;
+        font-size: 10px;
+      }
+      
+      body.mobile .controls {
+        gap: 5px;
+      }
+      
+      body.mobile .btn {
+        padding: 6px 8px;
+        font-size: 10px;
+        min-width: auto;
+      }
+      
+      body.mobile .sensor-item {
+        padding: 6px 8px;
+      }
+      
+      /* Landscape specific styles */
+      body.mobile.landscape {
+        overflow: hidden;
+      }
+      
+      body.mobile.landscape .header {
+        padding: 2px 5px;
+        min-height: 36px;
+      }
+      
+      body.mobile.landscape .chart-container {
+        padding: 5px 10px;
+        height: calc(100vh - 36px);
+        min-height: auto;
+      }
+      
+      body.mobile.landscape #chart {
+        height: 100%;
+      }
+      
+      body.mobile.landscape .sidebar,
+      body.tablet .sidebar.tablet-landscape {
+        top: 36px; /* Match header height */
+        right: 0;
+        bottom: 0;
+        width: 180px;
+        max-height: none;
+        transform: translateX(100%);
+        box-shadow: -2px 0 10px rgba(0, 0, 0, 0.5);
+      }
+      
+      body.mobile.landscape .sidebar.expanded,
+      body.tablet .sidebar.tablet-landscape.expanded {
+        transform: translateX(0);
+      }
+      
+      body.mobile.landscape .main-content {
+        flex-direction: row;
+        height: calc(100vh - 36px);
+      }
+      
+      body.mobile.landscape .sidebar-toggle {
+        bottom: 10px;
+        right: 10px;
+        width: 36px;
+        height: 36px;
+        font-size: 14px;
+      }
+      
+      body.mobile.landscape .status {
+        top: 10px;
+        right: 10px;
+        font-size: 9px;
+        padding: 2px 6px;
+      }
+      
+      body.mobile.landscape .controls {
+        gap: 3px;
+      }
+      
+      body.mobile.landscape .btn {
+        padding: 4px 6px;
+        font-size: 10px;
+        min-width: auto;
+        margin-bottom: 0;
+      }
+      
+      /* Fallback for devices that don't run JavaScript */
+      @media (max-width: 768px) {
+        body:not(.mobile):not(.tablet):not(.desktop) .main-content {
+          flex-direction: column-reverse;
+        }
+        
+        body:not(.mobile):not(.tablet):not(.desktop) .sidebar {
+          width: 100%;
+          max-height: 180px;
+        }
+      }
+      
+      @media (max-width: 768px) and (orientation: landscape) {
+        body:not(.mobile):not(.tablet):not(.desktop) .main-content {
+          flex-direction: row;
+        }
+        
+        body:not(.mobile):not(.tablet):not(.desktop) .sidebar {
+          width: 220px;
+          max-height: none;
+        }
+      }
+      
+      @media (max-width: 480px) {
+        body:not(.mobile):not(.tablet):not(.desktop) .sidebar-toggle {
+          display: block;
+        }
+      }
     </style>
   </head>
   <body>
@@ -185,35 +447,37 @@
         <div class="status" id="status">Connecting...</div>
       </div>
       <div class="sidebar">
-        <div
-          style="
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-          "
-        >
-          <div style="display: flex; gap: 5px;">
-            <button
-              id="clear-selection-btn"
-              class="btn"
-              style="padding: 4px 8px; font-size: 10px"
-            >
-              Clear
-            </button>
-            <button
-              id="admin-btn"
-              class="btn"
-              style="padding: 4px 8px; font-size: 12px; margin-left: 5px; opacity: 0.7; background: transparent; border-color: #444;"
-            >
-              ⚙️
-            </button>
-          </div>
-        </div>
-        <div id="latest-readings"></div>
-      </div>
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  margin-bottom: 10px;
+                "
+              >
+                <div style="display: flex; gap: 5px;">
+                  <button
+                    id="clear-selection-btn"
+                    class="btn"
+                    style="padding: 4px 8px; font-size: 10px"
+                  >
+                    Clear
+                  </button>
+                  <button
+                    id="admin-btn"
+                    class="btn"
+                    style="padding: 4px 8px; font-size: 12px; margin-left: 5px; opacity: 0.7; background: transparent; border-color: #444;"
+                  >
+                    ⚙️
+                  </button>
+                </div>
+              </div>
+              <div id="latest-readings"></div>
+            </div>
+            <button class="sidebar-toggle" id="sidebar-toggle">📊</button>
     </div>
 
     <script type="module" src="/src/main.ts"></script>
+    <!-- ViewportManager will handle all responsive layout logic -->
   </body>
 </html>

@@ -1,6 +1,7 @@
 import { WebSocketManager } from "./managers/WebSocketManager.js";
 import { SensorCard } from "./components/SensorCard.js";
 import { SensorChart } from "./components/chart/SensorChart.js";
+import { ViewportManager } from "./managers/ViewportManager.js";
 
 import type {
   ServerMessage,
@@ -34,9 +35,11 @@ class RuuviApp {
 
   private isAdmin = false;
   private adminToken: string | null = null;
+  private viewportManager: ViewportManager = new ViewportManager();
 
   constructor() {
     this.initializeWebSocket();
+    this.setupViewportManager();
     this.setupControls();
     this.setupCharts();
     this.setupPWA();
@@ -91,7 +94,9 @@ class RuuviApp {
   private handleHistoricalData(message: HistoricalDataMessage): void {
     // Only log if no data received (potential issue)
     if (message.data.length === 0) {
-      console.warn(`No historical data received for range: ${message.timeRange}`);
+      console.warn(
+        `No historical data received for range: ${message.timeRange}`,
+      );
     }
 
     if (this.sensorChart) {
@@ -126,7 +131,7 @@ class RuuviApp {
       this.latestReadings.set(mac.toLowerCase(), reading);
       this.updateSensorCard(mac.toLowerCase());
     });
-    
+
     // Only log if no readings received (potential issue)
     if (Object.keys(message.data).length === 0) {
       console.warn("No sensor readings received from server");
@@ -209,19 +214,19 @@ class RuuviApp {
 
     // Clear selection button
     const clearBtn = document.getElementById("clear-selection-btn");
-    
+
     // Hide clear button initially
     if (clearBtn) {
-      clearBtn.style.display = 'none';
+      clearBtn.style.display = "none";
     }
-    
+
     clearBtn?.addEventListener("click", () => {
       if (this.sensorChart) {
         this.sensorChart.clearActiveSensors();
         this.updateActiveSensorCards();
         // Hide button after clearing
         if (clearBtn) {
-          clearBtn.style.display = 'none';
+          clearBtn.style.display = "none";
         }
       }
     });
@@ -293,12 +298,12 @@ class RuuviApp {
     this.sensorCards.forEach((card, sensorMac) => {
       card.setActive(this.sensorChart?.isSensorActive(sensorMac) || false);
     });
-    
+
     // Update clear button visibility
     const clearBtn = document.getElementById("clear-selection-btn");
     if (clearBtn && this.sensorChart) {
       const hasActiveSensors = this.sensorChart.getActiveSensors().length > 0;
-      clearBtn.style.display = hasActiveSensors ? 'block' : 'none';
+      clearBtn.style.display = hasActiveSensors ? "block" : "none";
     }
   }
 
@@ -351,6 +356,20 @@ class RuuviApp {
     });
   }
 
+  private setupViewportManager(): void {
+    // Register a callback for viewport changes
+    this.viewportManager.onChange((_state, event) => {
+      // Resize the chart when viewport changes
+      if (
+        event.detail.resized ||
+        event.detail.orientationChanged ||
+        event.detail.sizeChanged
+      ) {
+        this.sensorChart?.resize();
+      }
+    });
+  }
+
   private setupCharts(): void {
     const canvas = document.getElementById("chart") as HTMLCanvasElement;
     if (canvas) {
@@ -374,10 +393,8 @@ class RuuviApp {
         }
       });
 
-      // Handle window resize
-      window.addEventListener("resize", () => {
-        this.sensorChart?.resize();
-      });
+      // Initial resize to ensure proper dimensions
+      this.sensorChart.resize();
     }
   }
 
@@ -386,6 +403,14 @@ class RuuviApp {
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch(console.error);
     }
+
+    // Handle PWA display mode changes
+    window
+      .matchMedia("(display-mode: standalone)")
+      .addEventListener("change", () => {
+        // Force viewport update when switching to/from standalone mode
+        this.viewportManager.forceUpdate();
+      });
   }
 }
 
