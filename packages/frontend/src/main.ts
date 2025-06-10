@@ -62,13 +62,14 @@ class RuuviApp {
     this.setupControls();
     this.setupCustomElements();
     this.setupPWA();
-    
+
     // Initialize chart with default state before connecting
     if (this.chartElement) {
-      this.chartElement.setStatus('connecting');
+      this.chartElement.setStatus("connecting");
+      // resize() will adjust canvas size and call drawChart()
       this.chartElement.resize();
     }
-    
+
     // Then connect to WebSocket and set up viewport listeners
     this.initializeWebSocket();
     this.setupViewportListeners();
@@ -83,7 +84,7 @@ class RuuviApp {
     });
 
     // Chart is already initialized in constructor
-    
+
     this.wsManager.connect();
   }
 
@@ -130,14 +131,8 @@ class RuuviApp {
       // Set time range and update data
       this.chartElement.setTimeRange(message.timeRange);
       this.chartElement.updateData(message.data);
-      
-      // Always trigger a resize after new data to ensure proper layout
-      // Use setTimeout to ensure DOM has fully updated
-      setTimeout(() => {
-        if (this.chartElement) {
-          this.chartElement.resize();
-        }
-      }, 0);
+
+      // No need for resize after data update - updateData now calls drawChart internally
     }
   }
 
@@ -218,27 +213,31 @@ class RuuviApp {
       if (btn.parentNode) {
         btn.parentNode.replaceChild(oldBtn, btn);
       }
-      
+
       // Add click handler with explicit options to ensure it fires
-      oldBtn.addEventListener("click", (e: Event) => {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const element = oldBtn as HTMLElement;
-        const newRange = element.dataset.range as TimeRange;
+      oldBtn.addEventListener(
+        "click",
+        (e: Event) => {
+          e.preventDefault();
+          e.stopPropagation();
 
-        document.querySelector(".btn.active")?.classList.remove("active");
-        element.classList.add("active");
+          const element = oldBtn as HTMLElement;
+          const newRange = element.dataset.range as TimeRange;
 
-        // No need to log every time range change
-        this.currentTimeRange = newRange;
-        this.wsManager.send({ type: "getData", timeRange: newRange });
+          document.querySelector(".btn.active")?.classList.remove("active");
+          element.classList.add("active");
 
-        // Update chart element time range
-        if (this.chartElement) {
-          this.chartElement.setTimeRange(newRange);
-        }
-      }, { capture: true });
+          // No need to log every time range change
+          this.currentTimeRange = newRange;
+          this.wsManager.send({ type: "getData", timeRange: newRange });
+
+          // Update chart element time range
+          if (this.chartElement) {
+            this.chartElement.setTimeRange(newRange);
+          }
+        },
+        { capture: true },
+      );
     });
 
     // Admin button
@@ -419,14 +418,16 @@ class RuuviApp {
     // Listen for sidebar events that affect layout
     if (this.sidebar && this.chartElement) {
       this.sidebar.addEventListener("sidebar-expanded", () => {
+        // When sidebar expands, we need to adjust canvas dimensions and redraw
         this.chartElement?.resize();
       });
 
       this.sidebar.addEventListener("sidebar-collapsed", () => {
+        // When sidebar collapses, we need to adjust canvas dimensions and redraw
         this.chartElement?.resize();
       });
     }
-    
+
     // Set up sensor card interactions
     document.addEventListener("mouseover", (e: Event) => {
       const target = e.target as Element;
@@ -467,28 +468,28 @@ class RuuviApp {
       DeviceHelper.fixAllTouchEvents(container);
     }
   }
-  
+
   /**
    * Set up viewport manager listeners to handle resize and orientation changes
    * This centralizes all resize handling in the application
    */
   private setupViewportListeners(): void {
     if (!this.chartElement) return;
-    
+
     // Listen for resize events
     this.unsubscribeResize = this.viewportManager.onResize(() => {
       if (this.chartElement) {
-        // Use requestAnimationFrame to ensure the DOM has updated before resizing
+        // Use requestAnimationFrame to ensure the DOM has updated before adjusting canvas size
         requestAnimationFrame(() => {
           if (this.chartElement) {
+            // resize() now only adjusts canvas dimensions and styles, then calls drawChart
             this.chartElement.resize();
           }
         });
       }
     });
-    
-    // Initial resize when app loads - use both requestAnimationFrame and setTimeout
-    // for maximum compatibility with different browsers' rendering cycles
+
+    // Initial resize when app loads - this will adjust canvas dimensions and draw
     requestAnimationFrame(() => {
       if (this.chartElement) {
         this.chartElement.resize();
@@ -501,6 +502,6 @@ class RuuviApp {
 const app = new RuuviApp();
 
 // Initialize the application with cleanup on page unload
-window.addEventListener('beforeunload', () => {
+window.addEventListener("beforeunload", () => {
   if (app.unsubscribeResize) app.unsubscribeResize();
 });

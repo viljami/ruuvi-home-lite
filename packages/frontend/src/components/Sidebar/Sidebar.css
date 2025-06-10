@@ -48,7 +48,7 @@
   background-color: var(--color-primary, #4a9eff);
   color: white;
   border: none;
-  border-radius: 50%;
+  border-radius: 4px;
   cursor: pointer;
   z-index: calc(
     var(--z-index-sidebar, 100) + 10
@@ -123,10 +123,9 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.2);
+    background-color: rgba(0, 0, 0, 0.3);
     z-index: 90; /* Just below sidebar */
     animation: fade-in 200ms ease;
-    backdrop-filter: blur(1px);
   }
 
   @keyframes fade-in {

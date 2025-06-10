@@ -14,8 +14,8 @@
   background-color: transparent;
   color: var(--color-text, #212529);
   opacity: 0.7;
-  border-radius: 50%;
-  border: none; /* Remove border as requested */
+  border-radius: 4px;
+  border: 1px solid transparent;
   cursor: pointer;
   padding: 0;
   
@@ -23,8 +23,7 @@
   transition: 
     background-color 200ms ease,
     opacity 200ms ease,
-    box-shadow 200ms ease,
-    transform 100ms ease;
+    border-color 200ms ease;
     
   /* Remove tap highlight on mobile */
   -webkit-tap-highlight-color: transparent;
@@ -35,27 +34,24 @@
 .admin-button.active {
   background-color: var(--color-secondary, #ff6b6b);
   opacity: 1;
-  box-shadow: 0 0 8px rgba(255, 107, 107, 0.3);
+  border-color: rgba(255, 107, 107, 0.3);
 }
 
 /* Hover state (desktop only) */
 @media (hover: hover) {
   .admin-button:hover:not(:active) {
     opacity: 0.9;
-    transform: translateY(-1px);
   }
 }
 
 /* Active/pressed state */
 .admin-button:active {
-  transform: scale(0.95);
-  opacity: 0.8;
+  opacity: 0.85;
 }
 
 /* Touch feedback */
 .admin-button.touch-active {
-  transform: scale(0.95);
-  opacity: 0.8;
+  opacity: 0.85;
 }
 
 /* Accessibility - focus state */
@@ -69,4 +65,9 @@
   .admin-button {
     transition: none;
   }
+}
+
+/* Ensure clear rendering with no blur */
+.admin-button * {
+  image-rendering: crisp-edges;
 }

@@ -132,12 +132,12 @@ body {
   font-size: 13px;
   text-align: center;
   cursor: pointer;
-  transition: all 150ms ease;
+  transition: background-color 150ms ease, color 150ms ease;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
-  border: none;
+  border: 1px solid transparent;
   min-height: 32px;
-  opacity: 0.85;
+  opacity: 0.9;
 }
 
 .btn-primary {

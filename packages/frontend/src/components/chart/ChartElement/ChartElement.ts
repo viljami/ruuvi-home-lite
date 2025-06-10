@@ -149,7 +149,7 @@ export class ChartElement extends HTMLElement {
     if (!this.canvas) return;
 
     // Get canvas context
-    this.ctx = this.canvas.getContext("2d");
+    this.ctx = this.canvas.getContext("2d", { alpha: false });
     if (!this.ctx) return;
 
     // Apply any attributes that were set before initialization
@@ -160,12 +160,11 @@ export class ChartElement extends HTMLElement {
     // Initial canvas setup
     this.setupCanvas();
     
-    // Initial render with empty data
-    this.calculateBounds();
+    // Initial render with empty data - this will calculate bounds internally
     this.drawChart();
-
-    // Allow layout to stabilize before resize
-    requestAnimationFrame(() => this.resize());
+    
+    // Delayed resize to ensure proper layout after DOM is settled
+    setTimeout(() => this.resize(), 100);
   }
 
   /**
@@ -186,28 +185,32 @@ export class ChartElement extends HTMLElement {
       this.canvas.clientHeight || this.canvas.height,
     );
 
-    // Set display size (css pixels) if not already set
-    if (!this.canvas.style.width) {
-      this.canvas.style.width = `${containerWidth}px`;
-    }
-    if (!this.canvas.style.height) {
-      this.canvas.style.height = `${containerHeight}px`;
-    }
+    // Only update if dimensions have changed (avoid unnecessary redraws)
+    if (this.chartConfig.width !== containerWidth || 
+        this.chartConfig.height !== containerHeight) {
 
-    // Set actual size in memory (scaled for high DPI displays)
-    this.canvas.width = Math.floor(containerWidth * dpr);
-    this.canvas.height = Math.floor(containerHeight * dpr);
+      // Set display size (css pixels)
+      this.canvas.style.width = `${containerWidth}px`;
+      this.canvas.style.height = `${containerHeight}px`;
+
+      // Set actual size in memory (scaled for high DPI displays)
+      this.canvas.width = Math.floor(containerWidth * dpr);
+      this.canvas.height = Math.floor(containerHeight * dpr);
+
+      // Store dimensions for calculations
+      this.chartConfig.width = containerWidth;
+      this.chartConfig.height = containerHeight;
+    }
 
     // Reset and then apply scale for high DPI displays
     this.ctx.setTransform(1, 0, 0, 1, 0, 0);
     this.ctx.scale(dpr, dpr);
 
-    // Store dimensions for calculations
-    this.chartConfig.width = containerWidth;
-    this.chartConfig.height = containerHeight;
-
-    // Enable crisp lines
+    // Enable crisp lines for better rendering
     this.ctx.imageSmoothingEnabled = false;
+    
+    // Use crisp pixel-aligned lines for grid
+    this.ctx.translate(0.5, 0.5);
   }
 
   /**
@@ -251,7 +254,14 @@ export class ChartElement extends HTMLElement {
     if (this.canvas) {
       const availableHeight =
         window.innerHeight - this.HEADER_HEIGHT - this.BOTTOM_MARGIN;
-      this.canvas.style.height = `${Math.max(availableHeight, this.MIN_HEIGHT)}px`;
+      const height = Math.max(availableHeight, this.MIN_HEIGHT);
+      
+      // Set explicit width and height
+      this.canvas.style.height = `${height}px`;
+      this.canvas.style.width = '100%';
+      
+      // Force immediate layout update
+      this.canvas.getBoundingClientRect();
     }
   }
 
@@ -407,17 +417,16 @@ export class ChartElement extends HTMLElement {
     this.data.forEach((points) => {
       points.sort((a, b) => a.timestamp - b.timestamp);
     });
-
-    this.calculateBounds();
     
     // If we have data now, trigger a full redraw
+    // Only render when new data arrives
     if (data.length > 0) {
       this.drawChart();
     }
   }
 
   /**
-   * Update a single data point
+   * Update a single data point and redraw the chart
    */
   updateValue(
     sensorMac: string,
@@ -492,7 +501,7 @@ export class ChartElement extends HTMLElement {
       this.data.set(sensorMac, [point]);
     }
 
-    this.calculateBounds();
+    // Just call drawChart - bounds will be calculated within it
     this.drawChart();
   }
 
@@ -501,6 +510,7 @@ export class ChartElement extends HTMLElement {
    */
   setHoveredSensor(sensorMac: string | null): void {
     this.hoveredSensor = sensorMac;
+    // Only redraw when hovering changes
     this.drawChart();
   }
 
@@ -515,6 +525,7 @@ export class ChartElement extends HTMLElement {
     }
 
     this.updateClearButtonVisibility();
+    // Redraw after sensor activation state changes
     this.drawChart();
   }
 
@@ -538,6 +549,7 @@ export class ChartElement extends HTMLElement {
   clearActiveSensors(): void {
     this.activeSensors.clear();
     this.updateClearButtonVisibility();
+    // Redraw after clearing active sensors
     this.drawChart();
   }
 
@@ -605,6 +617,7 @@ export class ChartElement extends HTMLElement {
 
   /**
    * Public resize method that can be called from outside
+   * On resize, only adjust canvas size and styles, then redraw
    */
   public resize(): void {
     if (!this.canvas || !this.ctx) return;
@@ -618,14 +631,10 @@ export class ChartElement extends HTMLElement {
       // Update size
       this.setSize();
 
-      // Reconfigure canvas for the new size
+      // Reconfigure canvas for the new size (only adjust canvas and its styles)
       this.setupCanvas();
       
-      // Recalculate bounds - important even with no data to ensure
-      // we have appropriate grid dimensions
-      this.calculateBounds();
-      
-      // Draw chart (will handle empty data case)
+      // Redraw chart with current data
       this.drawChart();
 
       if (this.statusIndicator) {
@@ -669,6 +678,10 @@ export class ChartElement extends HTMLElement {
 
   /**
    * Main chart drawing method
+   * This is the single point of rendering - called when:
+   * 1. Chart is created
+   * 2. Window is resized (only adjusts canvas and styles before drawing)
+   * 3. New data arrives
    */
   private drawChart(): void {
     if (!this.ctx || !this.canvas) return;
@@ -682,6 +695,9 @@ export class ChartElement extends HTMLElement {
     ) {
       return; // Skip rendering if dimensions are invalid
     }
+    
+    // Always calculate bounds before drawing to ensure proper rendering
+    this.calculateBounds();
 
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
@@ -767,11 +783,21 @@ export class ChartElement extends HTMLElement {
     const width = this.chartConfig.width;
     const height = this.chartConfig.height;
     
-    this.ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
+    this.ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
     this.ctx.font = "14px sans-serif";
     this.ctx.textAlign = "center";
     this.ctx.textBaseline = "middle";
     this.ctx.fillText("Waiting for sensor data...", width / 2, height / 2);
+    
+    // Add borders to ensure chart area is visible
+    this.ctx.strokeStyle = "rgba(0, 0, 0, 0.1)";
+    this.ctx.lineWidth = 1;
+    this.ctx.strokeRect(
+      this.chartConfig.padding.left, 
+      this.chartConfig.padding.top, 
+      width - this.chartConfig.padding.left - this.chartConfig.padding.right,
+      height - this.chartConfig.padding.top - this.chartConfig.padding.bottom
+    );
   }
 
   /**

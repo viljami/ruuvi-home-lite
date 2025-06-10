@@ -171,7 +171,7 @@ body {
     transform: translateX(-100%);
     z-index: var(--z-index-sidebar);
     padding-top: calc(var(--header-height) + var(--space-md));
-    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+    border-right: 1px solid rgba(0, 0, 0, 0.1);
   }
 
   .sidebar.expanded {
@@ -195,18 +195,8 @@ body {
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.3);
     z-index: calc(var(--z-index-sidebar) - 1);
-    animation: fade-in var(--transition-fast);
-  }
-
-  @keyframes fade-in {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
   }
 }
 
@@ -235,7 +225,7 @@ body {
 
     .sidebar.expanded {
       transform: translateX(0);
-      box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+      border-right: 1px solid rgba(0, 0, 0, 0.1);
     }
 
     .sidebar-toggle {
@@ -313,7 +303,7 @@ body {
 .card {
   background-color: var(--color-background);
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.1);
   padding: var(--space-md);
   margin-bottom: var(--space-md);
 }
@@ -332,7 +322,7 @@ body {
   width: 100%;
   background-color: var(--color-background);
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.1);
   padding: var(--space-md);
   margin-bottom: var(--space-lg);
 }
@@ -391,4 +381,11 @@ body {
     transition: none !important;
     animation: none !important;
   }
+}
+
+/* Remove all transitions for users who experience blurriness */
+.reduce-motion * {
+  transition: none !important;
+  animation: none !important;
+  transform: none !important;
 }

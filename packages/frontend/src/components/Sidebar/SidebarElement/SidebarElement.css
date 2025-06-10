@@ -66,8 +66,8 @@ sidebar-element > *:last-child {
 /* Touch feedback */
 .sidebar-toggle:active,
 .sidebar-toggle.touch-active {
-  transform: scale(0.92);
-  opacity: 0.8;
+  transform: scale(0.95);
+  opacity: 0.9;
 }
 
 /* ======= Overlay ======= */
@@ -77,8 +77,7 @@ sidebar-element > *:last-child {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(1px);
+  background-color: rgba(0, 0, 0, 0.3);
   z-index: 90;
   opacity: 0;
   pointer-events: none;
@@ -102,7 +101,7 @@ sidebar-element > *:last-child {
     width: 75%;
     max-width: 260px;
     padding-top: var(--header-height, 60px);
-    box-shadow: -1px 0 15px rgba(0, 0, 0, 0.08);
+    border-left: 1px solid rgba(0, 0, 0, 0.1);
     background-color: var(--color-background, #ffffff);
   }
   
@@ -160,5 +159,5 @@ sidebar-element > *:last-child {
 
 /* Add subtle border when in expanded mode */
 sidebar-element.expanded {
-  border-left: 1px solid rgba(0, 0, 0, 0.05);
+  border-left: 1px solid rgba(0, 0, 0, 0.1);
 }

@@ -24,7 +24,6 @@
     background-color var(--transition-fast),
     border-color var(--transition-fast),
     color var(--transition-fast),
-    transform var(--transition-fast),
     opacity var(--transition-fast);
   user-select: none;
   -webkit-tap-highlight-color: var(--button-tap-highlight);
@@ -72,12 +71,11 @@
 
 /* Button states */
 .btn:hover:not(:disabled) {
-  opacity: 0.9;
+  opacity: 0.95;
 }
 
 .btn:active:not(:disabled) {
-  transform: translateY(1px);
-  opacity: 0.8;
+  opacity: 0.9;
 }
 
 .btn:disabled {
@@ -123,10 +121,10 @@
   background-color: var(--color-background);
   border-radius: 8px;
   border-left: 4px solid var(--color-primary); /* Default color, will be overridden */
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.1);
   transition:
-    transform var(--transition-fast),
-    box-shadow var(--transition-fast),
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
     opacity var(--transition-fast);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -137,8 +135,8 @@
 }
 
 .sensor-item:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  border-color: rgba(0, 0, 0, 0.15);
+  background-color: rgba(74, 158, 255, 0.03);
 }
 
 .sensor-left {
@@ -171,7 +169,7 @@
 /* Active sensor (selected in chart) */
 .sensor-active {
   background-color: rgba(74, 158, 255, 0.05);
-  box-shadow: 0 2px 8px rgba(74, 158, 255, 0.2);
+  border: 1px solid rgba(74, 158, 255, 0.2);
 }
 
 /* Offline sensor */
@@ -186,8 +184,7 @@
 
 /* Touch feedback */
 .sensor-item.touch-active {
-  transform: scale(0.98);
-  opacity: var(--touch-feedback-opacity);
+  opacity: 0.9;
 }
 
 /* Editable name indicator */
@@ -234,13 +231,13 @@
 
 @keyframes pulse {
   0% {
-    opacity: 0.5;
+    opacity: 0.7;
   }
   50% {
-    opacity: 1;
+    opacity: 0.9;
   }
   100% {
-    opacity: 0.5;
+    opacity: 0.7;
   }
 }
 
@@ -250,9 +247,9 @@
   width: 24px;
   height: 24px;
   border: 2px solid rgba(74, 158, 255, 0.3);
-  border-radius: 50%;
+  border-radius: 4px;
   border-top-color: var(--color-primary);
-  animation: spin 1s linear infinite;
+  animation: none;
 }
 
 @keyframes spin {
@@ -279,7 +276,7 @@
   background-color: var(--color-secondary);
   border-color: var(--color-secondary);
   opacity: 1;
-  box-shadow: 0 0 5px rgba(255, 107, 107, 0.5);
+  border: 1px solid rgba(255, 107, 107, 0.3);
 }
 
 /* ======= Mobile Optimizations ======= */
