@@ -6,6 +6,7 @@
  */
 
  .header-buttons {
+   margin-right: 40px;
    margin-left: auto;
    display: flex;
    align-items: center;
