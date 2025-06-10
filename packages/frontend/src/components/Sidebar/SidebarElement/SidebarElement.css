@@ -14,20 +14,20 @@ sidebar-element {
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
-  
+
   /* Positioning and size */
   width: 240px;
   max-width: 100%;
   box-sizing: border-box;
   padding: 16px 12px;
   grid-area: sidebar;
-  
+
   /* Appearance */
   background-color: transparent;
-  
+
   /* Transitions */
-  transition: transform 280ms ease-out;
-  
+    transition: transform 280ms cubic-bezier(0.19, 1, 0.22, 1);
+
   /* z-index for stacking context */
   z-index: var(--z-index-sidebar, 100);
 }
@@ -60,7 +60,9 @@ sidebar-element > *:last-child {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
   user-select: none;
-  transition: transform 150ms ease, opacity 150ms ease;
+  transition:
+    transform 150ms ease,
+    opacity 150ms ease;
 }
 
 /* Touch feedback */
@@ -77,21 +79,34 @@ sidebar-element > *:last-child {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.3);
   z-index: 90;
   opacity: 0;
   pointer-events: none;
   transition: opacity 280ms ease-out;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: none; /* Hide by default on all screen sizes */
+  backdrop-filter: blur(2px); /* Frosted glass effect on supported browsers */
+  -webkit-backdrop-filter: blur(2px); /* For Safari */
+}
+
+/* Only show overlay on small screens where sidebar is an overlay */
+@media (max-width: 767px),
+  (min-width: 768px) and (max-width: 991px) and (orientation: portrait) {
+  .sidebar-overlay {
+    display: block; /* Enable on small screens */
+  }
 }
 
 .sidebar-overlay.visible {
-  opacity: 1;
   pointer-events: auto;
+  opacity: 0.6; /* Semi-transparent when visible */
+  transition: opacity 200ms ease-out; /* Slightly faster fade-in */
 }
 
 /* ======= Responsive Layouts ======= */
 /* Mobile & Tablet Portrait - overlay sidebar */
-@media (max-width: 767px), (min-width: 768px) and (max-width: 991px) and (orientation: portrait) {
+@media (max-width: 767px),
+  (min-width: 768px) and (max-width: 991px) and (orientation: portrait) {
   sidebar-element {
     position: fixed;
     top: 0;
@@ -103,10 +118,13 @@ sidebar-element > *:last-child {
     padding-top: var(--header-height, 60px);
     border-left: 1px solid rgba(0, 0, 0, 0.1);
     background-color: var(--color-background, #ffffff);
+    box-shadow: -5px 0 15px rgba(0, 0, 0, 0.15); /* Enhanced shadow for better visual separation */
+    z-index: 100; /* Ensure sidebar appears above overlay */
   }
-  
+
   sidebar-element.expanded {
     transform: translateX(0);
+    transition: transform 280ms cubic-bezier(0.175, 0.885, 0.32, 1.1); /* Slightly bouncy effect */
   }
 }
 
@@ -117,11 +135,11 @@ sidebar-element > *:last-child {
     transform: translateX(0);
     width: 220px;
   }
-  
+
   .sidebar-toggle {
     display: none;
   }
-  
+
   #latest-readings {
     display: flex;
     flex-direction: column;
@@ -135,11 +153,11 @@ sidebar-element > *:last-child {
     position: relative;
     transform: translateX(0);
   }
-  
+
   .sidebar-toggle {
     display: none;
   }
-  
+
   /* Larger screens get slightly more padding */
   @media (min-width: 1200px) {
     sidebar-element {

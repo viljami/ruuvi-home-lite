@@ -69,6 +69,11 @@ class RuuviApp {
       // resize() will adjust canvas size and call drawChart()
       this.chartElement.resize();
     }
+    
+    // Ensure sidebar is properly initialized with correct overlay state
+    if (this.sidebar) {
+      this.sidebar.refresh();
+    }
 
     // Then connect to WebSocket and set up viewport listeners
     this.initializeWebSocket();
@@ -458,8 +463,17 @@ class RuuviApp {
     window
       .matchMedia("(display-mode: standalone)")
       .addEventListener("change", () => {
+        // Refresh sidebar to update overlay visibility when display mode changes
         this.sidebar?.refresh();
         this.viewportManager.forceUpdate();
+      });
+      
+    // Handle orientation changes explicitly for better overlay handling
+    window
+      .matchMedia("(orientation: portrait), (orientation: landscape)")
+      .addEventListener("change", () => {
+        // Explicitly refresh sidebar on orientation change
+        this.sidebar?.refresh();
       });
 
     // Apply touch event fixes for mobile devices
@@ -478,6 +492,11 @@ class RuuviApp {
 
     // Listen for resize events
     this.unsubscribeResize = this.viewportManager.onResize(() => {
+      // Refresh sidebar to update overlay visibility based on screen size
+      if (this.sidebar) {
+        this.sidebar.refresh();
+      }
+      
       if (this.chartElement) {
         // Use requestAnimationFrame to ensure the DOM has updated before adjusting canvas size
         requestAnimationFrame(() => {

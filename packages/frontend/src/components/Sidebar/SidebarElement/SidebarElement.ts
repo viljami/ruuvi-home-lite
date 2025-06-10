@@ -134,12 +134,13 @@ export class SidebarElement extends HTMLElement {
    * Create the initial DOM structure
    */
   private render(): void {
-    // Add an overlay element for mobile view
+    // Add an overlay element for mobile view only
     if (!this.overlay) {
       this.overlay = document.createElement("div");
       this.overlay.className = "sidebar-overlay";
       this.overlay.addEventListener("click", this.handleOverlayClick);
       document.body.appendChild(this.overlay);
+      // Overlay visibility is controlled by CSS media queries and toggling the 'visible' class
     }
 
     // Add toggle button if it doesn't exist
@@ -317,6 +318,14 @@ export class SidebarElement extends HTMLElement {
       );
     }
 
+    // Update overlay visibility based on permanent state
+    if (this.overlay) {
+      // If sidebar became permanently visible and overlay is showing, hide it
+      if (this.isPermanentlyVisible && this.overlay.classList.contains("visible")) {
+        this.overlay.classList.remove("visible");
+      }
+    }
+
     // Always expand sidebar when permanently visible
     if (this.isPermanentlyVisible) {
       this.expand(false); // Silent expand - don't trigger events
@@ -352,7 +361,8 @@ export class SidebarElement extends HTMLElement {
     this.classList.add(this.options.expandedClass);
     this.setAttribute("expanded", "true");
 
-    if (this.overlay) {
+    // Only show overlay on small screens where the sidebar is not permanently visible
+    if (this.overlay && !this.isPermanentlyVisible) {
       this.overlay.classList.add("visible");
     }
 
@@ -417,8 +427,16 @@ export class SidebarElement extends HTMLElement {
    * Force a refresh of the sidebar state
    */
   public refresh(): void {
+    const wasPermanent = this.isPermanentlyVisible;
     this.isPermanentlyVisible = this.mediaQuery.matches;
-    this.updateVisibility();
+    
+    // If permanent state changed, update visibility
+    if (wasPermanent !== this.isPermanentlyVisible) {
+      this.updateVisibility();
+    } else {
+      // Otherwise just refresh current state
+      this.updateVisibility();
+    }
   }
 
   /**
