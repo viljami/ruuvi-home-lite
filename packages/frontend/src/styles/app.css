@@ -79,6 +79,7 @@ body {
     "footer";
   height: 100vh;
   overflow: hidden;
+  position: relative; /* Create positioning context for sidebar */
 }
 
 /* Header */
@@ -112,6 +113,9 @@ body {
   -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
+  width: 100%;
+  position: relative;
+  z-index: var(--z-index-base);
 }
 
 /* Footer */
@@ -205,14 +209,46 @@ body {
 /* Admin button styles moved to AdminButton component */
 
 /* ======= Mobile Layout (default) ======= */
-/* Layout adjustments already covered by component-specific CSS */
+/* On mobile, sidebar is not in the grid but positioned fixed */
+@media (max-width: 767px) {
+  sidebar-element {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: var(--z-index-sidebar);
+    transform: translateX(100%);
+    background-color: var(--color-background-alt);
+    width: 80%;
+    max-width: 280px;
+    padding-top: var(--header-height);
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  sidebar-element.expanded {
+    transform: translateX(0);
+  }
+  
+  /* When sidebar is expanded, add overlay to main content */
+  sidebar-element.expanded ~ .main-content::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.3);
+    z-index: calc(var(--z-index-sidebar) - 1);
+    animation: fade-in 150ms ease;
+  }
+}
 
 /* ======= Tablet Layout ======= */
 @media (min-width: 768px) and (max-width: 991px) {
   /* Landscape - sidebar on right */
   @media (orientation: landscape) {
     body {
-      grid-template-columns: 1fr auto;
+      grid-template-columns: 1fr 220px;
       grid-template-areas:
         "header header"
         "main sidebar"
@@ -222,6 +258,12 @@ body {
     .main-content {
       padding: var(--space-xl) var(--space-lg);
     }
+    
+    sidebar-element {
+      position: relative;
+      transform: translateX(0);
+      box-shadow: none;
+    }
   }
 
   /* Portrait - standard mobile layout */
@@ -229,13 +271,40 @@ body {
     .main-content {
       padding: var(--space-lg);
     }
+    
+    sidebar-element {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      z-index: var(--z-index-sidebar);
+      transform: translateX(100%);
+      width: 260px;
+      padding-top: var(--header-height);
+    }
+    
+    sidebar-element.expanded {
+      transform: translateX(0);
+      box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    sidebar-element.expanded ~ .main-content::before {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.3);
+      z-index: calc(var(--z-index-sidebar) - 1);
+    }
   }
 }
 
 /* ======= Desktop Layout ======= */
 @media (min-width: 992px) {
   body {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: 1fr 240px;
     grid-template-areas:
       "header header"
       "main sidebar"
@@ -254,6 +323,12 @@ body {
   .footer {
     padding: 0 var(--space-xl);
     margin-top: var(--space-lg);
+  }
+  
+  sidebar-element {
+    position: relative;
+    transform: translateX(0);
+    box-shadow: none;
   }
 }
 

@@ -19,6 +19,7 @@ sidebar-element {
   max-width: 100%;
   box-sizing: border-box;
   padding: 16px 12px;
+  grid-area: sidebar;
   
   /* Appearance */
   background-color: var(--color-background-alt, #f8f9fa);
@@ -156,7 +157,6 @@ sidebar-element > *:last-child {
       position: relative;
       transform: translateX(0);
       width: 220px;
-      margin-left: 16px;
     }
     
     /* Hide toggle button in landscape */
@@ -178,7 +178,6 @@ sidebar-element > *:last-child {
   sidebar-element {
     position: relative;
     transform: translateX(0);
-    margin-left: 16px;
   }
   
   .sidebar-toggle {

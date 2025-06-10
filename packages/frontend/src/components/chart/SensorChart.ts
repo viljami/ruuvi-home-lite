@@ -40,6 +40,7 @@ export class SensorChart {
   private hoveredSensor: string | null = null;
   private activeSensors = new Set<string>();
   private devicePixelRatio: number = 1;
+  private isResizing: boolean = false; // Lock to prevent resize loops
   private temperatureBounds = {
     minY: 0,
     maxY: 0,
@@ -97,22 +98,33 @@ export class SensorChart {
       // Store dpr for line calculations
       this.devicePixelRatio = dpr;
 
-      // Set display size (css pixels)
-      const containerWidth = container.clientWidth;
-      const containerHeight = container.clientHeight;
-      this.canvas.style.width = `${containerWidth}px`;
-      this.canvas.style.height = `${containerHeight}px`;
+      // Get container dimensions
+      // Use getBoundingClientRect for more accurate dimensions
+      const rect = container.getBoundingClientRect();
+      const containerWidth = Math.floor(rect.width);
+      const containerHeight = this.config.height || Math.floor(rect.height);
 
-      // Set actual size in memory (scaled for high DPI displays)
-      this.canvas.width = Math.floor(containerWidth * dpr);
-      this.canvas.height = Math.floor(containerHeight * dpr);
+      // Only update if dimensions actually changed
+      const sizeChanged = 
+        parseInt(this.canvas.style.width) !== containerWidth || 
+        parseInt(this.canvas.style.height) !== containerHeight;
+        
+      if (sizeChanged) {
+        // Set display size (css pixels)
+        this.canvas.style.width = `${containerWidth}px`;
+        this.canvas.style.height = `${containerHeight}px`;
 
-      // Scale all drawing operations by the dpr
-      this.ctx.scale(dpr, dpr);
+        // Set actual size in memory (scaled for high DPI displays)
+        this.canvas.width = Math.floor(containerWidth * dpr);
+        this.canvas.height = Math.floor(containerHeight * dpr);
 
-      // Update config dimensions to logical size (not pixel size)
-      this.config.width = containerWidth;
-      this.config.height = containerHeight;
+        // Scale all drawing operations by the dpr
+        this.ctx.scale(dpr, dpr);
+
+        // Update config dimensions to logical size (not pixel size)
+        this.config.width = containerWidth;
+        this.config.height = containerHeight;
+      }
     }
 
     // Enable crisp lines
@@ -876,20 +888,35 @@ export class SensorChart {
   }
 
   resize(): void {
-    // First reset all transformations to identity matrix
-    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+    // Prevent resize loops by checking if we're already resizing
+    if (this.isResizing) {
+      return;
+    }
+    
+    try {
+      // Set resize lock
+      this.isResizing = true;
+      
+      // First reset all transformations to identity matrix
+      this.ctx.setTransform(1, 0, 0, 1, 0, 0);
 
-    // Clear the entire canvas at its actual pixel dimensions
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      // Clear the entire canvas at its actual pixel dimensions
+      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-    // Reset device pixel ratio before reconfiguring
-    this.devicePixelRatio = 1;
+      // Reset device pixel ratio before reconfiguring
+      this.devicePixelRatio = 1;
 
-    // Reconfigure canvas with correct dimensions and scaling
-    this.setupCanvas();
+      // Reconfigure canvas with correct dimensions and scaling
+      this.setupCanvas();
 
-    // Redraw the chart with the new dimensions
-    this.render();
+      // Redraw the chart with the new dimensions
+      this.render();
+    } finally {
+      // Always release the resize lock, even if an error occurs
+      setTimeout(() => {
+        this.isResizing = false;
+      }, 100); // Small delay to prevent rapid consecutive resizes
+    }
   }
 
   clear(): void {

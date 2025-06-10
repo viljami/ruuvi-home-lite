@@ -13,14 +13,12 @@
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
-  transition:
-    transform 250ms ease;
+  transition: transform 250ms ease;
   z-index: var(--z-index-sidebar, 100);
   width: 240px; /* Compact width */
   max-width: 100%;
   box-sizing: border-box;
   padding: 16px 12px;
-  background-color: var(--color-background-alt, #f8f9fa);
 }
 
 /* Sidebar header with title */

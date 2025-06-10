@@ -9,6 +9,11 @@ Minimal Ruuvi sensor data visualization with real-time graphs. A lightweight, se
 
 **This project is designed for local network deployment only. Never expose to the internet without proper security hardening.**
 
+## 🌐 Access Options
+
+- **Direct Access**: `http://your-host-ip:3000` or `https://your-host-ip:3000` (if TLS enabled)
+- **Subdomain Access**: Use the included Nginx configuration to access as `subdomain.local.network` (see the `nginx` folder)
+
 ## 🚀 Quick Start
 
 ### Interactive Setup (Recommended)
@@ -30,6 +35,9 @@ make setup-docker && make docker-secure
 
 # Development
 make dev
+
+# Set up Nginx subdomain (optional)
+cd nginx && sudo ./install-nginx.sh
 ```
 </edits>
 
@@ -56,6 +64,7 @@ See `SECURITY.md` for complete security documentation and best practices.
 ### Quick Access
 - `make launcher` - Interactive menu with all options
 - `make help` - Show all available make targets
+- `sudo ./nginx/install-nginx.sh` - Set up Nginx subdomain access (subdomain.local.network)
 
 ### Core Operations
 - `make setup` / `make setup-docker` - Environment setup

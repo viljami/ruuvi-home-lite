@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -26,12 +26,13 @@
         padding: 0;
         box-sizing: border-box;
       }
-      
+
       /* Basic page structure */
       body {
         background: #1a1a1a;
         color: #e0e0e0;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         overflow: hidden;
         height: 100vh;
         display: grid;
@@ -45,7 +46,6 @@
   </head>
   <body>
     <div class="header">
-      <div class="header-title">Ruuvi Home</div>
       <div class="header-controls">
         <div class="time-range-controls">
           <button class="btn" data-range="hour">Hour</button>
@@ -59,18 +59,18 @@
     </div>
     <div class="main-content">
       <chart-element id="chart-container" time-range="day"></chart-element>
-      <sidebar-element 
-        id="sensor-sidebar"
-        role="complementary" 
-        aria-label="Sensor readings"
-        tabindex="-1"
-      >
-        <div class="sidebar-header">
-          <div class="sidebar-title">Sensors</div>
-        </div>
-        <div id="latest-readings" class="reading-container"></div>
-      </sidebar-element>
     </div>
+    <sidebar-element
+      id="sensor-sidebar"
+      role="complementary"
+      aria-label="Sensor readings"
+      tabindex="-1"
+    >
+      <div class="sidebar-header">
+        <div class="sidebar-title">Sensors</div>
+      </div>
+      <div id="latest-readings" class="reading-container"></div>
+    </sidebar-element>
 
     <script type="module" src="/src/main.ts"></script>
   </body>
