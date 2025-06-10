@@ -58,10 +58,19 @@ class RuuviApp {
       "chart-container",
     ) as ChartElement;
 
-    this.initializeWebSocket();
+    // Set up the UI first
     this.setupControls();
     this.setupCustomElements();
     this.setupPWA();
+    
+    // Initialize chart with default state before connecting
+    if (this.chartElement) {
+      this.chartElement.setStatus('connecting');
+      this.chartElement.resize();
+    }
+    
+    // Then connect to WebSocket and set up viewport listeners
+    this.initializeWebSocket();
     this.setupViewportListeners();
   }
 
@@ -73,6 +82,8 @@ class RuuviApp {
       onStatusChange: (status) => this.updateConnectionStatus(status),
     });
 
+    // Chart is already initialized in constructor
+    
     this.wsManager.connect();
   }
 
@@ -116,9 +127,17 @@ class RuuviApp {
     }
 
     if (this.chartElement) {
+      // Set time range and update data
       this.chartElement.setTimeRange(message.timeRange);
       this.chartElement.updateData(message.data);
-      this.chartElement.resize();
+      
+      // Always trigger a resize after new data to ensure proper layout
+      // Use setTimeout to ensure DOM has fully updated
+      setTimeout(() => {
+        if (this.chartElement) {
+          this.chartElement.resize();
+        }
+      }, 0);
     }
   }
 
@@ -458,6 +477,19 @@ class RuuviApp {
     
     // Listen for resize events
     this.unsubscribeResize = this.viewportManager.onResize(() => {
+      if (this.chartElement) {
+        // Use requestAnimationFrame to ensure the DOM has updated before resizing
+        requestAnimationFrame(() => {
+          if (this.chartElement) {
+            this.chartElement.resize();
+          }
+        });
+      }
+    });
+    
+    // Initial resize when app loads - use both requestAnimationFrame and setTimeout
+    // for maximum compatibility with different browsers' rendering cycles
+    requestAnimationFrame(() => {
       if (this.chartElement) {
         this.chartElement.resize();
       }

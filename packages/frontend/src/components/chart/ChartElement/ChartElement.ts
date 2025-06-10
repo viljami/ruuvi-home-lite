@@ -159,9 +159,13 @@ export class ChartElement extends HTMLElement {
 
     // Initial canvas setup
     this.setupCanvas();
+    
+    // Initial render with empty data
+    this.calculateBounds();
+    this.drawChart();
 
-    // Allow layout to stabilize before first render
-    setTimeout(() => this.resize(), 250);
+    // Allow layout to stabilize before resize
+    requestAnimationFrame(() => this.resize());
   }
 
   /**
@@ -405,7 +409,11 @@ export class ChartElement extends HTMLElement {
     });
 
     this.calculateBounds();
-    this.drawChart();
+    
+    // If we have data now, trigger a full redraw
+    if (data.length > 0) {
+      this.drawChart();
+    }
   }
 
   /**
@@ -554,10 +562,23 @@ export class ChartElement extends HTMLElement {
       });
     });
 
+    // Set current time range for X axis even when no data
+    const now = Date.now() / 1000;
+    let timeRangeSeconds: number;
+    
+    switch (this.timeRange) {
+      case "hour": timeRangeSeconds = 60 * 60; break;
+      case "day": timeRangeSeconds = 24 * 60 * 60; break;
+      case "week": timeRangeSeconds = 7 * 24 * 60 * 60; break;
+      case "month": timeRangeSeconds = 30 * 24 * 60 * 60; break;
+      case "year": timeRangeSeconds = 365 * 24 * 60 * 60; break;
+      default: timeRangeSeconds = 24 * 60 * 60; // Default to day
+    }
+    
     // Time bounds
     this.timeBounds = {
-      minX: minX === Infinity ? Date.now() / 1000 - 86400 : minX,
-      maxX: maxX === -Infinity ? Date.now() / 1000 : maxX,
+      minX: minX === Infinity ? now - timeRangeSeconds : minX,
+      maxX: maxX === -Infinity ? now : maxX,
     };
 
     // Temperature bounds with padding
@@ -597,8 +618,14 @@ export class ChartElement extends HTMLElement {
       // Update size
       this.setSize();
 
-      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      // Reconfigure canvas for the new size
       this.setupCanvas();
+      
+      // Recalculate bounds - important even with no data to ensure
+      // we have appropriate grid dimensions
+      this.calculateBounds();
+      
+      // Draw chart (will handle empty data case)
       this.drawChart();
 
       if (this.statusIndicator) {
@@ -663,10 +690,17 @@ export class ChartElement extends HTMLElement {
     this.ctx.setTransform(1, 0, 0, 1, 0, 0);
     this.ctx.scale(dpr, dpr);
 
-    // Draw grid and labels
+    // Always draw grid and labels, even if no data
     this.drawGrid();
     this.drawLabels();
 
+    // If no data, stop here - we've drawn the grid and labels
+    if (this.data.size === 0) {
+      // Maybe draw a "No Data" message
+      this.drawNoDataMessage();
+      return;
+    }
+    
     // Draw data lines
     const sortedSensors = Array.from(this.data.keys()).sort();
     const hasHoveredSensor = this.hoveredSensor !== null;
@@ -722,6 +756,22 @@ export class ChartElement extends HTMLElement {
         this.drawHumidityLine(points, color, 1, isHovered);
       }
     });
+  }
+  
+  /**
+   * Draw a message when no data is available
+   */
+  private drawNoDataMessage(): void {
+    if (!this.ctx || !this.chartConfig.width || !this.chartConfig.height) return;
+    
+    const width = this.chartConfig.width;
+    const height = this.chartConfig.height;
+    
+    this.ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
+    this.ctx.font = "14px sans-serif";
+    this.ctx.textAlign = "center";
+    this.ctx.textBaseline = "middle";
+    this.ctx.fillText("Waiting for sensor data...", width / 2, height / 2);
   }
 
   /**
