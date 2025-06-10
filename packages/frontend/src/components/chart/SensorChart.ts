@@ -1,6 +1,6 @@
 import type { AggregatedSensorData, TimeRange } from "../../types/index.js";
 import { TimeFormatter } from "../../utils/TimeFormatter.js";
-import './chart.css';
+import "./chart.css";
 
 export interface ChartConfig {
   width: number;

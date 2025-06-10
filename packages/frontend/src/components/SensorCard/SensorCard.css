@@ -9,12 +9,11 @@
 sensor-card {
   display: flex;
   align-items: center;
-  padding: 0 8px;
-  margin-bottom: 4px;
+  padding: 0 6px;
+  margin-bottom: 2px;
   background-color: var(--color-background, #ffffff);
-  border-radius: 4px;
-  border-left: 3px solid; /* Color is set programmatically */
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
   transition:
     transform 150ms ease,
     box-shadow 150ms ease,
@@ -32,7 +31,7 @@ sensor-card {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   width: 100%;
   white-space: nowrap;
   overflow: hidden;
@@ -41,7 +40,6 @@ sensor-card {
 /* ======= Sensor Values ======= */
 .sensor-temp {
   font-size: 14px;
-  font-weight: 600;
   color: var(--color-text, #212529);
   flex-shrink: 0;
 }
@@ -59,6 +57,7 @@ sensor-card {
   overflow: hidden;
   text-overflow: ellipsis;
   flex-grow: 1;
+  flex-basis: 60%;
   min-width: 0; /* Required for text-overflow to work */
 }
 
@@ -73,7 +72,9 @@ sensor-card {
 /* Active state (selected in chart) */
 sensor-card.sensor-active {
   background-color: rgba(74, 158, 255, 0.05);
-  box-shadow: 0 1px 4px rgba(74, 158, 255, 0.2);
+  box-shadow: 0 1px 2px rgba(74, 158, 255, 0.1);
+  /* Use slight left padding instead of border */
+  padding-left: 8px;
 }
 
 /* Offline state */
@@ -90,7 +91,7 @@ sensor-card.sensor-offline .sensor-humidity {
 @media (hover: hover) {
   sensor-card:hover {
     transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   }
 }
 
@@ -105,6 +106,7 @@ sensor-card.touch-active {
   position: relative;
   text-decoration: underline;
   text-decoration-style: dotted;
+  text-decoration-thickness: 1px;
   text-underline-offset: 2px;
 }
 
@@ -157,5 +159,6 @@ sensor-card.touch-active {
 
   sensor-card:hover .sensor-temp {
     color: var(--color-primary, #4a9eff);
+    font-weight: 400;
   }
 }

@@ -1,10 +1,50 @@
 # AI Coding Guidelines (Generic)
 
+## 🔥 SACRED PRINCIPLES: DRY & KISS
+
+**DRY (Don't Repeat Yourself)**: The highest pride for both human and AI programmers.
+
+**KISS (Keep it Simple Sweetheart)**: Simplicity is the ultimate sophistication.
+
+Do not leave commented code behind. Always remove unused code. Code is cheap - context (cognitive load) is expensive.
+
+Build from components: Block vs Knitted Castle principle.
+
 ## 🔄 Development Cycle
 
 1. **Make It Work**: Solve core problem with minimal viable implementation
 2. **Make It Right**: Clean, maintainable, documented code
 3. **Make It Fast**: Optimize with measurable improvements
+
+### Starting a new Project
+
+1. **Define Scope**: Clearly define project goals and requirements
+2. **Plan Architecture**: Design modular architecture with clear interfaces
+
+- use libraries to share types between services and clients, applications and servers - never define twice!
+
+3. **Set Up Environment**: Configure development environment and tools
+4. **MVP**: Minimum Viable Product: Start with a basic functional prototype that meets a core requirement across the entire stack to early identify potential issues and refine the design.
+
+- do the hard things first
+
+### Design
+
+5. **Mobile first**: Start with mobile design and scale up to desktop
+6. **Responsive design**: Ensure consistent layout and functionality across different screen sizes and devices
+7. **Accessibility**: Design with accessibility in mind, it benefits everyone
+8. **Less is More**
+
+- No border lines, if white space can do
+- Calming, focus supporting aesthetics, simplicity
+- Use animation but be subtle, if an animation can be seen rather than felt it is too slow and needs to be made more subtle (fast and smooth)
+
+### Project structure
+
+1. Associative grouping of files
+
+- styles, functional code, structured documents should be in same folder as the component they Define
+- layout and application level brings components and containers together
 
 ## 🎯 Core Principles
 
@@ -15,16 +55,6 @@
 **Modularity**: Keep files focused and reasonably sized. Single responsibility per component. No file should be longer than 500 lines.
 
 **Reversibility**: All decisions must be easily undoable. Use feature flags, configuration, interfaces.
-
-## 🔥 SACRED PRINCIPLES: DRY & KISS
-
-**DRY (Don't Repeat Yourself)**: The highest pride for both human and AI programmers.
-
-**KISS (Keep it Simple Sweetheart)**: Simplicity is the ultimate sophistication.
-
-Do not leave commented code behind. Always remove unused code. Code is cheap - context (cognitive load) is expensive.
-
-Build from components: Block vs Knitted Castle principle.
 
 ### Zero Tolerance for Redundancy
 
@@ -40,7 +70,7 @@ Build from components: Block vs Knitted Castle principle.
 1. Search existing files for similar content
 2. If ANY overlap exists, consolidate instead of duplicating
 3. If absolutely certain you need repetition: **ASK FOR EXPLICIT CONFIRMATION**
-4. Reviewer must approve repetition with clear justification
+4. Reviewer must approve repetition with clear justification - never repeat if it due to bad design or technical dept, rather cleanup as we go
 
 ### Simplicity Requirements
 
@@ -193,7 +223,7 @@ flake8 . && pytest
 
 **Integration Tests**: Component interaction testing. Realistic scenarios.
 
-**End-to-End Tests**: Full system testing. User journey validation.
+**End-to-End Tests**: Full system testing. Critical user journey validation.
 
 **Error Handling**: Application code must handle errors properly (avoid panic/crash patterns). Test code can fail fast for debugging.
 
@@ -245,6 +275,7 @@ flake8 . && pytest
 
 ### Integration
 
+- [ ] Shared type libraries between services and clients, applications and servers
 - [ ] Builds successfully
 - [ ] Integration tests pass
 - [ ] API contracts maintained

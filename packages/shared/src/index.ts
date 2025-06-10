@@ -1,11 +1,11 @@
 // Export all types
-export * from './types/sensor.js';
+export * from "./types/sensor.js";
 
 // Export all events
-export * from './events/websocket.js';
+export * from "./events/websocket.js";
 
 // Re-export for convenience
-export type { 
+export type {
   SensorReading,
   SensorReadingWithAge,
   ExtendedSensorReading,
@@ -19,8 +19,8 @@ export type {
   SensorBucketUpdate,
   ChartBounds,
   ChartArea,
-  ChartScale
-} from './types/sensor.js';
+  ChartScale,
+} from "./types/sensor.js";
 
 export type {
   BaseMessage,
@@ -38,7 +38,7 @@ export type {
   AdminAuthResultMessage,
   SensorNamesMessage,
   SensorNameSetMessage,
-  SensorNameDeletedMessage
-} from './events/websocket.js';
+  SensorNameDeletedMessage,
+} from "./events/websocket.js";
 
-export { isClientMessage, isServerMessage } from './events/websocket.js';
+export { isClientMessage, isServerMessage } from "./events/websocket.js";

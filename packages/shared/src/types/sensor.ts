@@ -57,7 +57,7 @@ export interface SensorName {
   updatedAt: number;
 }
 
-export type TimeRange = 'hour' | 'day' | 'week' | 'month' | 'year';
+export type TimeRange = "hour" | "day" | "week" | "month" | "year";
 
 export interface SensorBucketUpdate {
   sensorMac: string;

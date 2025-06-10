@@ -17,15 +17,15 @@ export class RuuviDecoder {
   static decode(hexData: string): RuuviData | null {
     try {
       // Remove any prefixes and ensure clean hex
-      const cleanHex = hexData.replace(/^(0x)?/, '').toUpperCase();
-      
+      const cleanHex = hexData.replace(/^(0x)?/, "").toUpperCase();
+
       // Data Format 5 should be 24 bytes (48 hex characters)
       if (cleanHex.length !== 48) {
         return null;
       }
 
-      const buffer = Buffer.from(cleanHex, 'hex');
-      
+      const buffer = Buffer.from(cleanHex, "hex");
+
       // Check data format
       const dataFormat = buffer.readUInt8(0);
       if (dataFormat !== 5) {
@@ -51,7 +51,7 @@ export class RuuviDecoder {
         measurementSequence: this.getMeasurementSequenceNumber(data),
         accelerationX: accX,
         accelerationY: accY,
-        accelerationZ: accZ
+        accelerationZ: accZ,
       };
     } catch (error) {
       return null;
@@ -60,17 +60,17 @@ export class RuuviDecoder {
 
   private static parseDataFields(buffer: Buffer): number[] {
     return [
-      buffer.readUInt8(0),        // data_format
-      buffer.readInt16BE(1),      // temperature
-      buffer.readUInt16BE(3),     // humidity
-      buffer.readUInt16BE(5),     // pressure
-      buffer.readInt16BE(7),      // acceleration_x
-      buffer.readInt16BE(9),      // acceleration_y
-      buffer.readInt16BE(11),     // acceleration_z
-      buffer.readUInt16BE(13),    // power_info
-      buffer.readUInt8(15),       // movement_counter
-      buffer.readUInt16BE(16),    // measurement_sequence
-      ...Array.from(buffer.slice(18, 24)) // mac bytes
+      buffer.readUInt8(0), // data_format
+      buffer.readInt16BE(1), // temperature
+      buffer.readUInt16BE(3), // humidity
+      buffer.readUInt16BE(5), // pressure
+      buffer.readInt16BE(7), // acceleration_x
+      buffer.readInt16BE(9), // acceleration_y
+      buffer.readInt16BE(11), // acceleration_z
+      buffer.readUInt16BE(13), // power_info
+      buffer.readUInt8(15), // movement_counter
+      buffer.readUInt16BE(16), // measurement_sequence
+      ...Array.from(buffer.slice(18, 24)), // mac bytes
     ];
   }
 
@@ -92,7 +92,7 @@ export class RuuviDecoder {
 
   private static getPressure(data: number[]): number | null {
     const value = data[3];
-    if (value === undefined || value === 0xFFFF) {
+    if (value === undefined || value === 0xffff) {
       return null;
     }
     return parseFloat(((value + 50000) / 100).toFixed(2));
@@ -130,11 +130,11 @@ export class RuuviDecoder {
     if (value === undefined) {
       return null;
     }
-    const txPower = value & 0x001F;
+    const txPower = value & 0x001f;
     if (txPower === 0b11111) {
       return null;
     }
-    return -40 + (txPower * 2);
+    return -40 + txPower * 2;
   }
 
   private static getMovementCounter(data: number[]): number | null {
@@ -148,9 +148,10 @@ export class RuuviDecoder {
   }
 
   private static getMac(data: number[]): string {
-    return data.slice(10, 16)
-      .map(x => x.toString(16).padStart(2, '0'))
-      .join('')
+    return data
+      .slice(10, 16)
+      .map((x) => x.toString(16).padStart(2, "0"))
+      .join("")
       .toLowerCase();
   }
 }

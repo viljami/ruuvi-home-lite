@@ -1,0 +1,203 @@
+/**
+ * SidebarElement Component Styles
+ *
+ * Responsive sidebar that appears on the right side of the screen on tablet/desktop
+ * and floats over content on mobile. Designed to be compact and prioritize chart visibility.
+ */
+
+/* ======= Base Styles ======= */
+sidebar-element {
+  /* Core layout */
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  
+  /* Positioning and size */
+  width: 240px;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 16px 12px;
+  
+  /* Appearance */
+  background-color: var(--color-background-alt, #f8f9fa);
+  
+  /* Transitions */
+  transition: transform 250ms ease;
+  
+  /* z-index for stacking context */
+  z-index: var(--z-index-sidebar, 100);
+}
+
+/* Sidebar children spacing */
+sidebar-element > * {
+  margin-bottom: 16px;
+}
+
+sidebar-element > *:last-child {
+  margin-bottom: 0;
+}
+
+/* ======= Toggle Button ======= */
+.sidebar-toggle {
+  position: fixed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  /* Size and shape */
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  
+  /* Position - default is top right */
+  top: 12px;
+  right: 12px;
+  
+  /* Appearance */
+  background-color: var(--color-primary, #4a9eff);
+  color: white;
+  border: none;
+  
+  /* Stacking and interaction */
+  z-index: calc(var(--z-index-sidebar, 100) + 10);
+  cursor: pointer;
+  
+  /* Touch optimizations */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+  user-select: none;
+  
+  /* Transitions */
+  transition: transform 150ms ease, opacity 150ms ease;
+}
+
+/* Toggle button active/pressed state */
+.sidebar-toggle:active,
+.sidebar-toggle.touch-active {
+  transform: scale(0.95);
+  opacity: 0.85;
+}
+
+/* ======= Overlay ======= */
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.3);
+  z-index: 90; /* Below sidebar but above content */
+  
+  /* Hidden by default */
+  opacity: 0;
+  pointer-events: none;
+  
+  /* Transitions */
+  transition: opacity 250ms ease;
+}
+
+.sidebar-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ======= Mobile Layout (right-side overlay) ======= */
+@media (max-width: 767px) {
+  sidebar-element {
+    /* Fixed positioning for overlay mode */
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    
+    /* Hidden by default (slide out from right) */
+    transform: translateX(100%);
+    
+    /* Adjust for mobile screens */
+    width: 80%;
+    max-width: 280px;
+    padding-top: var(--header-height, 60px);
+    
+    /* Add shadow for depth */
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Expanded state shows the sidebar */
+  sidebar-element.expanded {
+    transform: translateX(0);
+  }
+}
+
+/* ======= Tablet Layout ======= */
+@media (min-width: 768px) and (max-width: 991px) {
+  /* Portrait - collapsible sidebar */
+  @media (orientation: portrait) {
+    sidebar-element {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      transform: translateX(100%);
+      width: 260px;
+      padding-top: var(--header-height, 60px);
+    }
+    
+    sidebar-element.expanded {
+      transform: translateX(0);
+    }
+  }
+  
+  /* Landscape - permanent sidebar */
+  @media (orientation: landscape) {
+    sidebar-element {
+      position: relative;
+      transform: translateX(0);
+      width: 220px;
+      margin-left: 16px;
+    }
+    
+    /* Hide toggle button in landscape */
+    .sidebar-toggle {
+      display: none;
+    }
+    
+    /* Reading container is more compact */
+    #latest-readings {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+  }
+}
+
+/* ======= Desktop Layout ======= */
+@media (min-width: 992px) {
+  sidebar-element {
+    position: relative;
+    transform: translateX(0);
+    margin-left: 16px;
+  }
+  
+  .sidebar-toggle {
+    display: none;
+  }
+  
+  /* Larger screens get slightly more padding */
+  @media (min-width: 1200px) {
+    sidebar-element {
+      padding: 16px;
+    }
+  }
+}
+
+/* ======= Reduced Motion ======= */
+@media (prefers-reduced-motion: reduce) {
+  sidebar-element,
+  .sidebar-toggle,
+  .sidebar-overlay {
+    transition: none;
+  }
+}

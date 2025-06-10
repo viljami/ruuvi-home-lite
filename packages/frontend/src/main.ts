@@ -1,10 +1,12 @@
 import "./styles/app.css";
 import { WebSocketManager } from "./managers/WebSocketManager.js";
-import { SensorCard } from "./components/SensorCard/SensorCard.js";
-import { SensorChart } from "./components/chart/SensorChart.js";
-import { Utils } from "./utils/Utils.js";
+import {
+  SensorCard,
+  ChartElement,
+  SidebarElement,
+} from "./components/index.js";
 import { DeviceHelper } from "./utils/device/DeviceHelper.js";
-import { Sidebar } from "./components/Sidebar/Sidebar.js";
+import { AdminButton } from "./components/AdminButton/AdminButton.js";
 
 import type {
   ServerMessage,
@@ -33,43 +35,31 @@ class RuuviApp {
     "#ff4fa3", // hot pink / magenta
     "#7dff72", // neon green
   ];
-  private sensorChart: SensorChart | null = null;
   private currentTimeRange: TimeRange = "day";
 
   private isAdmin = false;
   private adminToken: string | null = null;
-  private sidebar: Sidebar;
-  private debouncedChartResize: (...args: any[]) => void;
+  private sidebar: SidebarElement | null = null;
+  private chartElement: ChartElement | null = null;
 
   constructor() {
     // Apply device-specific fixes before initializing components
     DeviceHelper.applyAllFixes();
-    
-    // Create sidebar component with CSS-first approach
-    this.sidebar = new Sidebar({
-      sidebarSelector: '.sidebar',
-      toggleSelector: '.sidebar-toggle',
-      contentSelector: '.main-content',
-      permanentMediaQuery: '(min-width: 768px) and (orientation: landscape)',
-      expandedClass: 'expanded'
-    });
 
-    // Single debounced chart resize function
-    this.debouncedChartResize = Utils.debounce(() => {
-      if (this.sensorChart) {
-        this.sensorChart.resize();
-      }
-    }, DeviceHelper.isIOS ? 300 : 200); // Longer debounce for iOS
+    // Get references to custom elements
+    this.sidebar = document.getElementById("sensor-sidebar") as SidebarElement;
+    this.chartElement = document.getElementById(
+      "chart-container",
+    ) as ChartElement;
 
     this.initializeWebSocket();
-    this.setupSidebarEvents();
     this.setupControls();
-    this.setupCharts();
+    this.setupCustomElements();
     this.setupPWA();
 
     // Force an additional resize after initial render for mobile devices
-    if (DeviceHelper.isMobile) {
-      setTimeout(() => this.debouncedChartResize(), 500);
+    if (DeviceHelper.isMobile && this.chartElement) {
+      setTimeout(() => this.chartElement?.resize(), 500);
     }
   }
 
@@ -85,13 +75,8 @@ class RuuviApp {
   }
 
   private updateConnectionStatus(status: string): void {
-    const statusElement = document.getElementById("status-indicator");
-
-    if (statusElement) {
-      statusElement.textContent = status === "connected" ? "Connected" : status;
-      
-      // Update status class for styling
-      statusElement.className = `status status-${status}`;
+    if (this.chartElement) {
+      this.chartElement.setStatus(status);
     }
   }
 
@@ -128,10 +113,10 @@ class RuuviApp {
       );
     }
 
-    if (this.sensorChart) {
-      this.sensorChart.setTimeRange(message.timeRange);
-      this.sensorChart.updateData(message.data);
-      this.debouncedChartResize();
+    if (this.chartElement) {
+      this.chartElement.setTimeRange(message.timeRange);
+      this.chartElement.updateData(message.data);
+      this.chartElement.resize();
     }
   }
 
@@ -146,8 +131,8 @@ class RuuviApp {
 
     this.updateSensorCard(normalizedMac);
 
-    if (this.sensorChart) {
-      this.sensorChart.updateValue(
+    if (this.chartElement) {
+      this.chartElement.updateValue(
         normalizedMac,
         message.data.timestamp,
         message.data.temperature,
@@ -199,20 +184,8 @@ class RuuviApp {
   private updateAdminUI(): void {
     const adminBtn = document.getElementById("admin-btn");
 
-    if (adminBtn) {
-      if (this.isAdmin) {
-        adminBtn.textContent = "⚙️";
-        adminBtn.style.background = "#ff6b6b";
-        adminBtn.style.opacity = "1";
-        adminBtn.style.borderColor = "#ff6b6b";
-        adminBtn.style.boxShadow = "0 0 5px rgba(255, 107, 107, 0.5)";
-      } else {
-        adminBtn.textContent = "⚙️";
-        adminBtn.style.background = "transparent";
-        adminBtn.style.opacity = "0.7";
-        adminBtn.style.borderColor = "#444";
-        adminBtn.style.boxShadow = "none";
-      }
+    if (adminBtn && adminBtn instanceof AdminButton) {
+      adminBtn.setActive(this.isAdmin);
     }
   }
 
@@ -228,38 +201,64 @@ class RuuviApp {
         // No need to log every time range change
         this.currentTimeRange = newRange;
         this.wsManager.send({ type: "getData", timeRange: newRange });
+
+        // Update chart element time range
+        if (this.chartElement) {
+          this.chartElement.setTimeRange(newRange);
+        }
       });
     });
 
     // Admin button
     const adminBtn = document.getElementById("admin-btn");
 
-    adminBtn?.addEventListener("click", () => {
-      if (this.isAdmin) {
-        this.logout();
+    if (adminBtn) {
+      // Create admin button component if it doesn't exist
+      if (!(adminBtn instanceof AdminButton)) {
+        const adminBtnComponent = new AdminButton({
+          isActive: this.isAdmin,
+          onClick: () => {
+            if (this.isAdmin) {
+              this.logout();
+            } else {
+              this.promptAdminAuth();
+            }
+          },
+        });
+
+        // Replace the original element with our custom component
+        adminBtn.parentNode?.replaceChild(adminBtnComponent, adminBtn);
+        adminBtnComponent.id = "admin-btn";
       } else {
-        this.promptAdminAuth();
+        // Update existing component
+        const adminButton = adminBtn as AdminButton;
+        // We need to access the property correctly
+        if (adminButton.config) {
+          adminButton.config.onClick = () => {
+            if (this.isAdmin) {
+              this.logout();
+            } else {
+              this.promptAdminAuth();
+            }
+          };
+        }
+        adminButton.setActive(this.isAdmin);
       }
-    });
-
-    // Clear selection button
-    const clearBtn = document.getElementById("clear-selection-btn");
-
-    // Hide clear button initially
-    if (clearBtn) {
-      clearBtn.style.display = "none";
     }
 
-    clearBtn?.addEventListener("click", () => {
-      if (this.sensorChart) {
-        this.sensorChart.clearActiveSensors();
+    // Clear selection button events now handled by chart-element component
+
+    // Listen for chart's custom events
+    if (this.chartElement) {
+      this.chartElement.addEventListener("sensors-cleared", () => {
         this.updateActiveSensorCards();
-        // Hide button after clearing
-        if (clearBtn) {
-          clearBtn.style.display = "none";
-        }
-      }
-    });
+      });
+
+      this.chartElement.addEventListener("sensor-toggled", (_e: Event) => {
+        // We don't need the detail for now, just update the cards
+        this.updateActiveSensorCards();
+      });
+    }
   }
 
   private promptAdminAuth(): void {
@@ -315,7 +314,7 @@ class RuuviApp {
         reading,
         sensorIndex,
         isAdmin: this.isAdmin,
-        isActive: this.sensorChart?.isSensorActive(sensorMac) || false,
+        isActive: this.chartElement?.isSensorActive(sensorMac) || false,
         sensorNames: this.sensorNames,
       });
     } else {
@@ -326,15 +325,10 @@ class RuuviApp {
   private updateActiveSensorCards(): void {
     // Update all sensor cards to reflect their active state
     this.sensorCards.forEach((card, sensorMac) => {
-      card.setActive(this.sensorChart?.isSensorActive(sensorMac) || false);
+      card.setActive(this.chartElement?.isSensorActive(sensorMac) || false);
     });
 
-    // Update clear button visibility
-    const clearBtn = document.getElementById("clear-selection-btn");
-    if (clearBtn && this.sensorChart) {
-      const hasActiveSensors = this.sensorChart.getActiveSensors().length > 0;
-      clearBtn.style.display = hasActiveSensors ? "block" : "none";
-    }
+    // Clear button visibility is now handled by the chart-element component
   }
 
   private renderLatestReadings(): void {
@@ -348,7 +342,7 @@ class RuuviApp {
 
     if (this.latestReadings.size === 0) {
       container.innerHTML =
-        '<div style="color: var(--color-text-light); text-align: center; padding: 12px;">No sensor data</div>';
+        '<div class="no-sensors-message">No sensor data</div>';
       return;
     }
 
@@ -363,16 +357,16 @@ class RuuviApp {
         colors: this.colors,
         sensorNames: this.sensorNames,
         isAdmin: this.isAdmin,
-        isActive: this.sensorChart?.isSensorActive(reading.sensorMac) || false,
+        isActive: this.chartElement?.isSensorActive(reading.sensorMac) || false,
         onHover: (sensorMac) => {
-          if (this.sensorChart) {
-            this.sensorChart.setHoveredSensor(sensorMac);
+          if (this.chartElement) {
+            this.chartElement.setHoveredSensor(sensorMac);
           }
         },
         onClick: (sensorMac) => {
-          if (this.sensorChart) {
-            this.sensorChart.toggleSensor(sensorMac);
-            // Update active state on cards and clear button visibility
+          if (this.chartElement) {
+            this.chartElement.toggleSensor(sensorMac);
+            // Update active state on cards
             this.updateActiveSensorCards();
           }
         },
@@ -384,67 +378,43 @@ class RuuviApp {
       this.sensorCards.set(reading.sensorMac, sensorCard);
       container.appendChild(sensorCard);
     });
-    
+
     // Apply touch event fixes to all new sensor cards
     DeviceHelper.fixAllTouchEvents(container);
   }
 
-  private setupSidebarEvents(): void {
+  private setupCustomElements(): void {
     // Listen for sidebar events that might affect layout
-    document.addEventListener('sidebar-expanded', () => {
-      // Resize the chart when sidebar expands
-      this.debouncedChartResize();
-    });
-    
-    document.addEventListener('sidebar-collapsed', () => {
-      // Resize the chart when sidebar collapses
-      this.debouncedChartResize();
-    });
-    
-    // Listen for orientation and resize events directly
-    window.addEventListener('resize', this.debouncedChartResize);
-    window.addEventListener('orientationchange', () => {
-      // Delay resize slightly to allow orientation to complete
-      setTimeout(this.debouncedChartResize, DeviceHelper.isIOS ? 300 : 150);
-    });
-    
-    // Handle toggle button click event
-    const toggleButton = document.querySelector('.sidebar-toggle');
-    if (toggleButton) {
-      toggleButton.addEventListener('click', () => {
-        this.sidebar.toggle();
+    if (this.sidebar && this.chartElement) {
+      this.sidebar.addEventListener("sidebar-expanded", () => {
+        // Resize the chart when sidebar expands
+        this.chartElement?.resize();
+      });
+
+      this.sidebar.addEventListener("sidebar-collapsed", () => {
+        // Resize the chart when sidebar collapses
+        this.chartElement?.resize();
       });
     }
-  }
 
-  private setupCharts(): void {
-    const canvas = document.getElementById("chart") as HTMLCanvasElement;
-    if (canvas) {
-      this.sensorChart = new SensorChart(canvas, {
-        colors: this.colors,
-        showHumidity: true,
-        showMinMaxBands: true,
-      });
-
-      // Set up canvas click handler for sensor selection
-      canvas.addEventListener("click", (_event) => {
-        if (!this.sensorChart) return;
-
-        // Find which sensor line was clicked (simplified approach)
-        // In a more advanced implementation, you could check proximity to lines
-        const hoveredSensor = this.sensorChart["hoveredSensor"];
-        if (hoveredSensor) {
-          this.sensorChart.toggleSensor(hoveredSensor);
-          // Update active state on cards and clear button visibility
-          this.updateActiveSensorCards();
+    // Set up sensor card hovering to highlight chart lines
+    document.addEventListener("mouseover", (e: Event) => {
+      const target = e.target as Element;
+      const sensorCard = target.closest("sensor-card");
+      if (sensorCard) {
+        const sensorMac = sensorCard.getAttribute("data-sensor-mac");
+        if (sensorMac && this.chartElement) {
+          this.chartElement.setHoveredSensor(sensorMac);
         }
-      });
+      }
+    });
 
-      // Chart orientation change handling now handled by sidebarManager
-
-      // Initial resize to ensure proper dimensions
-      this.sensorChart.resize();
-    }
+    document.addEventListener("mouseout", (e: Event) => {
+      const target = e.target as Element;
+      if (target.closest("sensor-card")) {
+        this.chartElement?.setHoveredSensor(null);
+      }
+    });
   }
 
   private setupPWA(): void {
@@ -458,13 +428,13 @@ class RuuviApp {
       .matchMedia("(display-mode: standalone)")
       .addEventListener("change", () => {
         // Refresh sidebar when switching to/from standalone mode
-        this.sidebar.refresh();
+        this.sidebar?.refresh();
         // Ensure chart is properly sized in standalone mode
-        this.debouncedChartResize();
+        this.chartElement?.resize();
       });
 
     // Add observer for new elements to apply touch event fixes
-    const container = document.getElementById('latest-readings');
+    const container = document.getElementById("latest-readings");
     if (container && DeviceHelper.isMobile) {
       const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
@@ -473,7 +443,7 @@ class RuuviApp {
           }
         });
       });
-      
+
       observer.observe(container, { childList: true });
     }
   }

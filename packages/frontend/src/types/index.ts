@@ -1,6 +1,6 @@
 // Import and re-export all types from shared package - following DRY principle
-export * from '@ruuvi-home/shared/types';
-export * from '@ruuvi-home/shared/events';
+export * from "@ruuvi-home/shared/types";
+export * from "@ruuvi-home/shared/events";
 
 // Re-export specific types for convenience
 export type {
@@ -24,5 +24,5 @@ export type {
   AdminAuthResultMessage,
   SensorNamesMessage,
   SensorNameSetMessage,
-  SensorNameDeletedMessage
-} from '@ruuvi-home/shared';
+  SensorNameDeletedMessage,
+} from "@ruuvi-home/shared";

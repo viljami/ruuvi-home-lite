@@ -11,7 +11,7 @@ export class DeviceHelper {
   private static _isAndroid: boolean | null = null;
   private static _isMobile: boolean | null = null;
   private static _isPWA: boolean | null = null;
-  
+
   /**
    * Check if the current device is iOS (iPhone, iPad, iPod)
    */
@@ -88,19 +88,19 @@ export class DeviceHelper {
       element.addEventListener(
         "touchstart",
         () => element.classList.add("touch-active"),
-        { passive: true }
+        { passive: true },
       );
 
       element.addEventListener(
         "touchend",
         () => setTimeout(() => element.classList.remove("touch-active"), 150),
-        { passive: true }
+        { passive: true },
       );
 
       element.addEventListener(
         "touchcancel",
         () => element.classList.remove("touch-active"),
-        { passive: true }
+        { passive: true },
       );
     }
   }
@@ -135,20 +135,24 @@ export class DeviceHelper {
     document.body.classList.toggle("android-device", this.isAndroid);
     document.body.classList.toggle("mobile-device", this.isMobile);
     document.body.classList.toggle("pwa-mode", this.isPWA);
-    
+
     // Add orientation class
-    const orientation = window.innerHeight > window.innerWidth ? "portrait" : "landscape";
+    const orientation =
+      window.innerHeight > window.innerWidth ? "portrait" : "landscape";
     document.body.classList.add(orientation);
 
     // Listen to orientation changes to update classes
     window.addEventListener("orientationchange", () => {
       // Update orientation class after orientation change
-      setTimeout(() => {
-        document.body.classList.remove("portrait", "landscape");
-        document.body.classList.add(
-          window.innerHeight > window.innerWidth ? "portrait" : "landscape"
-        );
-      }, this.isIOS ? 300 : 100);
+      setTimeout(
+        () => {
+          document.body.classList.remove("portrait", "landscape");
+          document.body.classList.add(
+            window.innerHeight > window.innerWidth ? "portrait" : "landscape",
+          );
+        },
+        this.isIOS ? 300 : 100,
+      );
     });
 
     // Fix iOS PWA height for fullscreen apps
@@ -158,7 +162,7 @@ export class DeviceHelper {
         document.documentElement.style.height = `${window.innerHeight}px`;
       });
     }
-    
+
     // Add simple touch event handling
     this.fixAllTouchEvents();
   }

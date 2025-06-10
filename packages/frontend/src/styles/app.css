@@ -11,26 +11,26 @@
   /* Layout dimensions */
   --header-height: 60px;
   --footer-height: 40px;
-  
+
   /* Colors */
   --color-primary: #4a9eff;
   --color-secondary: #ff6b6b;
   --color-success: #4ecdc4;
   --color-warning: #ff9f40;
   --color-danger: #ff6b6b;
-  
+
   --color-background: #ffffff;
   --color-background-alt: #f8f9fa;
   --color-text: #212529;
   --color-text-light: #6c757d;
   --color-border: #dee2e6;
-  
+
   /* Z-index layers */
   --z-index-base: 1;
   --z-index-sidebar: 100;
   --z-index-header: 90;
   --z-index-modal: 1000;
-  
+
   /* Spacing */
   --space-xs: 4px;
   --space-sm: 8px;
@@ -46,10 +46,12 @@
   padding: 0;
 }
 
-html, body {
+html,
+body {
   height: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, 
-               "Helvetica Neue", Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
   font-size: 16px;
   line-height: 1.5;
   color: var(--color-text);
@@ -88,7 +90,7 @@ body {
   justify-content: space-between;
   padding: 0 var(--space-md);
   background-color: var(--color-background);
-  border-bottom: 1px solid var(--color-border);
+  margin-bottom: var(--space-sm);
   z-index: var(--z-index-header);
 }
 
@@ -106,7 +108,7 @@ body {
 .main-content {
   grid-area: main;
   overflow-y: auto;
-  padding: var(--space-md);
+  padding: var(--space-lg) var(--space-md);
   -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
@@ -120,7 +122,7 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 0 var(--space-md);
-  border-top: 1px solid var(--color-border);
+  margin-top: var(--space-md);
   font-size: 14px;
   color: var(--color-text-light);
 }
@@ -133,35 +135,32 @@ body {
   padding: 8px 16px;
   border-radius: 4px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 400;
   text-align: center;
   cursor: pointer;
   transition: 
     background-color 150ms ease,
-    border-color 150ms ease,
-    color 150ms ease;
+    color 150ms ease,
+    transform 150ms ease;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
-  border: 1px solid transparent;
+  border: none;
   min-height: 36px;
 }
 
 .btn-primary {
   background-color: var(--color-primary);
   color: white;
-  border-color: var(--color-primary);
 }
 
 .btn-secondary {
-  background-color: transparent;
+  background-color: rgba(74, 158, 255, 0.1);
   color: var(--color-primary);
-  border-color: var(--color-primary);
 }
 
 .btn.active {
   background-color: var(--color-primary);
   color: white;
-  border-color: var(--color-primary);
 }
 
 /* ======= Status Indicator ======= */
@@ -192,33 +191,18 @@ body {
 }
 
 @keyframes pulse {
-  0% { opacity: 0.5; }
-  50% { opacity: 1; }
-  100% { opacity: 0.5; }
+  0% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.5;
+  }
 }
 
-/* ======= Admin Button ======= */
-#admin-btn {
-  background-color: transparent;
-  border: 1px solid var(--color-border);
-  color: var(--color-text);
-  opacity: 0.7;
-  transition: all 250ms ease;
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-#admin-btn.active {
-  background-color: var(--color-secondary);
-  border-color: var(--color-secondary);
-  opacity: 1;
-  box-shadow: 0 0 5px rgba(255, 107, 107, 0.5);
-}
+/* Admin button styles moved to AdminButton component */
 
 /* ======= Mobile Layout (default) ======= */
 /* Layout adjustments already covered by component-specific CSS */
@@ -236,10 +220,10 @@ body {
     }
     
     .main-content {
-      padding: var(--space-lg);
+      padding: var(--space-xl) var(--space-lg);
     }
   }
-  
+
   /* Portrait - standard mobile layout */
   @media (orientation: portrait) {
     .main-content {
@@ -259,15 +243,17 @@ body {
   }
   
   .main-content {
-    padding: var(--space-xl);
+    padding: var(--space-xxl) var(--space-xl);
   }
   
   .header {
     padding: 0 var(--space-xl);
+    margin-bottom: var(--space-md);
   }
   
   .footer {
     padding: 0 var(--space-xl);
+    margin-top: var(--space-lg);
   }
 }
 
@@ -277,6 +263,7 @@ body {
     max-width: 1400px;
     margin: 0 auto;
     width: 100%;
+    padding: var(--space-xxl) var(--space-xxl);
   }
 }
 
@@ -296,15 +283,17 @@ body {
   body {
     /* Ensure full height in PWA mode */
     height: 100vh;
-    height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    height: calc(
+      100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom)
+    );
   }
-  
+
   /* Adjust header for notched devices */
   .header {
     padding-top: env(safe-area-inset-top);
     height: calc(var(--header-height) + env(safe-area-inset-top));
   }
-  
+
   /* Adjust footer for home indicator */
   .footer {
     padding-bottom: env(safe-area-inset-bottom);

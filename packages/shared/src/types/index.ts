@@ -1,4 +1,4 @@
-export * from './sensor.js';
+export * from "./sensor.js";
 
 // Re-export specific types for convenience
 export type {
@@ -12,5 +12,5 @@ export type {
   SensorBucketUpdate,
   ChartBounds,
   ChartArea,
-  ChartScale
-} from './sensor.js';
+  ChartScale,
+} from "./sensor.js";

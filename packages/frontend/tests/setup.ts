@@ -1,10 +1,10 @@
 // Test setup for frontend components
-import { beforeAll, beforeEach, afterEach, vi } from 'vitest'
+import { beforeAll, beforeEach, afterEach, vi } from "vitest";
 
 // Mock Canvas API for chart testing
 beforeAll(() => {
   // Mock HTMLCanvasElement
-  Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
+  Object.defineProperty(HTMLCanvasElement.prototype, "getContext", {
     value: vi.fn(() => ({
       fillRect: vi.fn(),
       clearRect: vi.fn(),
@@ -30,17 +30,17 @@ beforeAll(() => {
       transform: vi.fn(),
       rect: vi.fn(),
       clip: vi.fn(),
-      strokeStyle: '#000000',
-      fillStyle: '#000000',
+      strokeStyle: "#000000",
+      fillStyle: "#000000",
       globalAlpha: 1,
       lineWidth: 1,
-      lineCap: 'butt',
-      lineJoin: 'miter',
+      lineCap: "butt",
+      lineJoin: "miter",
       miterLimit: 10,
-      font: '10px sans-serif',
-      textAlign: 'start',
-      textBaseline: 'alphabetic',
-      shadowColor: 'rgba(0, 0, 0, 0)',
+      font: "10px sans-serif",
+      textAlign: "start",
+      textBaseline: "alphabetic",
+      shadowColor: "rgba(0, 0, 0, 0)",
       shadowBlur: 0,
       shadowOffsetX: 0,
       shadowOffsetY: 0,
@@ -48,26 +48,26 @@ beforeAll(() => {
       getLineDash: vi.fn(() => []),
       canvas: {
         width: 800,
-        height: 600
-      }
-    }))
-  })
+        height: 600,
+      },
+    })),
+  });
 
   // Mock Canvas toDataURL for image output testing
-  Object.defineProperty(HTMLCanvasElement.prototype, 'toDataURL', {
-    value: vi.fn(() => 'data:image/png;base64,test-image-data')
-  })
+  Object.defineProperty(HTMLCanvasElement.prototype, "toDataURL", {
+    value: vi.fn(() => "data:image/png;base64,test-image-data"),
+  });
 
   // Mock Canvas width/height properties
-  Object.defineProperty(HTMLCanvasElement.prototype, 'width', {
+  Object.defineProperty(HTMLCanvasElement.prototype, "width", {
     value: 800,
-    writable: true
-  })
-  Object.defineProperty(HTMLCanvasElement.prototype, 'height', {
+    writable: true,
+  });
+  Object.defineProperty(HTMLCanvasElement.prototype, "height", {
     value: 600,
-    writable: true
-  })
-})
+    writable: true,
+  });
+});
 
 // Mock WebSocket for WebSocketManager tests
 beforeAll(() => {
@@ -80,27 +80,27 @@ beforeAll(() => {
     CONNECTING: 0,
     OPEN: 1,
     CLOSING: 2,
-    CLOSED: 3
-  })) as any
-})
+    CLOSED: 3,
+  })) as any;
+});
 
 // Mock window.location
-Object.defineProperty(window, 'location', {
+Object.defineProperty(window, "location", {
   value: {
-    protocol: 'http:',
-    host: 'localhost:3000',
-    hostname: 'localhost',
-    port: '3000',
-    href: 'http://localhost:3000'
+    protocol: "http:",
+    host: "localhost:3000",
+    hostname: "localhost",
+    port: "3000",
+    href: "http://localhost:3000",
   },
-  writable: true
-})
+  writable: true,
+});
 
 // Mock requestAnimationFrame
-global.requestAnimationFrame = vi.fn((cb) => setTimeout(cb, 16))
-global.cancelAnimationFrame = vi.fn()
+global.requestAnimationFrame = vi.fn((cb) => setTimeout(cb, 16));
+global.cancelAnimationFrame = vi.fn();
 
 // Clean up after each test
 afterEach(() => {
-  vi.clearAllMocks()
-})
+  vi.clearAllMocks();
+});

@@ -35,7 +35,7 @@ vi.mock("http", () => ({
     listen: vi.fn((...args) => {
       // Handle different signatures: listen(port, callback) or listen(port, host, callback)
       const callback = args[args.length - 1];
-      if (typeof callback === 'function') {
+      if (typeof callback === "function") {
         callback();
       }
     }),
@@ -49,7 +49,7 @@ vi.mock("https", () => ({
     listen: vi.fn((...args) => {
       // Handle different signatures: listen(port, callback) or listen(port, host, callback)
       const callback = args[args.length - 1];
-      if (typeof callback === 'function') {
+      if (typeof callback === "function") {
         callback();
       }
     }),

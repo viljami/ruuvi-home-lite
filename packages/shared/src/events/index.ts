@@ -1,4 +1,4 @@
-export * from './websocket.js';
+export * from "./websocket.js";
 
 // Re-export specific types for convenience
 export type {
@@ -17,7 +17,7 @@ export type {
   AdminAuthResultMessage,
   SensorNamesMessage,
   SensorNameSetMessage,
-  SensorNameDeletedMessage
-} from './websocket.js';
+  SensorNameDeletedMessage,
+} from "./websocket.js";
 
-export { isClientMessage, isServerMessage } from './websocket.js';
+export { isClientMessage, isServerMessage } from "./websocket.js";
