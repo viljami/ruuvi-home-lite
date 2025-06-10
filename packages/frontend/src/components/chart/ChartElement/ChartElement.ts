@@ -74,11 +74,6 @@ export class ChartElement extends HTMLElement {
     return ["show-humidity", "show-min-max", "time-range"];
   }
 
-  // Constants for sizing calculations
-  private readonly HEADER_HEIGHT = 60;
-  private readonly BOTTOM_MARGIN = 20;
-  private readonly MIN_HEIGHT = 300;
-
   constructor() {
     super();
   }
@@ -95,9 +90,6 @@ export class ChartElement extends HTMLElement {
 
     // Set up event listeners
     this.setupEventListeners();
-
-    // Initial size calculation
-    this.setSize();
   }
 
   /**
@@ -105,41 +97,47 @@ export class ChartElement extends HTMLElement {
    */
   private render(): void {
     // Clear existing content
-    this.innerHTML = "";
+    // this.innerHTML = "";
 
     // Create controls container
-    this.controlsContainer = document.createElement("div");
+    if (!this.controlsContainer) {
+      this.controlsContainer = document.createElement("div");
+      this.appendChild(this.controlsContainer);
+    }
     this.controlsContainer.className = "chart-controls";
 
     // Create clear button
-    this.clearButton = document.createElement("button");
-    this.clearButton.id = "clear-selection-btn";
+    if (!this.clearButton) {
+      this.clearButton = document.createElement("button");
+      this.clearButton.id = "clear-selection-btn";
+      this.clearButton.type = "button";
+      this.controlsContainer.appendChild(this.clearButton);
+    }
     this.clearButton.className = "btn btn-secondary";
     this.clearButton.textContent = "Clear";
     this.clearButton.style.display = "none"; // Hidden by default
-    this.clearButton.type = "button";
-
-    this.controlsContainer.appendChild(this.clearButton);
-    this.appendChild(this.controlsContainer);
 
     // Create canvas
-    this.canvas = document.createElement("canvas");
-    this.canvas.id = "chart";
-    this.appendChild(this.canvas);
+    if (!this.canvas) {
+      this.canvas = document.createElement("canvas");
+      this.canvas.id = "chart";
+      this.appendChild(this.canvas);
+    }
 
     // Create status indicator
-    const statusContainer = document.createElement("div");
-    statusContainer.className = "chart-status";
+    if (!this.statusIndicator) {
+      const statusContainer = document.createElement("div");
+      statusContainer.className = "chart-status";
+      this.statusIndicator = document.createElement("span");
+      this.statusIndicator.id = "status-indicator";
+      this.statusIndicator.textContent = "Connecting";
+      statusContainer.appendChild(this.statusIndicator);
+      this.appendChild(statusContainer);
+    }
 
-    this.statusIndicator = document.createElement("span");
-    this.statusIndicator.id = "status-indicator";
     this.statusIndicator.className = "status";
-    this.statusIndicator.textContent = "Connecting";
     this.statusIndicator.style.position = "relative";
     this.statusIndicator.style.zIndex = "20";
-
-    statusContainer.appendChild(this.statusIndicator);
-    this.appendChild(statusContainer);
   }
 
   /**
@@ -148,8 +146,8 @@ export class ChartElement extends HTMLElement {
   private initializeChart(): void {
     if (!this.canvas) return;
 
-    // Get canvas context
-    this.ctx = this.canvas.getContext("2d", { alpha: false });
+    // Get canvas context with alpha to allow proper background coloring
+    this.ctx = this.canvas.getContext("2d", { alpha: true });
     if (!this.ctx) return;
 
     // Apply any attributes that were set before initialization
@@ -159,10 +157,10 @@ export class ChartElement extends HTMLElement {
 
     // Initial canvas setup
     this.setupCanvas();
-    
+
     // Initial render with empty data - this will calculate bounds internally
     this.drawChart();
-    
+
     // Delayed resize to ensure proper layout after DOM is settled
     setTimeout(() => this.resize(), 100);
   }
@@ -178,17 +176,14 @@ export class ChartElement extends HTMLElement {
     this.devicePixelRatio = dpr;
 
     // Get container width
-    const containerWidth = Math.floor(
-      this.canvas.clientWidth || this.canvas.width,
-    );
-    const containerHeight = Math.floor(
-      this.canvas.clientHeight || this.canvas.height,
-    );
+    const containerWidth = this.clientWidth;
+    const containerHeight = this.clientHeight - 32;
 
     // Only update if dimensions have changed (avoid unnecessary redraws)
-    if (this.chartConfig.width !== containerWidth || 
-        this.chartConfig.height !== containerHeight) {
-
+    if (
+      this.chartConfig.width !== containerWidth ||
+      this.chartConfig.height !== containerHeight
+    ) {
       // Set display size (css pixels)
       this.canvas.style.width = `${containerWidth}px`;
       this.canvas.style.height = `${containerHeight}px`;
@@ -200,17 +195,17 @@ export class ChartElement extends HTMLElement {
       // Store dimensions for calculations
       this.chartConfig.width = containerWidth;
       this.chartConfig.height = containerHeight;
+
+      // Reset and then apply scale for high DPI displays
+      this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+      this.ctx.scale(dpr, dpr);
+
+      // Enable crisp lines for better rendering
+      this.ctx.imageSmoothingEnabled = false;
+
+      // Use crisp pixel-aligned lines for grid
+      this.ctx.translate(0.5, 0.5);
     }
-
-    // Reset and then apply scale for high DPI displays
-    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
-    this.ctx.scale(dpr, dpr);
-
-    // Enable crisp lines for better rendering
-    this.ctx.imageSmoothingEnabled = false;
-    
-    // Use crisp pixel-aligned lines for grid
-    this.ctx.translate(0.5, 0.5);
   }
 
   /**
@@ -247,21 +242,6 @@ export class ChartElement extends HTMLElement {
         },
         { passive: false },
       );
-    }
-  }
-
-  private setSize(): void {
-    if (this.canvas) {
-      const availableHeight =
-        window.innerHeight - this.HEADER_HEIGHT - this.BOTTOM_MARGIN;
-      const height = Math.max(availableHeight, this.MIN_HEIGHT);
-      
-      // Set explicit width and height
-      this.canvas.style.height = `${height}px`;
-      this.canvas.style.width = '100%';
-      
-      // Force immediate layout update
-      this.canvas.getBoundingClientRect();
     }
   }
 
@@ -417,7 +397,7 @@ export class ChartElement extends HTMLElement {
     this.data.forEach((points) => {
       points.sort((a, b) => a.timestamp - b.timestamp);
     });
-    
+
     // If we have data now, trigger a full redraw
     // Only render when new data arrives
     if (data.length > 0) {
@@ -577,16 +557,27 @@ export class ChartElement extends HTMLElement {
     // Set current time range for X axis even when no data
     const now = Date.now() / 1000;
     let timeRangeSeconds: number;
-    
+
     switch (this.timeRange) {
-      case "hour": timeRangeSeconds = 60 * 60; break;
-      case "day": timeRangeSeconds = 24 * 60 * 60; break;
-      case "week": timeRangeSeconds = 7 * 24 * 60 * 60; break;
-      case "month": timeRangeSeconds = 30 * 24 * 60 * 60; break;
-      case "year": timeRangeSeconds = 365 * 24 * 60 * 60; break;
-      default: timeRangeSeconds = 24 * 60 * 60; // Default to day
+      case "hour":
+        timeRangeSeconds = 60 * 60;
+        break;
+      case "day":
+        timeRangeSeconds = 24 * 60 * 60;
+        break;
+      case "week":
+        timeRangeSeconds = 7 * 24 * 60 * 60;
+        break;
+      case "month":
+        timeRangeSeconds = 30 * 24 * 60 * 60;
+        break;
+      case "year":
+        timeRangeSeconds = 365 * 24 * 60 * 60;
+        break;
+      default:
+        timeRangeSeconds = 24 * 60 * 60; // Default to day
     }
-    
+
     // Time bounds
     this.timeBounds = {
       minX: minX === Infinity ? now - timeRangeSeconds : minX,
@@ -628,12 +619,9 @@ export class ChartElement extends HTMLElement {
     try {
       this.isResizing = true;
 
-      // Update size
-      this.setSize();
-
       // Reconfigure canvas for the new size (only adjust canvas and its styles)
       this.setupCanvas();
-      
+
       // Redraw chart with current data
       this.drawChart();
 
@@ -695,11 +683,19 @@ export class ChartElement extends HTMLElement {
     ) {
       return; // Skip rendering if dimensions are invalid
     }
-    
+
     // Always calculate bounds before drawing to ensure proper rendering
     this.calculateBounds();
 
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+    // Set background color to match app background
+    const backgroundColor =
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--color-background")
+        .trim() || "#ffffff";
+    this.ctx.fillStyle = backgroundColor;
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
     // Reset any lingering transforms for consistency
     const dpr = this.devicePixelRatio;
@@ -716,7 +712,7 @@ export class ChartElement extends HTMLElement {
       this.drawNoDataMessage();
       return;
     }
-    
+
     // Draw data lines
     const sortedSensors = Array.from(this.data.keys()).sort();
     const hasHoveredSensor = this.hoveredSensor !== null;
@@ -773,30 +769,31 @@ export class ChartElement extends HTMLElement {
       }
     });
   }
-  
+
   /**
    * Draw a message when no data is available
    */
   private drawNoDataMessage(): void {
-    if (!this.ctx || !this.chartConfig.width || !this.chartConfig.height) return;
-    
+    if (!this.ctx || !this.chartConfig.width || !this.chartConfig.height)
+      return;
+
     const width = this.chartConfig.width;
     const height = this.chartConfig.height;
-    
+
     this.ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
     this.ctx.font = "14px sans-serif";
     this.ctx.textAlign = "center";
     this.ctx.textBaseline = "middle";
     this.ctx.fillText("Waiting for sensor data...", width / 2, height / 2);
-    
+
     // Add borders to ensure chart area is visible
     this.ctx.strokeStyle = "rgba(0, 0, 0, 0.1)";
     this.ctx.lineWidth = 1;
     this.ctx.strokeRect(
-      this.chartConfig.padding.left, 
-      this.chartConfig.padding.top, 
+      this.chartConfig.padding.left,
+      this.chartConfig.padding.top,
       width - this.chartConfig.padding.left - this.chartConfig.padding.right,
-      height - this.chartConfig.padding.top - this.chartConfig.padding.bottom
+      height - this.chartConfig.padding.top - this.chartConfig.padding.bottom,
     );
   }
 

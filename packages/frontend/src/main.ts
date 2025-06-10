@@ -54,6 +54,7 @@ class RuuviApp {
 
     // Get references to custom elements
     this.sidebar = document.getElementById("sensor-sidebar") as SidebarElement;
+    console.log(this.sidebar, this.viewportManager);
     this.chartElement = document.getElementById(
       "chart-container",
     ) as ChartElement;
@@ -66,13 +67,6 @@ class RuuviApp {
     // Initialize chart with default state before connecting
     if (this.chartElement) {
       this.chartElement.setStatus("connecting");
-      // resize() will adjust canvas size and call drawChart()
-      this.chartElement.resize();
-    }
-    
-    // Ensure sidebar is properly initialized with correct overlay state
-    if (this.sidebar) {
-      this.sidebar.refresh();
     }
 
     // Then connect to WebSocket and set up viewport listeners
@@ -419,102 +413,15 @@ class RuuviApp {
     DeviceHelper.fixAllTouchEvents(container);
   }
 
-  private setupCustomElements(): void {
-    // Listen for sidebar events that affect layout
-    if (this.sidebar && this.chartElement) {
-      this.sidebar.addEventListener("sidebar-expanded", () => {
-        // When sidebar expands, we need to adjust canvas dimensions and redraw
-        this.chartElement?.resize();
-      });
+  private setupCustomElements(): void {}
 
-      this.sidebar.addEventListener("sidebar-collapsed", () => {
-        // When sidebar collapses, we need to adjust canvas dimensions and redraw
-        this.chartElement?.resize();
-      });
-    }
-
-    // Set up sensor card interactions
-    document.addEventListener("mouseover", (e: Event) => {
-      const target = e.target as Element;
-      const sensorCard = target.closest("sensor-card");
-      if (sensorCard) {
-        const sensorMac = sensorCard.getAttribute("data-sensor-mac");
-        if (sensorMac && this.chartElement) {
-          this.chartElement.setHoveredSensor(sensorMac);
-        }
-      }
-    });
-
-    document.addEventListener("mouseout", (e: Event) => {
-      const target = e.target as Element;
-      if (target.closest("sensor-card")) {
-        this.chartElement?.setHoveredSensor(null);
-      }
-    });
-  }
-
-  private setupPWA(): void {
-    // PWA Service Worker
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(console.error);
-    }
-
-    // Handle PWA display mode changes
-    window
-      .matchMedia("(display-mode: standalone)")
-      .addEventListener("change", () => {
-        // Refresh sidebar to update overlay visibility when display mode changes
-        this.sidebar?.refresh();
-        this.viewportManager.forceUpdate();
-      });
-      
-    // Handle orientation changes explicitly for better overlay handling
-    window
-      .matchMedia("(orientation: portrait), (orientation: landscape)")
-      .addEventListener("change", () => {
-        // Explicitly refresh sidebar on orientation change
-        this.sidebar?.refresh();
-      });
-
-    // Apply touch event fixes for mobile devices
-    const container = document.getElementById("latest-readings");
-    if (container) {
-      DeviceHelper.fixAllTouchEvents(container);
-    }
-  }
+  private setupPWA(): void {}
 
   /**
    * Set up viewport manager listeners to handle resize and orientation changes
    * This centralizes all resize handling in the application
    */
-  private setupViewportListeners(): void {
-    if (!this.chartElement) return;
-
-    // Listen for resize events
-    this.unsubscribeResize = this.viewportManager.onResize(() => {
-      // Refresh sidebar to update overlay visibility based on screen size
-      if (this.sidebar) {
-        this.sidebar.refresh();
-      }
-      
-      if (this.chartElement) {
-        // Use requestAnimationFrame to ensure the DOM has updated before adjusting canvas size
-        requestAnimationFrame(() => {
-          if (this.chartElement) {
-            // resize() now only adjusts canvas dimensions and styles, then calls drawChart
-            this.chartElement.resize();
-          }
-        });
-      }
-    });
-
-    // Initial resize when app loads - this will adjust canvas dimensions and draw
-    requestAnimationFrame(() => {
-      if (this.chartElement) {
-        this.chartElement.resize();
-      }
-    });
-  }
+  private setupViewportListeners(): void {}
 }
 
 // Create a global variable for the application instance

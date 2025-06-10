@@ -8,14 +8,13 @@
 chart-element,
 sensor-chart {
   width: 100%;
+  height: 100%;
   background-color: var(--color-background, #ffffff);
   padding: 16px 8px 8px 8px;
-  margin-bottom: 16px;
   display: flex;
   flex-direction: column;
   position: relative;
   border-radius: 6px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 /* Canvas sizing with proper aspect ratio */
@@ -23,7 +22,6 @@ sensor-chart {
   width: 100%;
   height: 100%;
   margin: 12px 0 6px 0;
-  transition: height 250ms ease;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   border-radius: 4px;
@@ -70,7 +68,6 @@ sensor-chart {
   flex-wrap: wrap;
   gap: 3px;
   opacity: 0.7;
-  transition: opacity 200ms ease;
 }
 
 .time-range-controls:hover {
@@ -80,7 +77,7 @@ sensor-chart {
 .time-range-controls .btn {
   min-width: 40px;
   padding: 4px 8px;
-  font-size: 11px;
+  font-size: 13px;
   border: none;
   background-color: rgba(0, 0, 0, 0.02);
   color: var(--color-text-light, #6c757d);
@@ -88,9 +85,6 @@ sensor-chart {
   font-weight: normal;
   box-shadow: none;
   opacity: 0.8;
-  transition:
-    opacity 150ms ease,
-    background-color 150ms ease;
 }
 
 .time-range-controls .btn:hover {
@@ -113,18 +107,13 @@ sensor-chart {
 
 /* Clear selection button */
 #clear-selection-btn {
-  font-size: 11px;
+  font-size: 13px;
   padding: 4px 8px;
   background-color: rgba(74, 158, 255, 0.08);
   color: var(--color-text-light, #6c757d);
   border: none;
   border-radius: 3px;
   cursor: pointer;
-  transition:
-    background-color 150ms ease,
-    transform 150ms ease,
-    opacity 150ms ease,
-    color 150ms ease;
   display: none; /* Hidden by default until sensors are selected */
   position: relative;
   z-index: 15;
@@ -139,7 +128,6 @@ sensor-chart {
 }
 
 #clear-selection-btn:active {
-  transform: translateY(1px);
   opacity: 1;
 }
 
@@ -160,7 +148,7 @@ sensor-chart {
   align-items: center;
   font-size: 12px;
   opacity: 0.9;
-  background-color: rgba(255, 255, 255, 0.9);
+  color: var(--color-primary, #4a9eff);
   padding: 2px 6px;
   border-radius: 3px;
   pointer-events: auto;
@@ -176,11 +164,12 @@ sensor-chart {
 }
 
 .status-connected::before {
-  background-color: var(--color-success, #4ecdc4);
+  background-color: white;
 }
 
 .status-disconnected::before {
-  background-color: var(--color-danger, #ff6b6b);
+  color: var(--color-danger, #ff6b6b);
+  opacity: 0.9;
 }
 
 .status-reconnecting::before,
@@ -202,30 +191,19 @@ sensor-chart {
   z-index: 5;
   background-color: rgba(74, 158, 255, 0.05);
   border: 1px solid rgba(74, 158, 255, 0.2);
-  transition: 
-    opacity 200ms ease,
-    transform 200ms ease;
 }
 
 .status-reconnecting::before {
   background-color: var(--color-warning, #ff9f40);
+  opacity: 0.9;
 }
 
 .status-connecting::before {
-  background-color: var(--color-primary, #4a9eff);
+  background-color: white;
+  opacity: 0.9;
 }
 
-@keyframes pulse {
-  0% {
-    opacity: 0.7;
-  }
-  50% {
-    opacity: 0.9;
-  }
-  100% {
-    opacity: 0.7;
-  }
-}
+/* Animation removed */
 
 /* No sensors message */
 .no-sensors-message {
@@ -246,13 +224,13 @@ sensor-chart {
   }
 
   .time-range-controls .btn {
-    min-width: 34px;
-    padding: 3px 5px;
-    font-size: 10px;
+    min-width: 36px;
+    padding: 3px 6px;
+    font-size: 12px;
   }
 
   .chart-controls {
-    gap: 4px;
+    gap: 5px;
     margin-bottom: 4px;
   }
 }
@@ -318,10 +296,5 @@ sensor-chart {
 @media (prefers-reduced-motion: reduce) {
   #chart {
     transition: none;
-  }
-
-  .status-reconnecting::before,
-  .status-connecting::before {
-    animation: none;
   }
 }

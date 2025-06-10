@@ -191,7 +191,6 @@ body {
 
   .main-content {
     padding: var(--space-lg);
-    border-right: var(--sidebar-border);
   }
 }
 
@@ -207,7 +206,6 @@ body {
 
   .main-content {
     padding: var(--space-lg);
-    border-right: var(--sidebar-border);
   }
 }
 
