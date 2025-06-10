@@ -47,6 +47,7 @@
   <body>
     <div class="header">
       <div class="header-controls">
+        <admin-button id="admin-btn"></admin-button>
         <div class="time-range-controls">
           <button class="btn" data-range="hour">Hour</button>
           <button class="btn active" data-range="day">Day</button>
@@ -54,7 +55,15 @@
           <button class="btn" data-range="month">Month</button>
           <button class="btn" data-range="year">Year</button>
         </div>
-        <admin-button id="admin-btn"></admin-button>
+        <div class="header-buttons">
+          <button
+            id="clear-selection-btn"
+            class="btn btn-secondary"
+            style="display: none"
+          >
+            Clear
+          </button>
+        </div>
       </div>
     </div>
     <div class="main-content">

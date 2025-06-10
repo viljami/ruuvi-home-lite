@@ -73,6 +73,7 @@ body {
   background-color: var(--color-background);
   border-bottom: 1px solid var(--color-border);
   z-index: var(--z-index-header);
+  flex-wrap: nowrap;
 }
 
 .header-title {
@@ -83,6 +84,17 @@ body {
   display: flex;
   gap: var(--space-sm);
   align-items: center;
+  width: 100%;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.header-buttons {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding-right: var(--space-xs);
 }
 
 /* ======= Footer ======= */
@@ -159,6 +171,17 @@ body {
       "header"
       "main"
       "footer";
+  }
+
+  .header {
+    padding: 0;
+    height: auto;
+    min-height: var(--header-height);
+  }
+
+  .header-controls {
+    padding: var(--space-xs) 0;
+    width: 100%;
   }
 
   .sidebar {

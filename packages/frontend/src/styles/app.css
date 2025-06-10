@@ -5,6 +5,14 @@
  * Defines the overall grid system and component positioning.
  */
 
+ .header-buttons {
+   margin-left: auto;
+   display: flex;
+   align-items: center;
+   gap: var(--space-sm);
+   padding-right: var(--space-xs);
+ }
+
 /* ======= Root Variables ======= */
 :root {
   /* Layout dimensions */
@@ -94,6 +102,7 @@ body {
 }
 
 .header-controls {
+  width: 100%;
   display: flex;
   gap: var(--space-sm);
 }

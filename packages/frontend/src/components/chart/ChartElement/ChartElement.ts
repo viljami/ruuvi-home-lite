@@ -31,7 +31,7 @@ export class ChartElement extends HTMLElement {
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
   private controlsContainer: HTMLDivElement | null = null;
-  private clearButton: HTMLButtonElement | null = null;
+  private clearButton: HTMLButtonElement | null = null; // Now references element in header
   private statusIndicator: HTMLSpanElement | null = null;
 
   // Chart state
@@ -100,6 +100,9 @@ export class ChartElement extends HTMLElement {
 
     // Set up event listeners
     this.setupEventListeners();
+    
+    // Make sure clear button is properly initialized
+    this.updateClearButtonVisibility();
   }
 
   /**
@@ -116,16 +119,7 @@ export class ChartElement extends HTMLElement {
     }
     this.controlsContainer.className = "chart-controls";
 
-    // Create clear button
-    if (!this.clearButton) {
-      this.clearButton = document.createElement("button");
-      this.clearButton.id = "clear-selection-btn";
-      this.clearButton.type = "button";
-      this.controlsContainer.appendChild(this.clearButton);
-    }
-    this.clearButton.className = "btn btn-secondary";
-    this.clearButton.textContent = "Clear";
-    this.clearButton.style.display = "none"; // Hidden by default
+    // Clear button is now in the header, no need to create it here
 
     // Create canvas
     if (!this.canvas) {
@@ -227,6 +221,11 @@ export class ChartElement extends HTMLElement {
       this.canvas.addEventListener("click", this.handleCanvasClick.bind(this));
     }
 
+    // Get reference to clear button in the header
+    this.clearButton = document.getElementById(
+      "clear-selection-btn",
+    ) as HTMLButtonElement;
+
     // Clear button events
     if (this.clearButton) {
       this.clearButton.addEventListener(
@@ -304,15 +303,19 @@ export class ChartElement extends HTMLElement {
    * Update clear button visibility based on whether there are active sensors
    */
   private updateClearButtonVisibility(): void {
-    if (!this.clearButton) return;
+    if (!this.clearButton) {
+      // Try to get the button from the header if not already set
+      this.clearButton = document.getElementById(
+        "clear-selection-btn",
+      ) as HTMLButtonElement;
+      
+      if (!this.clearButton) return;
+    }
 
     const hasActiveSensors = this.activeSensors.size > 0;
 
     if (hasActiveSensors) {
-      this.clearButton.setAttribute(
-        "style",
-        "display: block; position: relative; z-index: 20; cursor: pointer;",
-      );
+      this.clearButton.style.display = "inline-block";
     } else {
       this.clearButton.style.display = "none";
     }
