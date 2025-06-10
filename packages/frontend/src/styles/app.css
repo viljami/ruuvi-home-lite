@@ -60,7 +60,7 @@ body {
 
 /* Apply safe area insets for notched devices */
 .ios-device body {
-  padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) 
+  padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0)
            env(safe-area-inset-bottom, 0) env(safe-area-inset-left, 0);
 }
 
@@ -127,31 +127,33 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 16px;
-  border-radius: 4px;
-  font-size: 14px;
+  padding: 7px 14px;
+  border-radius: 3px;
+  font-size: 13px;
   text-align: center;
   cursor: pointer;
   transition: all 150ms ease;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
   border: none;
-  min-height: 36px;
+  min-height: 32px;
+  opacity: 0.85;
 }
 
 .btn-primary {
-  background-color: var(--color-primary);
+  background-color: rgba(74, 158, 255, 0.7);
   color: white;
 }
 
 .btn-secondary {
-  background-color: rgba(74, 158, 255, 0.1);
-  color: var(--color-primary);
+  background-color: rgba(74, 158, 255, 0.07);
+  color: var(--color-text-light);
 }
 
 .btn.active {
-  background-color: var(--color-primary);
-  color: white;
+  background-color: rgba(74, 158, 255, 0.2);
+  color: var(--color-primary);
+  font-weight: 500;
 }
 
 /* ======= Responsive Layouts ======= */
@@ -165,11 +167,11 @@ body {
       "main"
       "footer";
   }
-  
+
   .main-content {
     padding: var(--space-md);
   }
-  
+
   /* Fade-in animation for overlay */
   @keyframes fade-in {
     from { opacity: 0; }
@@ -189,6 +191,7 @@ body {
 
   .main-content {
     padding: var(--space-lg);
+    border-right: var(--sidebar-border);
   }
 }
 
@@ -204,7 +207,9 @@ body {
 
   .main-content {
     padding: var(--space-lg);
+    border-right: var(--sidebar-border);
   }
+}
 
   .header {
     padding: 0 var(--space-lg);

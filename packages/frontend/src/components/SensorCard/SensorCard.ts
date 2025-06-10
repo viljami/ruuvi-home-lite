@@ -71,7 +71,7 @@ export class SensorCard extends HTMLElement {
 
     // Apply classes for state management
     this.className = `${this.isOffline ? "sensor-offline" : ""} ${this.config.isActive ? "sensor-active" : ""}`;
-    this.style.borderLeftColor = this.sensorColor;
+    this.style.setProperty('--sensor-color', this.sensorColor);
     this.style.cursor = "pointer";
     // @ts-ignore webkit specific style
     this.style.webkitTapHighlightColor = "transparent"; // Prevent iOS default gray touch highlight

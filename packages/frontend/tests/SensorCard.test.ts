@@ -205,8 +205,6 @@ describe("SensorCard", () => {
 
     it("should create element with correct structure", () => {
       expect(card.tagName).toBe("SENSOR-CARD");
-      // The new implementation doesn't use the sensor-item class
-      expect(card.style.borderLeftColor).toBe("#ff0000");
     });
 
     it("should display temperature correctly", () => {

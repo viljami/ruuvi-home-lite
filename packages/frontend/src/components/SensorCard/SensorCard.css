@@ -9,7 +9,7 @@
 sensor-card {
   display: flex;
   align-items: center;
-  padding: 0 6px;
+  padding: 0 6px 0 8px; /* Increased left padding for color indicator */
   margin-bottom: 2px;
   background-color: var(--color-background, #ffffff);
   border-radius: 3px;
@@ -24,6 +24,27 @@ sensor-card {
   height: 25px; /* Fixed compact height */
   max-height: 25px;
   overflow: hidden;
+  position: relative; /* For absolute positioning of color indicator */
+}
+
+/* Color indicator on the left edge */
+sensor-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background-color: var(--sensor-color, var(--color-primary, #4a9eff));
+  border-top-left-radius: 3px;
+  border-bottom-left-radius: 3px;
+  opacity: 0.7;
+  transition: opacity 150ms ease;
+}
+
+/* Brighten color indicator on hover */
+sensor-card:hover::before {
+  opacity: 1;
 }
 
 /* ======= Content Layout ======= */
@@ -42,12 +63,14 @@ sensor-card {
   font-size: 14px;
   color: var(--color-primary, #4a9eff);
   flex-shrink: 0;
+  transition: font-weight 150ms ease;
 }
 
 .sensor-humidity {
   font-size: 14px;
-  color: #c9aa42; /* Softer yellow that's still accessible */
+  color: #b4a149; /* More muted gold that's less distracting but still accessible */
   flex-shrink: 0;
+  opacity: 0.85; /* Slightly dimmer to be less prominent */
 }
 
 .sensor-mac {
@@ -72,15 +95,39 @@ sensor-card {
 /* ======= Card States ======= */
 /* Active state (selected in chart) */
 sensor-card.sensor-active {
-  background-color: rgba(74, 158, 255, 0.08);
-  box-shadow: 0 1px 3px rgba(74, 158, 255, 0.15);
-  /* Use slight left padding instead of border */
-  padding-left: 8px;
+  background-color: rgba(74, 158, 255, 0.12);
+  box-shadow: 0 1px 4px rgba(74, 158, 255, 0.25);
+  transform: translateY(-1px);
+  z-index: 5;
+}
+
+/* Make color indicator more prominent when active */
+sensor-card.sensor-active::before {
+  width: 4px;
+  opacity: 1;
+}
+
+/* Add right edge indicator for active sensors */
+sensor-card.sensor-active::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 3px;
+  bottom: 3px;
+  width: 2px;
+  background-color: var(--sensor-color, var(--color-primary, #4a9eff));
+  border-radius: 1px;
+  opacity: 0.6;
 }
 
 /* Offline state */
 sensor-card.sensor-offline {
   opacity: 0.7;
+}
+
+/* Dim the color indicator for offline sensors */
+sensor-card.sensor-offline::before {
+  opacity: 0.4;
 }
 
 sensor-card.sensor-offline .sensor-temp,
@@ -92,17 +139,34 @@ sensor-card.sensor-offline .sensor-mac {
 
 /* Hover state */
 @media (hover: hover) {
-  sensor-card:hover {
+  sensor-card:hover:not(.sensor-active) {
     transform: translateY(-1px);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     background-color: rgba(74, 158, 255, 0.03);
   }
+  
+  /* Special hover state for active cards */
+  sensor-card.sensor-active:hover {
+    box-shadow: 0 2px 6px rgba(74, 158, 255, 0.3);
+    background-color: rgba(74, 158, 255, 0.15);
+  }
+  
+  /* Make text bolder in active cards */
+  sensor-card.sensor-active .sensor-temp,
+  sensor-card.sensor-active .sensor-mac {
+    font-weight: 500;
+  }
 }
 
 /* Touch feedback */
-sensor-card.touch-active {
+sensor-card.touch-active:not(.sensor-active) {
   transform: scale(0.98);
   opacity: 0.8;
+}
+
+sensor-card.sensor-active.touch-active {
+  transform: scale(0.99);
+  opacity: 0.9;
 }
 
 /* ======= Editable name in admin mode ======= */
@@ -125,7 +189,7 @@ sensor-card.touch-active {
 /* Compact mode for very small screens */
 @media (max-width: 360px) {
   sensor-card {
-    padding: 0 6px;
+    padding: 0 6px 0 7px;
     /* Height remains fixed at 25px */
   }
 

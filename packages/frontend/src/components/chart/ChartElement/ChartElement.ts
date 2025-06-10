@@ -597,16 +597,10 @@ export class ChartElement extends HTMLElement {
       // Update size
       this.setSize();
 
-      // Clear the entire canvas
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-
-      // Configure canvas with correct dimensions
       this.setupCanvas();
-
-      // Render with the new dimensions
       this.drawChart();
 
-      // Ensure the status indicator is visible after resize
       if (this.statusIndicator) {
         this.statusIndicator.style.visibility = "visible";
         this.statusIndicator.style.opacity = "1";

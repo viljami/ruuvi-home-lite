@@ -13,12 +13,13 @@
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
-  transition: transform 250ms ease;
+  transition: transform 280ms ease-out;
   z-index: var(--z-index-sidebar, 100);
   width: 240px; /* Compact width */
   max-width: 100%;
   box-sizing: border-box;
   padding: 16px 12px;
+  background-color: transparent;
 }
 
 /* Sidebar header with title */
@@ -88,9 +89,9 @@
     right: 0;
     bottom: 0;
     transform: translateX(100%);
-
-    width: 80%; /* Use percentage for better responsiveness */
-    max-width: 280px;
+    background-color: var(--color-background, #ffffff);
+    width: 75%; /* Use percentage for better responsiveness */
+    max-width: 260px;
     padding-top: var(--header-height, 60px);
   }
 
@@ -122,9 +123,10 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.3);
+    background-color: rgba(0, 0, 0, 0.2);
     z-index: 90; /* Just below sidebar */
-    animation: fade-in 150ms ease;
+    animation: fade-in 200ms ease;
+    backdrop-filter: blur(1px);
   }
 
   @keyframes fade-in {

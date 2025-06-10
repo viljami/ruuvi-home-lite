@@ -23,10 +23,10 @@ sidebar-element {
   grid-area: sidebar;
   
   /* Appearance */
-  background-color: var(--color-background-alt, #f8f9fa);
+  background-color: transparent;
   
   /* Transitions */
-  transition: transform 250ms ease;
+  transition: transform 280ms ease-out;
   
   /* z-index for stacking context */
   z-index: var(--z-index-sidebar, 100);
@@ -52,7 +52,7 @@ sidebar-element > *:last-child {
   border-radius: 50%;
   top: 12px;
   right: 12px;
-  background-color: var(--color-primary, #4a9eff);
+  background-color: rgba(74, 158, 255, 0.9);
   color: white;
   border: none;
   z-index: calc(var(--z-index-sidebar, 100) + 10);
@@ -63,10 +63,11 @@ sidebar-element > *:last-child {
   transition: transform 150ms ease, opacity 150ms ease;
 }
 
+/* Touch feedback */
 .sidebar-toggle:active,
 .sidebar-toggle.touch-active {
-  transform: scale(0.95);
-  opacity: 0.85;
+  transform: scale(0.92);
+  opacity: 0.8;
 }
 
 /* ======= Overlay ======= */
@@ -76,11 +77,12 @@ sidebar-element > *:last-child {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.3);
+  background-color: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(1px);
   z-index: 90;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 250ms ease;
+  transition: opacity 280ms ease-out;
 }
 
 .sidebar-overlay.visible {
@@ -97,10 +99,11 @@ sidebar-element > *:last-child {
     right: 0;
     bottom: 0;
     transform: translateX(100%);
-    width: 80%;
-    max-width: 280px;
+    width: 75%;
+    max-width: 260px;
     padding-top: var(--header-height, 60px);
-    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+    box-shadow: -1px 0 15px rgba(0, 0, 0, 0.08);
+    background-color: var(--color-background, #ffffff);
   }
   
   sidebar-element.expanded {
@@ -153,4 +156,9 @@ sidebar-element > *:last-child {
   .sidebar-overlay {
     transition: none;
   }
+}
+
+/* Add subtle border when in expanded mode */
+sidebar-element.expanded {
+  border-left: 1px solid rgba(0, 0, 0, 0.05);
 }

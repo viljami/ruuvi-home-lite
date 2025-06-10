@@ -29,8 +29,8 @@
   /*
    * Layout & Spacing
    */
-  --sidebar-width: 320px;
-  --sidebar-width-compact: 260px;
+  --sidebar-width: 300px;
+  --sidebar-width-compact: 240px;
   --content-max-width: 1200px;
   --header-height: 60px;
   --footer-height: 40px;
@@ -61,10 +61,10 @@
   --color-info: #b48eff;
 
   --color-background: #ffffff;
-  --color-background-alt: #f8f9fa;
+  --color-background-alt: rgba(248, 249, 250, 0.3);
   --color-text: #212529;
   --color-text-light: #6c757d;
-  --color-border: #dee2e6;
+  --color-border: rgba(222, 226, 230, 0.4);
 
   /*
    * Typography
@@ -106,7 +106,7 @@
   --chart-height-mobile: 200px;
   --chart-height-tablet: 300px;
   --chart-height-desktop: 400px;
-  --chart-grid-color: rgba(0, 0, 0, 0.1);
+  --chart-grid-color: rgba(0, 0, 0, 0.06);
   --chart-label-color: #6c757d;
 }
 
@@ -139,15 +139,15 @@
 
 /* Dark mode support - to be expanded later */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --color-background: #121212;
-    --color-background-alt: #1e1e1e;
-    --color-text: #e0e0e0;
-    --color-text-light: #a0a0a0;
-    --color-border: #2c2c2c;
+:root {
+  --color-background: #121212;
+  --color-background-alt: rgba(30, 30, 30, 0.3);
+  --color-text: #e0e0e0;
+  --color-text-light: #a0a0a0;
+  --color-border: rgba(44, 44, 44, 0.4);
 
-    /* Adjust chart colors for dark mode */
-    --chart-grid-color: rgba(255, 255, 255, 0.1);
-    --chart-label-color: #a0a0a0;
-  }
+  /* Adjust chart colors for dark mode */
+  --chart-grid-color: rgba(255, 255, 255, 0.1);
+  --chart-label-color: #a0a0a0;
+}
 }
