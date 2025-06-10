@@ -54,7 +54,7 @@ class RuuviApp {
 
     // Get references to custom elements
     this.sidebar = document.getElementById("sensor-sidebar") as SidebarElement;
-    console.log(this.sidebar, this.viewportManager);
+    console.log(this.sidebar);
     this.chartElement = document.getElementById(
       "chart-container",
     ) as ChartElement;
@@ -421,7 +421,19 @@ class RuuviApp {
    * Set up viewport manager listeners to handle resize and orientation changes
    * This centralizes all resize handling in the application
    */
-  private setupViewportListeners(): void {}
+  private setupViewportListeners(): void {
+    this.unsubscribeResize = this.viewportManager.onResize(() => {
+      if (this.chartElement) {
+        // Use requestAnimationFrame to ensure the DOM has updated before adjusting canvas size
+        requestAnimationFrame(() => {
+          if (this.chartElement) {
+            // resize() now only adjusts canvas dimensions and styles, then calls drawChart
+            this.chartElement.resize();
+          }
+        });
+      }
+    });
+  }
 }
 
 // Create a global variable for the application instance
