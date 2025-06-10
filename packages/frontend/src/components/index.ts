@@ -11,9 +11,6 @@ export { AdminButton } from "./AdminButton/AdminButton.js";
 export { SidebarElement } from "./Sidebar/SidebarElement/SidebarElement.js";
 export { ChartElement } from "./chart/ChartElement/ChartElement.js";
 
-// Also export the SensorChart for backward compatibility
-export { SensorChart } from "./chart/SensorChart.js";
-
 // Force components to register their custom elements
 import "./SensorCard/SensorCard.js";
 import "./AdminButton/AdminButton.js";

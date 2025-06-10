@@ -1,5 +1,6 @@
 import "./styles/app.css";
 import { WebSocketManager } from "./managers/WebSocketManager.js";
+import { ViewportManager } from "./managers/ViewportManager.js";
 import {
   SensorCard,
   ChartElement,
@@ -41,10 +42,15 @@ class RuuviApp {
   private adminToken: string | null = null;
   private sidebar: SidebarElement | null = null;
   private chartElement: ChartElement | null = null;
+  private viewportManager: ViewportManager;
+  public unsubscribeResize: (() => void) | null = null;
 
   constructor() {
     // Apply device-specific fixes before initializing components
     DeviceHelper.applyAllFixes();
+
+    // Initialize ViewportManager first
+    this.viewportManager = ViewportManager.getInstance();
 
     // Get references to custom elements
     this.sidebar = document.getElementById("sensor-sidebar") as SidebarElement;
@@ -56,11 +62,7 @@ class RuuviApp {
     this.setupControls();
     this.setupCustomElements();
     this.setupPWA();
-
-    // Force an additional resize after initial render for mobile devices
-    if (DeviceHelper.isMobile && this.chartElement) {
-      setTimeout(() => this.chartElement?.resize(), 500);
-    }
+    this.setupViewportListeners();
   }
 
   private initializeWebSocket(): void {
@@ -395,34 +397,18 @@ class RuuviApp {
   }
 
   private setupCustomElements(): void {
-    // Listen for sidebar events that might affect layout
+    // Listen for sidebar events that affect layout
     if (this.sidebar && this.chartElement) {
       this.sidebar.addEventListener("sidebar-expanded", () => {
-        // Resize the chart when sidebar expands
         this.chartElement?.resize();
       });
 
       this.sidebar.addEventListener("sidebar-collapsed", () => {
-        // Resize the chart when sidebar collapses
         this.chartElement?.resize();
       });
     }
     
-    // Prevent sidebar from closing when sensor cards are clicked on mobile
-    document.addEventListener("click", (e: Event) => {
-      if (DeviceHelper.isMobile) {
-        const target = e.target as Element;
-        const sensorCard = target.closest("sensor-card");
-        // Make sure we don't interfere with buttons or other controls
-        const isControl = target.closest("button") || target.closest(".btn") || target.closest(".chart-controls");
-        if (sensorCard && !isControl) {
-          // Stop propagation to prevent sidebar from closing
-          e.stopPropagation();
-        }
-      }
-    }, true); // Use capture phase to intercept before sidebar handler
-
-    // Set up sensor card hovering to highlight chart lines
+    // Set up sensor card interactions
     document.addEventListener("mouseover", (e: Event) => {
       const target = e.target as Element;
       const sensorCard = target.closest("sensor-card");
@@ -452,27 +438,37 @@ class RuuviApp {
     window
       .matchMedia("(display-mode: standalone)")
       .addEventListener("change", () => {
-        // Refresh sidebar when switching to/from standalone mode
         this.sidebar?.refresh();
-        // Ensure chart is properly sized in standalone mode
-        this.chartElement?.resize();
+        this.viewportManager.forceUpdate();
       });
 
-    // Add observer for new elements to apply touch event fixes
+    // Apply touch event fixes for mobile devices
     const container = document.getElementById("latest-readings");
-    if (container && DeviceHelper.isMobile) {
-      const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-          if (mutation.addedNodes.length) {
-            DeviceHelper.fixAllTouchEvents(container);
-          }
-        });
-      });
-
-      observer.observe(container, { childList: true });
+    if (container) {
+      DeviceHelper.fixAllTouchEvents(container);
     }
+  }
+  
+  /**
+   * Set up viewport manager listeners to handle resize and orientation changes
+   * This centralizes all resize handling in the application
+   */
+  private setupViewportListeners(): void {
+    if (!this.chartElement) return;
+    
+    // Listen for resize events
+    this.unsubscribeResize = this.viewportManager.onResize(() => {
+      if (this.chartElement) {
+        this.chartElement.resize();
+      }
+    });
   }
 }
 
-// Initialize the application
-new RuuviApp();
+// Create a global variable for the application instance
+const app = new RuuviApp();
+
+// Initialize the application with cleanup on page unload
+window.addEventListener('beforeunload', () => {
+  if (app.unsubscribeResize) app.unsubscribeResize();
+});

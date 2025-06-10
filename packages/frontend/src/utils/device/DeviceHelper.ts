@@ -1,8 +1,7 @@
 /**
  * DeviceHelper
  *
- * Lightweight utility for device detection and adding appropriate CSS classes
- * to enable CSS-first responsive design approach.
+ * Simple utility for device detection and applying mobile-friendly optimizations
  */
 
 export class DeviceHelper {
@@ -17,7 +16,6 @@ export class DeviceHelper {
    */
   static get isIOS(): boolean {
     if (this._isIOS === null) {
-      // MSStream is a property present in IE/Edge but not in iOS
       const windowWithMSStream = window as { MSStream?: unknown };
       this._isIOS =
         /iPad|iPhone|iPod/.test(navigator.userAgent) &&
@@ -56,7 +54,6 @@ export class DeviceHelper {
    */
   static get isPWA(): boolean {
     if (this._isPWA === null) {
-      // Safari iOS-specific standalone property
       const navigatorWithStandalone = navigator as { standalone?: boolean };
       this._isPWA =
         window.matchMedia("(display-mode: standalone)").matches ||
@@ -66,96 +63,83 @@ export class DeviceHelper {
   }
 
   /**
-   * Fix touch event handling for interactive elements (simplified)
-   * @param element Element to apply touch event fixes to
+   * Apply touch event handling for better mobile experience
    */
   static fixTouchEvents(element: HTMLElement): void {
     if (!element) return;
 
-    // Add -webkit-tap-highlight-color
-    (
-      element.style as CSSStyleDeclaration & { webkitTapHighlightColor: string }
-    ).webkitTapHighlightColor = "transparent";
+    // Remove tap highlight
+    element.style.setProperty("-webkit-tap-highlight-color", "transparent");
 
-    // For clickable elements, add simple touch feedback via CSS class
+    // Add touch feedback for interactive elements
     if (
-      element.hasAttribute("data-clickable") ||
-      element.tagName === "BUTTON" ||
+      element.tagName === "BUTTON" || 
       element.tagName === "A" ||
-      element.classList.contains("btn") ||
-      element.classList.contains("sensor-item")
+      element.classList.contains("btn") || 
+      element.hasAttribute("data-clickable")
     ) {
       element.addEventListener(
         "touchstart",
         () => element.classList.add("touch-active"),
-        { passive: true },
+        { passive: true }
       );
 
       element.addEventListener(
         "touchend",
         () => setTimeout(() => element.classList.remove("touch-active"), 150),
-        { passive: true },
+        { passive: true }
       );
 
       element.addEventListener(
         "touchcancel",
         () => element.classList.remove("touch-active"),
-        { passive: true },
+        { passive: true }
       );
     }
   }
 
   /**
-   * Fix all touch events for a container and its children
-   * @param container Container element
-   * @param selector CSS selector to filter which elements to fix
+   * Apply touch events to all interactive elements in a container
    */
   static fixAllTouchEvents(
     container: HTMLElement = document.body,
-    selector: string = "[data-clickable], button, a, .btn, .sensor-item",
+    selector: string = "button, a, .btn, [data-clickable], sensor-card"
   ): void {
-    // Fix the container if it matches
     if (container.matches(selector)) {
       this.fixTouchEvents(container);
     }
 
-    // Fix all matching elements inside the container
-    container.querySelectorAll<HTMLElement>(selector).forEach((el) => {
+    container.querySelectorAll<HTMLElement>(selector).forEach(el => {
       this.fixTouchEvents(el);
     });
   }
 
   /**
-   * Apply device detection and add appropriate CSS classes to enable
-   * responsive CSS-first design approach
+   * Apply all device-specific optimizations
    */
   static applyAllFixes(): void {
-    // Add device classes to the body for CSS targeting
+    // Add device classes to the body
     document.body.classList.toggle("ios-device", this.isIOS);
     document.body.classList.toggle("android-device", this.isAndroid);
     document.body.classList.toggle("mobile-device", this.isMobile);
     document.body.classList.toggle("pwa-mode", this.isPWA);
 
-    // Add orientation class
-    const orientation =
+    // Set initial orientation class
+    const orientation = 
       window.innerHeight > window.innerWidth ? "portrait" : "landscape";
     document.body.classList.add(orientation);
 
-    // Listen to orientation changes to update classes
+    // Update orientation class when device orientation changes
     window.addEventListener("orientationchange", () => {
-      // Update orientation class after orientation change
-      setTimeout(
-        () => {
-          document.body.classList.remove("portrait", "landscape");
-          document.body.classList.add(
-            window.innerHeight > window.innerWidth ? "portrait" : "landscape",
-          );
-        },
-        this.isIOS ? 300 : 100,
-      );
+      setTimeout(() => {
+        document.body.classList.remove("portrait", "landscape");
+        document.body.classList.add(
+          window.innerHeight > window.innerWidth ? "portrait" : "landscape"
+        );
+      }, 200);
     });
 
-    // Fix iOS PWA height for fullscreen apps
+    // Apply iOS PWA fixes if needed
     if (this.isIOS && this.isPWA) {
       document.documentElement.style.height = `${window.innerHeight}px`;
       window.addEventListener("resize", () => {
@@ -163,7 +147,7 @@ export class DeviceHelper {
       });
     }
 
-    // Add simple touch event handling
+    // Apply touch optimizations
     this.fixAllTouchEvents();
   }
 }

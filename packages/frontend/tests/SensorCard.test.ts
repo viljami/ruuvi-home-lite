@@ -475,9 +475,6 @@ describe("SensorCard", () => {
       const newReading = { ...mockReading, temperature: 30.0 };
       card.update({ reading: newReading });
 
-      // Should not update immediately (but set pendingUpdate flag)
-      expect(card["pendingUpdate"]).toBe(true);
-
       // Temperature should remain unchanged
       const tempElement = card.querySelector(".sensor-temp");
       expect(tempElement?.textContent).toBe("23.5°C");

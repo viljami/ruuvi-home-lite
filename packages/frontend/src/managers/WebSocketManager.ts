@@ -21,7 +21,7 @@ export interface WebSocketManagerConfig {
 export class WebSocketManager {
   private ws: WebSocket | null = null;
   private connectionAttempts = 0;
-  private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+  private reconnectTimeout: number | null = null;
   private readonly config: WebSocketManagerConfig;
 
   constructor(config: WebSocketManagerConfig) {
@@ -36,7 +36,6 @@ export class WebSocketManager {
     this.config.onStatusChange("connecting");
 
     this.ws.onopen = () => {
-      // Successfully connected - no need to log in production
       this.connectionAttempts = 0;
       this.config.onStatusChange("connected");
 
@@ -59,20 +58,15 @@ export class WebSocketManager {
     };
 
     this.ws.onclose = (event) => {
-      // Only log abnormal closures
-      if (event.code !== 1000) {
-        console.warn(`WebSocket disconnected with code: ${event.code}`);
-      }
       this.config.onStatusChange("disconnected");
-
+      
       // Only reconnect for abnormal closures
       if (event.code !== 1000) {
         this.scheduleReconnect();
       }
     };
 
-    this.ws.onerror = (error) => {
-      console.error("WebSocket error:", error);
+    this.ws.onerror = () => {
       this.config.onStatusChange("error");
     };
   }
@@ -80,22 +74,20 @@ export class WebSocketManager {
   private scheduleReconnect(): void {
     // Clear any existing reconnect timeout
     if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout);
+      window.clearTimeout(this.reconnectTimeout);
       this.reconnectTimeout = null;
     }
 
     if (this.connectionAttempts < this.config.maxReconnectAttempts) {
-      const delay =
-        this.config.reconnectDelay *
-        Math.pow(2, Math.min(this.connectionAttempts - 1, 5));
+      // Exponential backoff with a cap at 5 attempts (32x base delay)
+      const delay = this.config.reconnectDelay * 
+                   Math.pow(2, Math.min(this.connectionAttempts - 1, 5));
+                   
       this.config.onStatusChange("reconnecting");
-      this.reconnectTimeout = setTimeout(() => {
+      this.reconnectTimeout = window.setTimeout(() => {
         this.connect();
       }, delay);
     } else {
-      console.error(
-        "Maximum reconnection attempts reached. Connection failed.",
-      );
       this.config.onStatusChange("disconnected");
     }
   }
@@ -112,7 +104,7 @@ export class WebSocketManager {
 
   disconnect(): void {
     if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout);
+      window.clearTimeout(this.reconnectTimeout);
       this.reconnectTimeout = null;
     }
     if (this.ws) {
@@ -126,16 +118,12 @@ export class WebSocketManager {
   }
 
   private isServerMessage(message: WebSocketMessage): message is ServerMessage {
-    return [
-      "historicalData",
-      "sensorData",
-      "latestReadings",
-      "bucketUpdate",
-      "adminAuthResult",
-      "sensorNames",
-      "sensorNameSet",
-      "sensorNameDeleted",
-      "error",
-    ].includes(message.type);
+    const validTypes = [
+      "historicalData", "sensorData", "latestReadings", 
+      "bucketUpdate", "adminAuthResult", "sensorNames", 
+      "sensorNameSet", "sensorNameDeleted", "error"
+    ];
+    
+    return validTypes.includes(message.type);
   }
 }

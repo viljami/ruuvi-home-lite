@@ -75,9 +75,7 @@ export class AdminButton extends HTMLElement {
    * Event handler for touchend events
    */
   private handleTouchEnd = (): void => {
-    setTimeout(() => {
-      this.button?.classList.remove("touch-active");
-    }, 150);
+    this.button?.classList.remove("touch-active");
   };
 
   /**

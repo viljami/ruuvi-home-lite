@@ -207,6 +207,7 @@ export class SidebarElement extends HTMLElement {
 
   private handleButtonTouchStart = (e: TouchEvent): void => {
     e.stopPropagation();
+
     if (this.toggleButton) {
       this.toggleButton.classList.add("touch-active");
     }
@@ -214,10 +215,9 @@ export class SidebarElement extends HTMLElement {
 
   private handleButtonTouchEnd = (e: TouchEvent): void => {
     e.stopPropagation();
+
     if (this.toggleButton) {
-      setTimeout(() => {
-        this.toggleButton?.classList.remove("touch-active");
-      }, 150);
+      this.toggleButton?.classList.remove("touch-active");
     }
   };
 

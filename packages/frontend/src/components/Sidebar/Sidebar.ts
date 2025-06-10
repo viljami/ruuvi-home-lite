@@ -89,10 +89,7 @@ export class Sidebar {
 
   private touchEndHandler = (e: TouchEvent): void => {
     e.stopPropagation();
-    // Remove feedback class after delay
-    setTimeout(() => {
-      this.toggleButton?.classList.remove("touch-active");
-    }, 150);
+    this.toggleButton?.classList.remove("touch-active");
   };
 
   private setupEventListeners(): void {

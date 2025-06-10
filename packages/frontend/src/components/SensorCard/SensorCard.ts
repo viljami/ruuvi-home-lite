@@ -16,7 +16,6 @@ export interface SensorCardConfig {
 
 export class SensorCard extends HTMLElement {
   private config: SensorCardConfig;
-  private pendingUpdate = false;
 
   // DOM element references
   private leftContainer: HTMLDivElement | null = null;
@@ -25,8 +24,6 @@ export class SensorCard extends HTMLElement {
   private macElement: HTMLDivElement | null = null;
   private ageElement: HTMLDivElement | null = null;
 
-  // Event handler references
-  private touchTimeout: number | null = null;
   private isTouchDevice = false;
 
   constructor(config: SensorCardConfig) {
@@ -196,12 +193,7 @@ export class SensorCard extends HTMLElement {
 
   private handleMouseLeave = (): void => {
     this.config.onHover(null);
-
-    // Process pending update if any
-    if (this.pendingUpdate) {
-      this.pendingUpdate = false;
-      setTimeout(() => this.render(), 50);
-    }
+    this.render();
   };
 
   private handleTouchStart = (e: TouchEvent): void => {
@@ -219,32 +211,16 @@ export class SensorCard extends HTMLElement {
 
     this.config.onHover(this.config.reading.sensorMac);
     this.classList.add("touch-active");
-
-    // Clear any existing timeout
-    if (this.touchTimeout) {
-      clearTimeout(this.touchTimeout);
-    }
   };
 
   private handleTouchEnd = (_e: TouchEvent): void => {
-    // Don't prevent default here as it would prevent clicks from firing
-
-    // Delay removing hover state to allow visual feedback
-    this.touchTimeout = window.setTimeout(() => {
-      this.config.onHover(null);
-      this.classList.remove("touch-active");
-      this.touchTimeout = null;
-    }, 200);
+    this.config.onHover(null);
+    this.classList.remove("touch-active");
   };
 
   private handleTouchCancel = (): void => {
     this.config.onHover(null);
     this.classList.remove("touch-active");
-
-    if (this.touchTimeout) {
-      clearTimeout(this.touchTimeout);
-      this.touchTimeout = null;
-    }
   };
 
   private handleClick = (e: MouseEvent): void => {
@@ -297,7 +273,6 @@ export class SensorCard extends HTMLElement {
   update(newConfig: Partial<SensorCardConfig>): void {
     // If card is being hovered, schedule update for later
     if (this.matches(":hover")) {
-      this.pendingUpdate = true;
       return;
     }
 
@@ -355,12 +330,6 @@ export class SensorCard extends HTMLElement {
     // Clean up the MAC element click handler if it exists
     if (this.macElement) {
       this.macElement.removeEventListener("click", this.handleMacClick);
-    }
-
-    // Clear any pending timeouts
-    if (this.touchTimeout) {
-      clearTimeout(this.touchTimeout);
-      this.touchTimeout = null;
     }
 
     // Clear element references
