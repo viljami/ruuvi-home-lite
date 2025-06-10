@@ -89,7 +89,7 @@ export class SensorChart {
   }
 
   private setupCanvas(): void {
-    // Set canvas size based on container
+    // Set canvas size based on container and window dimensions
     const container = this.canvas.parentElement;
     if (container) {
       // Get the device pixel ratio for high-DPI displays
@@ -98,22 +98,30 @@ export class SensorChart {
       // Store dpr for line calculations
       this.devicePixelRatio = dpr;
 
-      // Get container dimensions
-      // Use getBoundingClientRect for more accurate dimensions
+      // Get container width
       const rect = container.getBoundingClientRect();
       const containerWidth = Math.floor(rect.width);
-      const containerHeight = this.config.height || Math.floor(rect.height);
+      
+      // Calculate height based on window height minus header
+      // Estimate header height (adjust this value as needed)
+      const headerHeight = 60; // Approximate header height in pixels
+      
+      // Calculate available height (subtract header and add some margin)
+      const availableHeight = window.innerHeight - headerHeight - 20; // 20px for bottom margin
+      
+      // Use calculated height, but ensure it's not too small
+      const containerHeight = Math.max(availableHeight, 300);
 
-      // Force update on viewport height-based sizing to ensure accurate rendering
-      // Only check dimensions for non-vh units
-      const sizeChanged =
-        !container.style.height.includes("vh") ||
-        parseInt(this.canvas.style.width) !== containerWidth ||
-        parseInt(this.canvas.style.height) !== containerHeight;
-
+      // Always resize when dimensions change
+      const currentWidth = this.canvas.width / dpr;
+      const currentHeight = this.canvas.height / dpr;
+      const sizeChanged = 
+        currentWidth !== containerWidth || 
+        currentHeight !== containerHeight || 
+        // Force update at least once to ensure initial render is correct
+        !this.canvas.style.width;
+        
       if (sizeChanged) {
-        console.log(`Canvas size update: ${containerWidth}x${containerHeight}`);
-
         // Set display size (css pixels)
         this.canvas.style.width = `${containerWidth}px`;
         this.canvas.style.height = `${containerHeight}px`;
@@ -336,7 +344,7 @@ export class SensorChart {
           : Math.ceil((maxTempY + tempPadding) / 5) * 5,
     };
 
-    // Humidity bounds (always 0-100% but can be narrowed if data allows)
+    // Humidity bounds (default 0-100% but can be narrowed if data allows)
     if (this.config.showHumidity) {
       this.humidityBounds = {
         minY: 0.0,
@@ -349,6 +357,11 @@ export class SensorChart {
     // Clear canvas
     this.ctx.clearRect(0, 0, this.config.width, this.config.height);
 
+    // Ensure we have valid dimensions before rendering
+    if (this.config.width <= 0 || this.config.height <= 0) {
+      return; // Skip rendering if dimensions are invalid
+    }
+    
     // Draw grid and labels
     this.drawGrid();
     this.drawLabels();
@@ -927,11 +940,11 @@ export class SensorChart {
     if (this.isResizing) {
       return;
     }
-
+    
     try {
       // Set resize lock
       this.isResizing = true;
-
+      
       // First reset all transformations to identity matrix
       this.ctx.setTransform(1, 0, 0, 1, 0, 0);
 
@@ -943,24 +956,27 @@ export class SensorChart {
 
       // Reconfigure canvas with correct dimensions and scaling
       this.setupCanvas();
+      
+      // Recalculate bounds to ensure proper scale with new dimensions
+      this.calculateBounds();
 
       // Redraw the chart with the new dimensions
       this.render();
-
-      // Add a second render pass after a slight delay to ensure everything is properly sized
-      // This helps with viewport-based sizing which can take time to stabilize
+      
+      // Add a second render pass after a short delay to ensure correct sizing
+      // Remove duplicate setTimeout call and keep just one with a slightly longer delay
       setTimeout(() => {
         if (this.canvas.parentElement) {
-          this.calculateBounds();
           this.setupCanvas();
+          this.calculateBounds(); // Ensure bounds are recalculated
           this.render();
         }
-      }, 50);
+      }, 100); // Slightly longer delay for better stability
     } finally {
       // Always release the resize lock, even if an error occurs
       setTimeout(() => {
         this.isResizing = false;
-      }, 150); // Small delay to prevent rapid consecutive resizes
+      }, 200); // Longer delay to prevent rapid consecutive resizes
     }
   }
 

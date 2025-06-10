@@ -46,7 +46,7 @@ sensor-card {
 
 .sensor-humidity {
   font-size: 14px;
-  color: #f0b400; /* Brighter yellow that's still accessible */
+  color: #c9aa42; /* Softer yellow that's still accessible */
   flex-shrink: 0;
 }
 

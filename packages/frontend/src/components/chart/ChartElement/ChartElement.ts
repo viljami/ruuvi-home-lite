@@ -61,7 +61,7 @@ export class ChartElement extends HTMLElement {
    * Called when the element is added to the DOM
    */
   connectedCallback(): void {
-    // Create the DOM structure
+    // Component added to DOM
     this.render();
 
     // Initialize the chart
@@ -69,6 +69,16 @@ export class ChartElement extends HTMLElement {
 
     // Set up event listeners
     this.setupEventListeners();
+    
+    // Initial size calculation
+    if (this.canvas) {
+      const headerHeight = 60; // Approximate header height
+      const availableHeight = window.innerHeight - headerHeight - 20;
+      this.canvas.style.height = `${Math.max(availableHeight, 300)}px`;
+    }
+    
+    // Force resize after DOM is ready
+    setTimeout(() => this.handleResize(), 100);
   }
 
   /**
@@ -137,11 +147,19 @@ export class ChartElement extends HTMLElement {
     }
     
     // Force initial resize to ensure proper rendering
+    // Use a longer delay to make sure DOM is fully ready
     setTimeout(() => {
       if (this.chart) {
         this.chart.resize();
       }
-    }, 50);
+    }, 150);
+    
+    // Add a second resize after DOM is more likely to be stable
+    setTimeout(() => {
+      if (this.chart) {
+        this.chart.resize();
+      }
+    }, 500);
   }
 
   /**
@@ -184,16 +202,22 @@ export class ChartElement extends HTMLElement {
       }
     }
 
-    // Listen for window resize as a backup
+    // Listen for window resize
     window.addEventListener("resize", this.handleResize);
 
-    // Listen for orientation changes
+    // Listen for orientation changes with special handling
     window.addEventListener("orientationchange", () => {
-      // Delay resize to let orientation change complete
-      setTimeout(this.handleResize, 300);
+      // Immediately set canvas to approximate size for better UX
+      if (this.canvas) {
+        const headerHeight = 60; // Approximate header height
+        const availableHeight = window.innerHeight - headerHeight - 20;
+        this.canvas.style.height = `${Math.max(availableHeight, 300)}px`;
+      }
       
-      // Add an additional delayed resize to handle viewport stabilization
-      setTimeout(this.handleResize, 600);
+      // Sequence of resizes to handle orientation change properly
+      setTimeout(this.handleResize, 200);
+      setTimeout(this.handleResize, 500);
+      setTimeout(this.handleResize, 1000);
     });
   }
 
@@ -281,19 +305,26 @@ export class ChartElement extends HTMLElement {
       window.clearTimeout(this.resizeTimeout);
     }
 
+    // Immediately set canvas to approximate size to improve user experience
+    if (this.canvas && this.chart) {
+      const headerHeight = 60; // Approximate header height
+      const availableHeight = window.innerHeight - headerHeight - 20;
+      this.canvas.style.height = `${Math.max(availableHeight, 300)}px`;
+    }
+
     this.resizeTimeout = window.setTimeout(() => {
       if (this.chart) {
         this.chart.resize();
         
-        // Add a second resize after a delay to handle any viewport size stabilization
+        // Add a second resize after a delay to handle any window size stabilization
         setTimeout(() => {
           if (this.chart) {
             this.chart.resize();
           }
-        }, 250);
+        }, 300);
       }
       this.resizeTimeout = null;
-    }, 150);
+    }, 200);
   };
 
   /**
@@ -306,6 +337,11 @@ export class ChartElement extends HTMLElement {
     this.statusIndicator.textContent =
       status === "connected" ? "Real-time" : status.charAt(0).toUpperCase() + status.slice(1);
     this.statusIndicator.className = `status status-${status}`;
+    
+    // Ensure indicator is visible and has proper z-index
+    this.statusIndicator.style.visibility = "visible";
+    this.statusIndicator.style.opacity = "1";
+    this.statusIndicator.style.zIndex = "25";
     
     // Force render after status change to ensure proper layout
     if (this.chart) {
@@ -411,11 +447,18 @@ export class ChartElement extends HTMLElement {
   resize(): void {
     if (!this.chart) return;
     
+    // Calculate height based on window dimensions
+    if (this.canvas) {
+      const headerHeight = 60; // Approximate header height
+      const availableHeight = window.innerHeight - headerHeight - 20;
+      this.canvas.style.height = `${Math.max(availableHeight, 300)}px`;
+    }
+    
     // Initial resize
     this.chart.resize();
     
     // Secondary resize after a delay to ensure proper rendering
-    // This helps with viewport-based sizing which can take time to stabilize
+    // This helps with window-based sizing which can take time to stabilize
     setTimeout(() => {
       if (this.chart) {
         this.chart.resize();
@@ -426,7 +469,7 @@ export class ChartElement extends HTMLElement {
           this.statusIndicator.style.opacity = "1";
         }
       }
-    }, 200);
+    }, 300);
   }
 
   /**
