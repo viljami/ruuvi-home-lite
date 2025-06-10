@@ -396,6 +396,18 @@ class RuuviApp {
         this.chartElement?.resize();
       });
     }
+    
+    // Prevent sidebar from closing when sensor cards are clicked on mobile
+    document.addEventListener("click", (e: Event) => {
+      if (DeviceHelper.isMobile) {
+        const target = e.target as Element;
+        const sensorCard = target.closest("sensor-card");
+        if (sensorCard) {
+          // Stop propagation to prevent sidebar from closing
+          e.stopPropagation();
+        }
+      }
+    }, true); // Use capture phase to intercept before sidebar handler
 
     // Set up sensor card hovering to highlight chart lines
     document.addEventListener("mouseover", (e: Event) => {

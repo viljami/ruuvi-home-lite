@@ -40,25 +40,28 @@ sensor-card {
 /* ======= Sensor Values ======= */
 .sensor-temp {
   font-size: 14px;
-  color: var(--color-text, #212529);
+  color: var(--color-primary, #4a9eff);
   flex-shrink: 0;
+  font-weight: 600;
 }
 
 .sensor-humidity {
   font-size: 14px;
-  color: var(--color-text-light, #6c757d);
+  color: #f0b400; /* Brighter yellow that's still accessible */
   flex-shrink: 0;
+  font-weight: 600;
 }
 
 .sensor-mac {
   font-size: 14px;
-  color: var(--color-text, #212529);
+  color: var(--color-text-light, #6c757d);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   flex-grow: 1;
   flex-basis: 60%;
   min-width: 0; /* Required for text-overflow to work */
+  opacity: 0.85; /* Slightly dimmer for better contrast with values */
 }
 
 .sensor-age {
@@ -71,8 +74,8 @@ sensor-card {
 /* ======= Card States ======= */
 /* Active state (selected in chart) */
 sensor-card.sensor-active {
-  background-color: rgba(74, 158, 255, 0.05);
-  box-shadow: 0 1px 2px rgba(74, 158, 255, 0.1);
+  background-color: rgba(74, 158, 255, 0.08);
+  box-shadow: 0 1px 3px rgba(74, 158, 255, 0.15);
   /* Use slight left padding instead of border */
   padding-left: 8px;
 }
@@ -83,8 +86,11 @@ sensor-card.sensor-offline {
 }
 
 sensor-card.sensor-offline .sensor-temp,
-sensor-card.sensor-offline .sensor-humidity {
+sensor-card.sensor-offline .sensor-humidity,
+sensor-card.sensor-offline .sensor-mac {
   color: var(--color-text-light, #6c757d);
+  opacity: 0.6;
+  font-weight: normal;
 }
 
 /* Hover state */
@@ -92,6 +98,7 @@ sensor-card.sensor-offline .sensor-humidity {
   sensor-card:hover {
     transform: translateY(-1px);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    background-color: rgba(74, 158, 255, 0.03);
   }
 }
 
@@ -158,7 +165,12 @@ sensor-card.touch-active {
   }
 
   sensor-card:hover .sensor-temp {
-    color: var(--color-primary, #4a9eff);
-    font-weight: 400;
-  }
+      color: var(--color-primary, #4a9eff);
+      font-weight: 700;
+    }
+  
+    sensor-card:hover .sensor-humidity {
+      color: #f0b400; /* Match the regular state */
+      font-weight: 700;
+    }
 }
