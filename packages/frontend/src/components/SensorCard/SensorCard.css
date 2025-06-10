@@ -9,8 +9,7 @@
 sensor-card {
   display: flex;
   align-items: center;
-  padding: 0 6px 0 8px; /* Increased left padding for color indicator */
-  margin-bottom: 2px;
+  padding: 0 6px 2px 8px; /* Increased left padding for color indicator */
   background-color: var(--color-background, #ffffff);
   border-radius: 3px;
   border: 1px solid rgba(0, 0, 0, 0.05);
@@ -142,13 +141,13 @@ sensor-card.sensor-offline .sensor-mac {
     border-color: rgba(0, 0, 0, 0.1);
     background-color: rgba(74, 158, 255, 0.03);
   }
-  
+
   /* Special hover state for active cards */
   sensor-card.sensor-active:hover {
     border-color: rgba(74, 158, 255, 0.5);
     background-color: rgba(74, 158, 255, 0.15);
   }
-  
+
   /* Make text bolder in active cards */
   sensor-card.sensor-active .sensor-temp,
   sensor-card.sensor-active .sensor-mac {
