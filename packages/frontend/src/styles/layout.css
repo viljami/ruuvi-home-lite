@@ -1,0 +1,387 @@
+/**
+ * Ruuvi Home Lite - Core Layout Styles
+ * 
+ * This file defines the main layout structure and responsive behavior
+ * for the application. It uses CSS Grid and Flexbox for modern layout
+ * techniques and leverages the variables defined in variables.css.
+ */
+
+/* Import variables if not using a CSS preprocessor */
+@import './variables.css';
+
+/* ======= Base Layout Structure ======= */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-base);
+  color: var(--color-text);
+  background-color: var(--color-background);
+}
+
+body {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto 1fr auto;
+  grid-template-areas:
+    "sidebar header"
+    "sidebar main"
+    "sidebar footer";
+  height: 100vh;
+  height: calc(100vh - var(--safe-area-inset-top) - var(--safe-area-inset-bottom));
+  width: 100vw;
+  overflow: hidden;
+  
+  /* Prevent iOS overscroll/bounce effect */
+  position: fixed;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Apply safe area insets for notched devices */
+.ios-device body {
+  padding-top: var(--safe-area-inset-top);
+  padding-bottom: var(--safe-area-inset-bottom);
+  padding-left: var(--safe-area-inset-left);
+  padding-right: var(--safe-area-inset-right);
+}
+
+/* ======= Main Content Area ======= */
+.main-content {
+  grid-area: main;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  padding: var(--space-md);
+  background-color: var(--color-background);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ======= Header ======= */
+.header {
+  grid-area: header;
+  height: var(--header-height);
+  padding: 0 var(--space-md);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--color-background);
+  border-bottom: 1px solid var(--color-border);
+  z-index: var(--z-index-header);
+}
+
+.header-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+}
+
+.header-controls {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+}
+
+/* ======= Footer ======= */
+.footer {
+  grid-area: footer;
+  height: var(--footer-height);
+  padding: 0 var(--space-md);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--color-background);
+  border-top: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-light);
+}
+
+/* ======= Sidebar ======= */
+.sidebar {
+  grid-area: sidebar;
+  width: var(--sidebar-width);
+  background-color: var(--color-background-alt);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  border-right: 1px solid var(--color-border);
+  transition: transform var(--transition-base);
+  z-index: var(--z-index-sidebar);
+  
+  /* Default sidebar content layout */
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-md);
+}
+
+/* Sidebar header (if needed) */
+.sidebar-header {
+  padding-bottom: var(--space-md);
+  margin-bottom: var(--space-md);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Sidebar toggle button - only visible on smaller screens */
+.sidebar-toggle {
+  position: fixed;
+  top: calc(var(--header-height) / 2);
+  left: var(--space-md);
+  transform: translateY(-50%);
+  z-index: calc(var(--z-index-sidebar) + 1);
+  display: none; /* Hidden by default, shown in media queries */
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  
+  /* Touch-friendly target size */
+  min-width: var(--touch-target-size);
+  min-height: var(--touch-target-size);
+}
+
+/* ======= Responsive Layout ======= */
+
+/* Small Screens (Mobile) */
+@media (max-width: calc(var(--breakpoint-md) - 1px)) {
+  body {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "header"
+      "main"
+      "footer";
+  }
+  
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: var(--sidebar-width);
+    transform: translateX(-100%);
+    z-index: var(--z-index-sidebar);
+    padding-top: calc(var(--header-height) + var(--space-md));
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .sidebar.expanded {
+    transform: translateX(0);
+  }
+  
+  .sidebar-toggle {
+    display: flex;
+  }
+  
+  /* Adjust main content padding for toggle button */
+  .main-content {
+    padding-left: calc(var(--space-md) + 40px + var(--space-sm));
+  }
+  
+  /* When sidebar is expanded, add overlay to main content */
+  .sidebar.expanded + .main-content::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: calc(var(--z-index-sidebar) - 1);
+    animation: fade-in var(--transition-fast);
+  }
+  
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+}
+
+/* Medium Screens (Tablet) */
+@media (min-width: var(--breakpoint-md)) and (max-width: calc(var(--breakpoint-lg) - 1px)) {
+  /* Portrait tablets - sidebar is collapsible */
+  @media (orientation: portrait) {
+    body {
+      grid-template-columns: 1fr;
+      grid-template-areas:
+        "header"
+        "main"
+        "footer";
+    }
+    
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: var(--sidebar-width);
+      transform: translateX(-100%);
+      z-index: var(--z-index-sidebar);
+      padding-top: calc(var(--header-height) + var(--space-md));
+    }
+    
+    .sidebar.expanded {
+      transform: translateX(0);
+      box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .sidebar-toggle {
+      display: flex;
+    }
+    
+    /* Overlay for expanded sidebar */
+    .sidebar.expanded ~ .main-content::before {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.3);
+      z-index: calc(var(--z-index-sidebar) - 1);
+    }
+  }
+  
+  /* Landscape tablets - sidebar is fixed but narrower */
+  @media (orientation: landscape) {
+    body {
+      grid-template-columns: var(--sidebar-width-compact) 1fr;
+    }
+    
+    .sidebar {
+      width: var(--sidebar-width-compact);
+    }
+    
+    .sidebar-toggle {
+      display: none;
+    }
+  }
+}
+
+/* Large Screens (Desktop) */
+@media (min-width: var(--breakpoint-lg)) {
+  body {
+    grid-template-columns: var(--sidebar-width) 1fr;
+  }
+  
+  .sidebar {
+    transform: translateX(0); /* Always visible */
+  }
+  
+  .sidebar-toggle {
+    display: none;
+  }
+  
+  /* Larger screens get more padding */
+  .main-content {
+    padding: var(--space-lg);
+  }
+  
+  /* Content max-width to prevent stretching on ultra-wide screens */
+  .main-content > * {
+    max-width: var(--content-max-width);
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+/* Very Large Screens */
+@media (min-width: var(--breakpoint-xl)) {
+  .sidebar {
+    width: var(--sidebar-width);
+  }
+  
+  .main-content {
+    padding: var(--space-xl);
+  }
+}
+
+/* ======= Content Containers ======= */
+.card {
+  background-color: var(--color-background);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.section {
+  margin-bottom: var(--space-lg);
+}
+
+.section-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--space-md);
+}
+
+/* ======= Chart Container ======= */
+.chart-container {
+  width: 100%;
+  background-color: var(--color-background);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.chart-controls {
+  display: flex;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+  flex-wrap: wrap;
+}
+
+#chart {
+  width: 100%;
+  height: var(--chart-height-mobile);
+  transition: height var(--transition-base);
+}
+
+@media (min-width: var(--breakpoint-md)) {
+  #chart {
+    height: var(--chart-height-tablet);
+  }
+}
+
+@media (min-width: var(--breakpoint-lg)) {
+  #chart {
+    height: var(--chart-height-desktop);
+  }
+}
+
+/* ======= PWA Optimizations ======= */
+@media (display-mode: standalone) {
+  body {
+    /* Ensure full height in PWA mode */
+    height: 100vh;
+    height: calc(100vh - var(--safe-area-inset-top) - var(--safe-area-inset-bottom));
+  }
+  
+  /* Adjust header for notched devices */
+  .header {
+    padding-top: var(--safe-area-inset-top);
+    height: calc(var(--header-height) + var(--safe-area-inset-top));
+  }
+  
+  /* Adjust footer for home indicator */
+  .footer {
+    padding-bottom: var(--safe-area-inset-bottom);
+    height: calc(var(--footer-height) + var(--safe-area-inset-bottom));
+  }
+}
+
+/* ======= Accessibility ======= */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

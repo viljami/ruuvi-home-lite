@@ -1,9 +1,9 @@
 import { WebSocketManager } from "./managers/WebSocketManager.js";
 import { SensorCard } from "./components/SensorCard.js";
 import { SensorChart } from "./components/chart/SensorChart.js";
-import { ViewportManager } from "./managers/ViewportManager.js";
 import { Utils } from "./utils/Utils.js";
 import { DeviceHelper } from "./utils/device/DeviceHelper.js";
+import { SidebarManager } from "./utils/SidebarManager.js";
 
 import type {
   ServerMessage,
@@ -37,14 +37,19 @@ class RuuviApp {
 
   private isAdmin = false;
   private adminToken: string | null = null;
-  private viewportManager: ViewportManager;
+  private sidebarManager: SidebarManager;
   private debouncedChartResize: (...args: any[]) => void;
 
   constructor() {
     // Apply device-specific fixes before initializing components
     DeviceHelper.applyAllFixes();
     
-    this.viewportManager = new ViewportManager();
+    // Create sidebar manager with CSS-first approach
+    this.sidebarManager = new SidebarManager({
+      sidebarSelector: '.sidebar',
+      toggleSelector: '.sidebar-toggle',
+      contentSelector: '.main-content'
+    });
 
     // Single debounced chart resize function
     this.debouncedChartResize = Utils.debounce(() => {
@@ -54,7 +59,7 @@ class RuuviApp {
     }, DeviceHelper.isIOS ? 300 : 200); // Longer debounce for iOS
 
     this.initializeWebSocket();
-    this.setupViewportManager();
+    this.setupSidebarManager();
     this.setupControls();
     this.setupCharts();
     this.setupPWA();
@@ -378,17 +383,23 @@ class RuuviApp {
     DeviceHelper.fixAllTouchEvents(container);
   }
 
-  private setupViewportManager(): void {
-    // Register a callback for viewport changes
-    this.viewportManager.onChange((_state, event) => {
-      // Resize the chart when viewport changes
-      if (
-        event.detail.resized ||
-        event.detail.orientationChanged ||
-        event.detail.sizeChanged
-      ) {
-        this.debouncedChartResize();
-      }
+  private setupSidebarManager(): void {
+    // Listen for sidebar events that might affect layout
+    document.addEventListener('sidebar-expanded', () => {
+      // Resize the chart when sidebar expands
+      this.debouncedChartResize();
+    });
+    
+    document.addEventListener('sidebar-collapsed', () => {
+      // Resize the chart when sidebar collapses
+      this.debouncedChartResize();
+    });
+    
+    // Listen for orientation and resize events directly
+    window.addEventListener('resize', this.debouncedChartResize);
+    window.addEventListener('orientationchange', () => {
+      // Delay resize slightly to allow orientation to complete
+      setTimeout(this.debouncedChartResize, DeviceHelper.isIOS ? 300 : 150);
     });
   }
 
@@ -415,12 +426,7 @@ class RuuviApp {
         }
       });
 
-      // Handle orientation changes
-      window.addEventListener("orientationchange", () => {
-        // Resize after orientation change with appropriate delay
-        setTimeout(() => this.debouncedChartResize(), 
-          DeviceHelper.isIOS ? 300 : 150);
-      });
+      // Chart orientation change handling now handled by sidebarManager
 
       // Initial resize to ensure proper dimensions
       this.sensorChart.resize();
@@ -437,8 +443,8 @@ class RuuviApp {
     window
       .matchMedia("(display-mode: standalone)")
       .addEventListener("change", () => {
-        // Force viewport update when switching to/from standalone mode
-        this.viewportManager.forceUpdate();
+        // Refresh sidebar when switching to/from standalone mode
+        this.sidebarManager.refresh();
         // Ensure chart is properly sized in standalone mode
         this.debouncedChartResize();
       });

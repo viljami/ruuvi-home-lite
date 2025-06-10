@@ -1,0 +1,64 @@
+/**
+ * Ruuvi Home Lite - Main CSS
+ * 
+ * This is the main entry point for all CSS styles in the application.
+ * It imports all style modules in the correct order to ensure proper
+ * cascading and specificity.
+ */
+
+/* Base styles and reset first */
+@import './base.css';
+
+/* Variables for theming and responsive design */
+@import './variables.css';
+
+/* Layout structure and grid systems */
+@import './layout.css';
+
+/* Component-specific styles */
+@import './components.css';
+
+/**
+ * Additional custom overrides can be added here
+ * These will have the highest specificity since they come last
+ */
+
+/* iOS PWA specific adjustments */
+@media (display-mode: standalone) {
+  /* Fix for iOS PWA viewport height issues */
+  html.ios-device {
+    height: -webkit-fill-available;
+  }
+  
+  body.ios-device {
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+  }
+}
+
+/* Print styles */
+@media print {
+  body {
+    background: white;
+  }
+  
+  .sidebar,
+  .header,
+  .footer,
+  .btn,
+  .no-print {
+    display: none !important;
+  }
+  
+  .main-content {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* Ensure chart is properly sized for printing */
+  #chart {
+    max-width: 100%;
+    page-break-inside: avoid;
+  }
+}

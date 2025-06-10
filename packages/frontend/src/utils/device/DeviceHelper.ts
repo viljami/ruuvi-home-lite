@@ -1,7 +1,8 @@
 /**
  * DeviceHelper
  *
- * Lightweight utility for device detection and mobile-specific fixes.
+ * Lightweight utility for device detection and adding appropriate CSS classes
+ * to enable CSS-first responsive design approach.
  */
 
 export class DeviceHelper {
@@ -10,7 +11,7 @@ export class DeviceHelper {
   private static _isAndroid: boolean | null = null;
   private static _isMobile: boolean | null = null;
   private static _isPWA: boolean | null = null;
-
+  
   /**
    * Check if the current device is iOS (iPhone, iPad, iPod)
    */
@@ -43,7 +44,7 @@ export class DeviceHelper {
       this._isMobile =
         this.isIOS ||
         this.isAndroid ||
-        /Mobile|Tablet|Android|BlackBerry|IEMobile|Opera Mini/i.test(
+        /Mobile|Tablet|BlackBerry|IEMobile|Opera Mini/i.test(
           navigator.userAgent,
         );
     }
@@ -65,7 +66,7 @@ export class DeviceHelper {
   }
 
   /**
-   * Fix touch event handling for interactive elements
+   * Fix touch event handling for interactive elements (simplified)
    * @param element Element to apply touch event fixes to
    */
   static fixTouchEvents(element: HTMLElement): void {
@@ -76,7 +77,7 @@ export class DeviceHelper {
       element.style as CSSStyleDeclaration & { webkitTapHighlightColor: string }
     ).webkitTapHighlightColor = "transparent";
 
-    // For clickable elements, prevent ghost clicks and improve responsiveness
+    // For clickable elements, add simple touch feedback via CSS class
     if (
       element.hasAttribute("data-clickable") ||
       element.tagName === "BUTTON" ||
@@ -84,45 +85,23 @@ export class DeviceHelper {
       element.classList.contains("btn") ||
       element.classList.contains("sensor-item")
     ) {
-      // Store state to prevent duplicate events
-      let lastTouchTime = 0;
-
       element.addEventListener(
         "touchstart",
-        () => {
-          lastTouchTime = Date.now();
-          element.classList.add("touch-active");
-        },
-        { passive: true },
+        () => element.classList.add("touch-active"),
+        { passive: true }
       );
 
       element.addEventListener(
         "touchend",
-        () => {
-          // Remove active state after short delay for visual feedback
-          setTimeout(() => {
-            element.classList.remove("touch-active");
-          }, 150);
-        },
-        { passive: true },
+        () => setTimeout(() => element.classList.remove("touch-active"), 150),
+        { passive: true }
       );
 
       element.addEventListener(
         "touchcancel",
-        () => {
-          element.classList.remove("touch-active");
-        },
-        { passive: true },
+        () => element.classList.remove("touch-active"),
+        { passive: true }
       );
-
-      // Prevent duplicate events on iOS Safari
-      element.addEventListener("click", (e) => {
-        const now = Date.now();
-        if (now - lastTouchTime < 300 && e.detail > 1) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
-      });
     }
   }
 
@@ -147,7 +126,8 @@ export class DeviceHelper {
   }
 
   /**
-   * Apply core device-specific fixes
+   * Apply device detection and add appropriate CSS classes to enable
+   * responsive CSS-first design approach
    */
   static applyAllFixes(): void {
     // Add device classes to the body for CSS targeting
@@ -155,82 +135,31 @@ export class DeviceHelper {
     document.body.classList.toggle("android-device", this.isAndroid);
     document.body.classList.toggle("mobile-device", this.isMobile);
     document.body.classList.toggle("pwa-mode", this.isPWA);
+    
+    // Add orientation class
+    const orientation = window.innerHeight > window.innerWidth ? "portrait" : "landscape";
+    document.body.classList.add(orientation);
 
-    // Fix touch events for all interactive elements
-    this.fixAllTouchEvents();
+    // Listen to orientation changes to update classes
+    window.addEventListener("orientationchange", () => {
+      // Update orientation class after orientation change
+      setTimeout(() => {
+        document.body.classList.remove("portrait", "landscape");
+        document.body.classList.add(
+          window.innerHeight > window.innerWidth ? "portrait" : "landscape"
+        );
+      }, this.isIOS ? 300 : 100);
+    });
 
-    // Apply global touch event handling
-    this.handleGlobalTouchEvents();
-
-    // Apply orientation change handling
-    this.handleOrientationChanges();
-
-    // iOS PWA height fix
+    // Fix iOS PWA height for fullscreen apps
     if (this.isIOS && this.isPWA) {
-      this.fixIOSPWAHeight();
-      window.addEventListener("resize", () => this.fixIOSPWAHeight());
-    }
-
-    // Fix iOS scroll position on orientation change
-    if (this.isIOS) {
-      window.addEventListener("orientationchange", () => {
-        const scrollY = window.scrollY;
-        setTimeout(() => window.scrollTo(0, scrollY), 100);
+      document.documentElement.style.height = `${window.innerHeight}px`;
+      window.addEventListener("resize", () => {
+        document.documentElement.style.height = `${window.innerHeight}px`;
       });
     }
-
-    // Prevent pull-to-refresh on Android
-    if (this.isAndroid) {
-      document.body.addEventListener(
-        "touchmove",
-        (e) => {
-          if (
-            window.scrollY === 0 &&
-            e.touches[0] &&
-            e.touches[0].clientY > 5
-          ) {
-            e.preventDefault();
-          }
-        },
-        { passive: false },
-      );
-    }
-  }
-  /**
-   * Fix for iOS PWA height calculation
-   */
-  private static fixIOSPWAHeight(): void {
-    const height = window.innerHeight;
-    document.documentElement.style.height = `${height}px`;
-    document.body.style.height = `${height}px`;
-  }
-
-  /**
-   * Handle global touch events to prevent unwanted scrolling
-   */
-  private static handleGlobalTouchEvents(): void {
-    // Prevent scrolling except in the sensor list
-    document.addEventListener(
-      "touchmove",
-      (e) => {
-        if (!e.target || !(e.target as Element).closest("#latest-readings")) {
-          e.preventDefault();
-        }
-      },
-      { passive: false },
-    );
-  }
-
-  /**
-   * Handle orientation changes with force reflow to fix visual glitches
-   */
-  private static handleOrientationChanges(): void {
-    window.addEventListener("orientationchange", () => {
-      // Force a reflow after orientation change to prevent visual glitches
-      document.body.style.display = "none";
-      setTimeout(() => {
-        document.body.style.display = "";
-      }, 20);
-    });
+    
+    // Add simple touch event handling
+    this.fixAllTouchEvents();
   }
 }

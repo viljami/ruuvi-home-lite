@@ -1,0 +1,155 @@
+/**
+ * Ruuvi Home Lite - CSS Variables
+ * 
+ * This file defines the core CSS variables used throughout the application.
+ * It establishes a single source of truth for responsive breakpoints,
+ * device-specific settings, colors, and layout measurements.
+ */
+
+:root {
+  /* 
+   * Responsive Breakpoints
+   * These define the screen width thresholds for different device classes
+   */
+  --breakpoint-xs: 360px;   /* Small phones */
+  --breakpoint-sm: 480px;   /* Large phones */
+  --breakpoint-md: 768px;   /* Tablets */
+  --breakpoint-lg: 992px;   /* Small desktops/landscape tablets */
+  --breakpoint-xl: 1200px;  /* Large desktops */
+  --breakpoint-xxl: 1440px; /* Extra large screens */
+
+  /* 
+   * Feature breakpoints
+   * These are used for specific layout features rather than device classes
+   */
+  --breakpoint-sidebar-fixed: 992px;    /* Width at which sidebar becomes permanently visible */
+  --breakpoint-chart-extended: 1100px;   /* Width at which chart gets more horizontal space */
+  --breakpoint-sidebar-compact: 600px;   /* Width at which sidebar becomes more compact */
+
+  /* 
+   * Layout & Spacing
+   */
+  --sidebar-width: 320px;
+  --sidebar-width-compact: 260px;
+  --content-max-width: 1200px;
+  --header-height: 60px;
+  --footer-height: 40px;
+  
+  /* Standard spacing units for consistent margins/padding */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-xxl: 48px;
+  
+  /* Z-index layers */
+  --z-index-base: 1;
+  --z-index-sidebar: 100;
+  --z-index-header: 90;
+  --z-index-modal: 1000;
+  --z-index-tooltip: 2000;
+  
+  /* 
+   * Colors & Theming
+   */
+  --color-primary: #4a9eff;
+  --color-secondary: #ff6b6b;
+  --color-success: #4ecdc4;
+  --color-warning: #ff9f40;
+  --color-danger: #ff6b6b;
+  --color-info: #b48eff;
+  
+  --color-background: #ffffff;
+  --color-background-alt: #f8f9fa;
+  --color-text: #212529;
+  --color-text-light: #6c757d;
+  --color-border: #dee2e6;
+  
+  /* 
+   * Typography
+   */
+  --font-family-base: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, 
+                     "Helvetica Neue", Arial, sans-serif;
+  --font-family-mono: SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-md: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 24px;
+  
+  --font-weight-normal: 400;
+  --font-weight-bold: 700;
+  
+  --line-height-base: 1.5;
+  --line-height-heading: 1.2;
+  
+  /* 
+   * Animations & Transitions
+   */
+  --transition-fast: 150ms ease;
+  --transition-base: 250ms ease;
+  --transition-slow: 400ms ease;
+  
+  /* 
+   * Device-specific adjustments
+   * These variables can be overridden with device-specific selectors
+   */
+  --touch-target-size: 44px;      /* Minimum touch target size (iOS HIG) */
+  --safe-area-inset-top: 0px;     /* For notched devices */
+  --safe-area-inset-bottom: 0px;  /* For home indicator on newer iOS */
+  --safe-area-inset-left: 0px;
+  --safe-area-inset-right: 0px;
+  
+  /* 
+   * Chart specific settings
+   */
+  --chart-height-mobile: 200px;
+  --chart-height-tablet: 300px;
+  --chart-height-desktop: 400px;
+  --chart-grid-color: rgba(0, 0, 0, 0.1);
+  --chart-label-color: #6c757d;
+}
+
+/* iOS-specific adjustments */
+.ios-device {
+  /* Adjust for iOS quirks */
+  --touch-feedback-opacity: 0.7;  /* iOS needs stronger visual feedback */
+  --button-tap-highlight: rgba(0, 0, 0, 0);
+  
+  /* Safe area insets for notched devices (iPhone X and newer) */
+  /* These will be set dynamically by JS but default values help with initial render */
+  --safe-area-inset-top: env(safe-area-inset-top, 0px);
+  --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-inset-left: env(safe-area-inset-left, 0px);
+  --safe-area-inset-right: env(safe-area-inset-right, 0px);
+}
+
+/* Android-specific adjustments */
+.android-device {
+  /* Adjust for Android quirks */
+  --touch-feedback-opacity: 0.5;  /* Android has built-in feedback */
+  --button-tap-highlight: transparent;
+}
+
+/* PWA mode specific adjustments */
+.pwa-mode {
+  /* Full-height app experience */
+  --header-height: 50px; /* Slightly smaller header in PWA mode */
+}
+
+/* Dark mode support - to be expanded later */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: #121212;
+    --color-background-alt: #1e1e1e;
+    --color-text: #e0e0e0;
+    --color-text-light: #a0a0a0;
+    --color-border: #2c2c2c;
+    
+    /* Adjust chart colors for dark mode */
+    --chart-grid-color: rgba(255, 255, 255, 0.1);
+    --chart-label-color: #a0a0a0;
+  }
+}

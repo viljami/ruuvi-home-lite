@@ -1,0 +1,328 @@
+/**
+ * Ruuvi Home Lite - Component Styles
+ * 
+ * This file defines styles for reusable UI components including sensor cards,
+ * buttons, and interactive elements. It leverages the variables defined in
+ * variables.css for consistency.
+ */
+
+/* Import variables if not using a CSS preprocessor */
+@import './variables.css';
+
+/* ======= Buttons ======= */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--touch-target-size);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: 4px;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  text-align: center;
+  cursor: pointer;
+  transition: 
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    transform var(--transition-fast),
+    opacity var(--transition-fast);
+  user-select: none;
+  -webkit-tap-highlight-color: var(--button-tap-highlight);
+  
+  /* Prevent double-tap zoom on iOS */
+  touch-action: manipulation;
+}
+
+/* Button variants */
+.btn-primary {
+  background-color: var(--color-primary);
+  color: white;
+  border: 1px solid var(--color-primary);
+}
+
+.btn-secondary {
+  background-color: transparent;
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+}
+
+.btn-danger {
+  background-color: var(--color-danger);
+  color: white;
+  border: 1px solid var(--color-danger);
+}
+
+.btn-text {
+  background-color: transparent;
+  color: var(--color-text);
+  border: 1px solid transparent;
+  padding: var(--space-xs) var(--space-sm);
+}
+
+/* Icon button */
+.btn-icon {
+  width: var(--touch-target-size);
+  height: var(--touch-target-size);
+  padding: 0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Button states */
+.btn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+  opacity: 0.8;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn.active {
+  background-color: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+/* Touch feedback for mobile */
+.touch-active {
+  opacity: var(--touch-feedback-opacity) !important;
+}
+
+/* Time range selector buttons */
+.time-range-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-md);
+}
+
+.time-range-controls .btn {
+  min-width: 60px;
+}
+
+/* Clear selection button */
+#clear-selection-btn {
+  margin-left: auto;
+}
+
+/* ======= Sensor Cards ======= */
+.sensor-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md);
+  margin-bottom: var(--space-sm);
+  background-color: var(--color-background);
+  border-radius: 8px;
+  border-left: 4px solid var(--color-primary); /* Default color, will be overridden */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: 
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast),
+    opacity var(--transition-fast);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  
+  /* Use flex layout for sensor data */
+  display: flex;
+  flex-direction: row;
+}
+
+.sensor-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.sensor-left {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.sensor-temp {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+}
+
+.sensor-humidity {
+  font-size: var(--font-size-lg);
+  color: var(--color-text-light);
+}
+
+.sensor-mac {
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  margin-top: var(--space-xs);
+}
+
+.sensor-age {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-light);
+}
+
+/* Active sensor (selected in chart) */
+.sensor-active {
+  background-color: rgba(74, 158, 255, 0.05);
+  box-shadow: 0 2px 8px rgba(74, 158, 255, 0.2);
+}
+
+/* Offline sensor */
+.sensor-offline {
+  opacity: 0.7;
+}
+
+.sensor-offline .sensor-temp,
+.sensor-offline .sensor-humidity {
+  color: var(--color-text-light);
+}
+
+/* Touch feedback */
+.sensor-item.touch-active {
+  transform: scale(0.98);
+  opacity: var(--touch-feedback-opacity);
+}
+
+/* Editable name indicator */
+.sensor-mac[style*="cursor: pointer"] {
+  position: relative;
+}
+
+.sensor-mac[style*="cursor: pointer"]::after {
+  content: "✏️";
+  font-size: 10px;
+  margin-left: var(--space-xs);
+  opacity: 0.6;
+}
+
+/* ======= Status Indicators ======= */
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-light);
+}
+
+.status-indicator::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: var(--space-xs);
+}
+
+.status-connected::before {
+  background-color: var(--color-success);
+}
+
+.status-disconnected::before {
+  background-color: var(--color-danger);
+}
+
+.status-reconnecting::before {
+  background-color: var(--color-warning);
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.5; }
+  50% { opacity: 1; }
+  100% { opacity: 0.5; }
+}
+
+/* ======= Loading Indicators ======= */
+.loading-spinner {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(74, 158, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: var(--color-primary);
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ======= Admin Controls ======= */
+.admin-controls {
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-border);
+}
+
+#admin-btn {
+  background-color: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  opacity: 0.7;
+  transition: all var(--transition-base);
+}
+
+#admin-btn.active {
+  background-color: var(--color-secondary);
+  border-color: var(--color-secondary);
+  opacity: 1;
+  box-shadow: 0 0 5px rgba(255, 107, 107, 0.5);
+}
+
+/* ======= Mobile Optimizations ======= */
+@media (max-width: calc(var(--breakpoint-sm) - 1px)) {
+  /* More compact cards on very small screens */
+  .sensor-item {
+    padding: var(--space-sm);
+  }
+  
+  .sensor-temp {
+    font-size: var(--font-size-lg);
+  }
+  
+  .sensor-humidity {
+    font-size: var(--font-size-md);
+  }
+  
+  /* Stack buttons on very small screens */
+  .time-range-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-xs);
+  }
+  
+  .time-range-controls .btn {
+    width: 100%;
+  }
+}
+
+/* ======= Tablet Optimizations ======= */
+@media (min-width: var(--breakpoint-md)) and (max-width: calc(var(--breakpoint-lg) - 1px)) {
+  /* Grid layout for sensor cards on tablets */
+  #latest-readings {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--space-sm);
+  }
+  
+  .sensor-item {
+    margin-bottom: 0;
+    height: 100%;
+  }
+}
+
+/* ======= Accessibility ======= */
+@media (prefers-reduced-motion: reduce) {
+  .loading-spinner,
+  .status-reconnecting::before {
+    animation: none;
+  }
+}
