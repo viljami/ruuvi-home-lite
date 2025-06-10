@@ -42,14 +42,12 @@ sensor-card {
   font-size: 14px;
   color: var(--color-primary, #4a9eff);
   flex-shrink: 0;
-  font-weight: 600;
 }
 
 .sensor-humidity {
   font-size: 14px;
   color: #f0b400; /* Brighter yellow that's still accessible */
   flex-shrink: 0;
-  font-weight: 600;
 }
 
 .sensor-mac {
@@ -90,7 +88,6 @@ sensor-card.sensor-offline .sensor-humidity,
 sensor-card.sensor-offline .sensor-mac {
   color: var(--color-text-light, #6c757d);
   opacity: 0.6;
-  font-weight: normal;
 }
 
 /* Hover state */
@@ -165,12 +162,10 @@ sensor-card.touch-active {
   }
 
   sensor-card:hover .sensor-temp {
-      color: var(--color-primary, #4a9eff);
-      font-weight: 700;
-    }
-  
-    sensor-card:hover .sensor-humidity {
-      color: #f0b400; /* Match the regular state */
-      font-weight: 700;
-    }
+    color: var(--color-primary, #4a9eff);
+  }
+
+  sensor-card:hover .sensor-humidity {
+    color: #c9aa42; /* Match the regular state */
+  }
 }

@@ -13,6 +13,7 @@ chart-element {
   background-color: var(--color-background, #ffffff);
   padding: 8px 4px;
   margin-bottom: 10px;
+  position: relative;
 }
 
 /* ======= Canvas ======= */
@@ -33,6 +34,8 @@ chart-element {
   margin-bottom: 8px;
   align-items: center;
   justify-content: flex-end;
+  position: relative;
+  z-index: 10;
 }
 
 /* Clear selection button */
@@ -46,6 +49,8 @@ chart-element {
   cursor: pointer;
   transition: background-color 150ms ease, transform 150ms ease;
   display: none; /* Hidden by default until sensors are selected */
+  position: relative;
+  z-index: 15;
 }
 
 #clear-selection-btn:hover {
@@ -60,8 +65,11 @@ chart-element {
 .chart-status {
   font-size: 12px;
   color: var(--color-text-light, #6c757d);
-  margin-top: 2px;
+  position: absolute;
+  top: 10px;
+  right: 10px;
   text-align: right;
+  z-index: 5;
 }
 
 .status {
@@ -69,6 +77,9 @@ chart-element {
   align-items: center;
   font-size: 12px;
   opacity: 0.8;
+  background-color: rgba(255, 255, 255, 0.7);
+  padding: 2px 6px;
+  border-radius: 3px;
 }
 
 .status::before {

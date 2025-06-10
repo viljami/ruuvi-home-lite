@@ -345,7 +345,7 @@ export class SensorChart {
     }
   }
 
-  private render(): void {
+  render(): void {
     // Clear canvas
     this.ctx.clearRect(0, 0, this.config.width, this.config.height);
 

@@ -18,7 +18,6 @@
   padding: var(--space-sm) var(--space-md);
   border-radius: 4px;
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-bold);
   text-align: center;
   cursor: pointer;
   transition:
@@ -150,7 +149,6 @@
 
 .sensor-temp {
   font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-bold);
   color: var(--color-text);
 }
 

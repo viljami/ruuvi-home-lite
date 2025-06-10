@@ -192,11 +192,22 @@ class RuuviApp {
   private setupControls(): void {
     // Time range controls
     document.querySelectorAll(".btn[data-range]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const newRange = (btn as HTMLElement).dataset.range as TimeRange;
+      // Remove any existing listeners to prevent duplicates
+      const oldBtn = btn.cloneNode(true);
+      if (btn.parentNode) {
+        btn.parentNode.replaceChild(oldBtn, btn);
+      }
+      
+      // Add click handler with explicit options to ensure it fires
+      oldBtn.addEventListener("click", (e: Event) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const element = oldBtn as HTMLElement;
+        const newRange = element.dataset.range as TimeRange;
 
         document.querySelector(".btn.active")?.classList.remove("active");
-        btn.classList.add("active");
+        element.classList.add("active");
 
         // No need to log every time range change
         this.currentTimeRange = newRange;
@@ -206,7 +217,7 @@ class RuuviApp {
         if (this.chartElement) {
           this.chartElement.setTimeRange(newRange);
         }
-      });
+      }, { capture: true });
     });
 
     // Admin button
@@ -402,7 +413,9 @@ class RuuviApp {
       if (DeviceHelper.isMobile) {
         const target = e.target as Element;
         const sensorCard = target.closest("sensor-card");
-        if (sensorCard) {
+        // Make sure we don't interfere with buttons or other controls
+        const isControl = target.closest("button") || target.closest(".btn") || target.closest(".chart-controls");
+        if (sensorCard && !isControl) {
           // Stop propagation to prevent sidebar from closing
           e.stopPropagation();
         }

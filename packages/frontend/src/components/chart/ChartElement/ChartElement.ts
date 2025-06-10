@@ -86,6 +86,7 @@ export class ChartElement extends HTMLElement {
       this.clearButton.className = "btn btn-secondary";
       this.clearButton.textContent = "Clear";
       this.clearButton.style.display = "none"; // Hidden by default
+      this.clearButton.type = "button"; // Explicitly set type to button
 
       this.controlsContainer.appendChild(this.clearButton);
       this.appendChild(this.controlsContainer);
@@ -107,6 +108,10 @@ export class ChartElement extends HTMLElement {
       this.statusIndicator.id = "status-indicator";
       this.statusIndicator.className = "status";
       this.statusIndicator.textContent = "Connecting";
+      
+      // Ensure the status indicator is always clickable
+      this.statusIndicator.style.position = "relative";
+      this.statusIndicator.style.zIndex = "20";
 
       statusContainer.appendChild(this.statusIndicator);
       this.appendChild(statusContainer);
@@ -148,9 +153,24 @@ export class ChartElement extends HTMLElement {
       this.canvas.addEventListener("click", this.handleCanvasClick);
     }
 
-    // Clear button
+    // Clear button - make it very robust
     if (this.clearButton) {
-      this.clearButton.addEventListener("click", this.handleClearClick);
+      // Remove any existing event listeners first to prevent duplicates
+      this.clearButton.removeEventListener("click", this.handleClearClick);
+      // Add click event listener with capture and stopping propagation
+      this.clearButton.addEventListener("click", this.handleClearClick, { capture: true });
+      
+      // Add additional listeners for mobile
+      this.clearButton.addEventListener("touchstart", (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+      }, { passive: false });
+      
+      this.clearButton.addEventListener("touchend", (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        this.handleClearClick(e as unknown as MouseEvent);
+      }, { passive: false });
     }
 
     // Set up resize observation for both the canvas and its parent
@@ -205,7 +225,11 @@ export class ChartElement extends HTMLElement {
   /**
    * Event handler for clear button clicks
    */
-  private handleClearClick = (): void => {
+  private handleClearClick = (e: MouseEvent): void => {
+    // Prevent event propagation and default behavior
+    e.stopPropagation();
+    e.preventDefault();
+    
     if (!this.chart) return;
 
     // Get active sensors before clearing
@@ -224,6 +248,9 @@ export class ChartElement extends HTMLElement {
         },
       }),
     );
+    
+    // Force a render to update the chart
+    this.chart.render();
   };
 
   /**
@@ -234,6 +261,15 @@ export class ChartElement extends HTMLElement {
 
     const hasActiveSensors = this.chart.getActiveSensors().length > 0;
     this.clearButton.style.display = hasActiveSensors ? "block" : "none";
+    
+    // Ensure button is clickable by updating z-index and position
+    if (hasActiveSensors) {
+      this.clearButton.style.position = "relative";
+      this.clearButton.style.zIndex = "20";
+      
+      // Add a higher specificity style to ensure the button is clickable
+      this.clearButton.setAttribute("style", "display: block; position: relative; z-index: 20; cursor: pointer;");
+    }
   }
 
   /**
@@ -266,9 +302,15 @@ export class ChartElement extends HTMLElement {
   setStatus(status: string): void {
     if (!this.statusIndicator) return;
 
+    // Set status text with capitalized first letter
     this.statusIndicator.textContent =
-      status === "connected" ? "Real-time" : status;
+      status === "connected" ? "Real-time" : status.charAt(0).toUpperCase() + status.slice(1);
     this.statusIndicator.className = `status status-${status}`;
+    
+    // Force render after status change to ensure proper layout
+    if (this.chart) {
+      setTimeout(() => this.chart?.resize(), 50);
+    }
   }
 
   /**
@@ -358,6 +400,9 @@ export class ChartElement extends HTMLElement {
 
     this.chart.clearActiveSensors();
     this.updateClearButtonVisibility();
+    
+    // Force a render after clearing
+    this.chart.render();
   }
 
   /**
@@ -365,7 +410,7 @@ export class ChartElement extends HTMLElement {
    */
   resize(): void {
     if (!this.chart) return;
-
+    
     // Initial resize
     this.chart.resize();
     
@@ -374,6 +419,12 @@ export class ChartElement extends HTMLElement {
     setTimeout(() => {
       if (this.chart) {
         this.chart.resize();
+        
+        // Ensure the status indicator is visible after resize
+        if (this.statusIndicator) {
+          this.statusIndicator.style.visibility = "visible";
+          this.statusIndicator.style.opacity = "1";
+        }
       }
     }, 200);
   }

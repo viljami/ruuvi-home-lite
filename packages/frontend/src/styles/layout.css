@@ -1,16 +1,17 @@
 /**
  * Ruuvi Home Lite - Core Layout Styles
- * 
+ *
  * This file defines the main layout structure and responsive behavior
  * for the application. It uses CSS Grid and Flexbox for modern layout
  * techniques and leverages the variables defined in variables.css.
  */
 
 /* Import variables if not using a CSS preprocessor */
-@import './variables.css';
+@import "./variables.css";
 
 /* ======= Base Layout Structure ======= */
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
   height: 100%;
@@ -31,10 +32,12 @@ body {
     "sidebar main"
     "sidebar footer";
   height: 100vh;
-  height: calc(100vh - var(--safe-area-inset-top) - var(--safe-area-inset-bottom));
+  height: calc(
+    100vh - var(--safe-area-inset-top) - var(--safe-area-inset-bottom)
+  );
   width: 100vw;
   overflow: hidden;
-  
+
   /* Prevent iOS overscroll/bounce effect */
   position: fixed;
   -webkit-overflow-scrolling: touch;
@@ -74,7 +77,6 @@ body {
 
 .header-title {
   font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-bold);
 }
 
 .header-controls {
@@ -107,7 +109,7 @@ body {
   border-right: 1px solid var(--color-border);
   transition: transform var(--transition-base);
   z-index: var(--z-index-sidebar);
-  
+
   /* Default sidebar content layout */
   display: flex;
   flex-direction: column;
@@ -142,7 +144,7 @@ body {
   align-items: center;
   justify-content: center;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  
+
   /* Touch-friendly target size */
   min-width: var(--touch-target-size);
   min-height: var(--touch-target-size);
@@ -159,7 +161,7 @@ body {
       "main"
       "footer";
   }
-  
+
   .sidebar {
     position: fixed;
     top: 0;
@@ -171,20 +173,20 @@ body {
     padding-top: calc(var(--header-height) + var(--space-md));
     box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
   }
-  
+
   .sidebar.expanded {
     transform: translateX(0);
   }
-  
+
   .sidebar-toggle {
     display: flex;
   }
-  
+
   /* Adjust main content padding for toggle button */
   .main-content {
     padding-left: calc(var(--space-md) + 40px + var(--space-sm));
   }
-  
+
   /* When sidebar is expanded, add overlay to main content */
   .sidebar.expanded + .main-content::before {
     content: "";
@@ -197,10 +199,14 @@ body {
     z-index: calc(var(--z-index-sidebar) - 1);
     animation: fade-in var(--transition-fast);
   }
-  
+
   @keyframes fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
 }
 
@@ -215,7 +221,7 @@ body {
         "main"
         "footer";
     }
-    
+
     .sidebar {
       position: fixed;
       top: 0;
@@ -226,16 +232,16 @@ body {
       z-index: var(--z-index-sidebar);
       padding-top: calc(var(--header-height) + var(--space-md));
     }
-    
+
     .sidebar.expanded {
       transform: translateX(0);
       box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
     }
-    
+
     .sidebar-toggle {
       display: flex;
     }
-    
+
     /* Overlay for expanded sidebar */
     .sidebar.expanded ~ .main-content::before {
       content: "";
@@ -248,17 +254,17 @@ body {
       z-index: calc(var(--z-index-sidebar) - 1);
     }
   }
-  
+
   /* Landscape tablets - sidebar is fixed but narrower */
   @media (orientation: landscape) {
     body {
       grid-template-columns: var(--sidebar-width-compact) 1fr;
     }
-    
+
     .sidebar {
       width: var(--sidebar-width-compact);
     }
-    
+
     .sidebar-toggle {
       display: none;
     }
@@ -270,20 +276,20 @@ body {
   body {
     grid-template-columns: var(--sidebar-width) 1fr;
   }
-  
+
   .sidebar {
     transform: translateX(0); /* Always visible */
   }
-  
+
   .sidebar-toggle {
     display: none;
   }
-  
+
   /* Larger screens get more padding */
   .main-content {
     padding: var(--space-lg);
   }
-  
+
   /* Content max-width to prevent stretching on ultra-wide screens */
   .main-content > * {
     max-width: var(--content-max-width);
@@ -297,7 +303,7 @@ body {
   .sidebar {
     width: var(--sidebar-width);
   }
-  
+
   .main-content {
     padding: var(--space-xl);
   }
@@ -318,7 +324,6 @@ body {
 
 .section-title {
   font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-bold);
   margin-bottom: var(--space-md);
 }
 
@@ -362,15 +367,17 @@ body {
   body {
     /* Ensure full height in PWA mode */
     height: 100vh;
-    height: calc(100vh - var(--safe-area-inset-top) - var(--safe-area-inset-bottom));
+    height: calc(
+      100vh - var(--safe-area-inset-top) - var(--safe-area-inset-bottom)
+    );
   }
-  
+
   /* Adjust header for notched devices */
   .header {
     padding-top: var(--safe-area-inset-top);
     height: calc(var(--header-height) + var(--safe-area-inset-top));
   }
-  
+
   /* Adjust footer for home indicator */
   .footer {
     padding-bottom: var(--safe-area-inset-bottom);
