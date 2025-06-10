@@ -26,24 +26,32 @@
       body {
         background: #1a1a1a;
         color: #e0e0e0;
-        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
+          sans-serif;
         overflow: hidden;
         height: 100vh;
         display: flex;
         flex-direction: column;
+        line-height: 1.4;
+        font-weight: 300;
+        letter-spacing: 0;
       }
+
       .header {
-        padding: 10px 20px;
+        padding: 12px 24px;
         display: flex;
         justify-content: space-between;
         align-items: center;
         z-index: 10;
+        margin-bottom: 4px;
       }
       .controls {
         display: flex;
         gap: 10px;
         flex-wrap: wrap;
       }
+      /* Interactive elements */
       .btn {
         background: #333;
         border: 1px solid #555;
@@ -52,10 +60,14 @@
         border-radius: 4px;
         cursor: pointer;
         font-size: 12px;
+        transition: all 0.2s ease;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        outline: none;
       }
       .btn.active {
         background: #4a9eff;
         border-color: #4a9eff;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
       }
       .main-content {
         flex: 1;
@@ -65,10 +77,13 @@
       .chart-container {
         flex: 1;
         position: relative;
-        padding: 20px;
+        padding: 12px;
         min-height: 250px;
         display: flex;
         flex-direction: column;
+        transition:
+          padding 0.3s ease,
+          background 0.5s ease;
       }
 
       #chart {
@@ -82,6 +97,12 @@
         overflow-y: auto;
         display: flex;
         flex-direction: column;
+        transition:
+          transform 0.3s ease,
+          opacity 0.3s ease,
+          padding 0.3s ease,
+          border-color 0.5s ease,
+          box-shadow 0.5s ease;
       }
       #chart {
         width: 100%;
@@ -93,20 +114,21 @@
         color: #e0e0e0;
         font-size: 16px;
       }
+      /* Sensor items */
       .sensor-item {
-        background: #333;
+        background: #2a2a2a;
         margin-bottom: 5px;
-        margin-left: 4px;
+        margin-left: 2px;
         padding: 8px 10px;
-        border-radius: 4px;
-        border-left: 3px solid #4a9eff;
+        border-radius: 3px;
+        border-left: 2px solid #4a9eff;
         display: flex;
         align-items: center;
         justify-content: space-between;
         font-size: 12px;
         cursor: pointer;
         transition: all 0.2s ease;
-        width: calc(100% - 4px);
+        width: calc(100% - 2px);
         min-width: 0;
         flex-wrap: nowrap;
         overflow: hidden;
@@ -115,17 +137,18 @@
       /* Combined hover and touch states */
       .sensor-item:hover,
       .sensor-item.touch-active {
-        background: #404040;
-        transform: translateX(2px);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        background: #333;
+        transform: translateX(1px);
         z-index: 2;
+        border-left-width: 3px;
       }
 
       /* When any item is interactive, dim the others unless they're active */
       .sidebar:has(.sensor-item:hover, .sensor-item.touch-active)
         .sensor-item:not(:hover):not(.touch-active):not(.sensor-active) {
-        opacity: 0.5;
+        opacity: 0.4;
         transform: translateX(0);
+        transition: opacity 0.3s ease;
       }
       .sensor-left {
         display: flex;
@@ -134,11 +157,11 @@
         overflow: hidden;
         min-width: 0;
         flex: 1;
-        max-width: calc(100% - 40px);
+        max-width: calc(100% - 35px);
       }
       .sensor-mac {
         font-family: monospace;
-        color: #888;
+        color: #999;
         font-size: 11px;
         white-space: nowrap;
         overflow: hidden;
@@ -146,13 +169,20 @@
         max-width: 100%;
         flex-shrink: 1;
         min-width: 40px;
+        opacity: 0.85;
       }
       .sensor-temp {
-        font-weight: bold;
+        font-weight: 600;
         color: #4a9eff;
         white-space: nowrap;
         flex-shrink: 0;
         min-width: 30px;
+        letter-spacing: 0;
+      }
+
+      body.mobile .sensor-temp,
+      body.mobile .sensor-humidity {
+        font-size: 13px;
       }
 
       .sensor-humidity {
@@ -160,17 +190,19 @@
         white-space: nowrap;
         flex-shrink: 0;
         min-width: 30px;
+        letter-spacing: -0.01em;
       }
 
       .sensor-age {
-        color: #666;
+        color: #777;
         font-size: 10px;
         white-space: nowrap;
         margin-left: auto;
-        padding-left: 4px;
+        padding-left: 6px;
         min-width: 30px;
         text-align: right;
         flex-shrink: 0;
+        opacity: 0.75;
       }
       .sensor-offline {
         border-left-color: #666;
@@ -180,10 +212,9 @@
         color: #666;
       }
       .sensor-active {
-        background: #3a3a3a;
-        border: 1px solid #4a9eff;
-        box-shadow: 0 0 5px rgba(74, 158, 255, 0.3);
-        transform: translateX(2px);
+        background: #2d2d2d;
+        border-left: 3px solid #4a9eff;
+        transform: translateX(1px);
         z-index: 1;
         opacity: 1 !important; /* Ensure active sensors don't get dimmed */
       }
@@ -210,13 +241,22 @@
       }
       .status {
         position: absolute;
-        top: 30px;
-        right: 30px;
-        font-size: 12px;
-        opacity: 0.7;
-        padding: 4px 8px;
-        background: #333;
+        top: 12px;
+        right: 12px;
+        font-size: 10px;
+        opacity: 0.8;
+        padding: 3px 6px;
+        background: #2a2a2a;
         border-radius: 3px;
+        transition: all 0.3s ease;
+      }
+      .status:hover {
+        opacity: 1;
+      }
+      @media (min-width: 992px) {
+        .status:hover {
+          background: #333;
+        }
       }
 
       .axis-label {
@@ -235,21 +275,22 @@
 
       /* Add scrollbar styling for better visual appearance */
       #latest-readings::-webkit-scrollbar {
-        width: 4px;
+        width: 3px;
       }
 
       #latest-readings::-webkit-scrollbar-track {
-        background: #222;
-        border-radius: 4px;
+        background: rgba(34, 34, 34, 0.2);
+        border-radius: 3px;
+        margin: 4px;
       }
 
       #latest-readings::-webkit-scrollbar-thumb {
-        background: #444;
-        border-radius: 4px;
+        background: rgba(85, 85, 85, 0.4);
+        border-radius: 3px;
       }
 
       #latest-readings::-webkit-scrollbar-thumb:hover {
-        background: #555;
+        background: rgba(100, 100, 100, 0.5);
       }
 
       /* Handle long content in sidebar */
@@ -264,17 +305,19 @@
       .sidebar-toggle {
         display: none;
         position: fixed;
-        bottom: 12px;
-        right: 12px;
-        width: 38px;
-        height: 38px;
-        background: #4a9eff;
+        bottom: 16px;
+        right: 16px;
+        width: 44px;
+        height: 44px;
+        background: rgba(74, 158, 255, 0.9);
         border: none;
         border-radius: 50%;
         color: white;
-        font-size: 16px;
+        font-size: 18px;
         z-index: 100;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+        transition: all 0.2s ease;
+        -webkit-tap-highlight-color: transparent;
       }
 
       /* Transitions and interactive elements */
@@ -304,6 +347,7 @@
       /* Button states */
       .btn {
         -webkit-tap-highlight-color: transparent;
+        font-weight: 400;
       }
       .btn:active {
         background: #444;
@@ -311,6 +355,9 @@
       }
       .btn.active:active {
         background: #3a8eea;
+      }
+      .btn:focus {
+        outline: none;
       }
 
       /* ViewportManager responsive styles - based on body classes */
@@ -355,8 +402,8 @@
       }
 
       body.tablet.landscape .sidebar {
-        min-width: 180px;
-        max-width: 250px;
+        min-width: 200px;
+        max-width: 260px;
         width: auto;
         max-height: none;
         height: 100%;
@@ -364,6 +411,7 @@
         border-left: 1px solid #333;
         /* Always show the sidebar in tablet landscape mode */
         transform: translateX(0) !important;
+        padding: 14px 12px;
       }
 
       body.tablet.landscape .chart-container {
@@ -397,9 +445,13 @@
           env(safe-area-inset-bottom) env(safe-area-inset-left);
       }
 
+      /* Mobile styles */
       body.mobile .header {
-        padding: 2px 6px;
-        min-height: 32px;
+        padding: 4px 8px;
+        min-height: 36px;
+        border-bottom: 1px solid #333;
+        z-index: 5;
+        padding-top: max(4px, env(safe-area-inset-top, 4px));
       }
 
       body.mobile .sidebar-toggle {
@@ -419,9 +471,10 @@
         bottom: 0;
         left: 0;
         right: 0;
-        max-height: 33vh;
+        max-height: 40vh;
         transform: translateY(100%);
         box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.5);
+        padding-bottom: env(safe-area-inset-bottom, 10px);
       }
 
       body.mobile.portrait .sidebar.expanded,
@@ -431,8 +484,8 @@
 
       body.mobile.portrait .chart-container {
         min-height: 180px;
-        padding: 10px;
-        height: calc(100vh - 32px); /* Match header min-height */
+        padding: 8px;
+        height: calc(100vh - 36px); /* Match header min-height */
       }
 
       body.mobile.portrait #chart {
@@ -440,9 +493,11 @@
       }
 
       body.mobile .status {
-        top: 15px;
-        right: 15px;
+        top: 8px;
+        right: 8px;
         font-size: 10px;
+        padding: 3px 6px;
+        background: rgba(42, 42, 42, 0.9);
       }
 
       body.mobile .controls {
@@ -450,13 +505,16 @@
       }
 
       body.mobile .btn {
-        padding: 4px 6px;
-        font-size: 10px;
+        padding: 6px 8px;
+        font-size: 11px;
         min-width: auto;
+        margin: 0 1px;
+        height: 28px;
       }
 
       body.mobile .sensor-item {
-        padding: 6px 8px;
+        padding: 10px;
+        margin-bottom: 6px;
       }
 
       /* Landscape specific styles */
@@ -480,21 +538,93 @@
         }
       }
 
-      /* Desktop specific styles to ensure sidebar visibility */
+      /* Desktop specific styles with zen aesthetics */
       @media (min-width: 992px) {
+        body {
+          letter-spacing: 0.01em;
+          line-height: 1.5;
+        }
+
         .sidebar {
-          min-width: 200px;
-          max-width: 280px;
+          min-width: 220px;
+          max-width: 300px;
           width: auto;
+          border-left: 1px solid rgba(255, 255, 255, 0.05);
+          padding: 20px 16px;
+          box-shadow: -1px 0 15px rgba(0, 0, 0, 0.1);
         }
 
         .sensor-item {
           min-width: 0;
-          padding: 10px 12px;
+          padding: 12px 16px;
+          margin-bottom: 10px;
+          margin-left: 4px;
+          width: calc(100% - 4px);
+          background: #2d2d2d;
+          transition: all 0.25s ease;
+        }
+
+        .sensor-item:hover {
+          transform: translateX(2px);
+          background: #333;
+        }
+
+        .sensor-left {
+          gap: 12px;
         }
 
         .sensor-mac {
-          min-width: 60px;
+          min-width: 70px;
+          opacity: 0.7;
+        }
+
+        .chart-container {
+          padding: 28px 32px;
+        }
+
+        .header {
+          padding: 18px 32px;
+          margin-bottom: 8px;
+        }
+
+        .btn {
+          padding: 6px 18px;
+          font-size: 13px;
+          letter-spacing: 0.02em;
+          transition: all 0.25s ease;
+        }
+
+        .status {
+          top: 28px;
+          right: 32px;
+          font-size: 11px;
+          opacity: 0.5;
+          padding: 3px 10px;
+          transition: opacity 0.4s ease;
+        }
+      }
+
+      /* Even larger screens - more refined zen */
+      @media (min-width: 1400px) {
+        body {
+          letter-spacing: 0.015em;
+        }
+
+        .chart-container {
+          padding: 32px 38px;
+        }
+
+        .sidebar {
+          padding: 24px 20px;
+        }
+
+        .sensor-item {
+          margin-bottom: 12px;
+          padding: 14px 18px;
+        }
+
+        .btn {
+          padding: 7px 20px;
         }
       }
 
@@ -504,7 +634,7 @@
       }
 
       body.mobile.landscape .chart-container {
-        padding: 5px 10px;
+        padding: 6px 10px;
         height: calc(100vh - 28px);
         min-height: auto;
       }
@@ -517,12 +647,14 @@
         top: 28px; /* Match header height */
         right: 0;
         bottom: 0;
-        min-width: 170px;
-        max-width: 220px;
-        width: auto;
+        min-width: 190px;
+        max-width: 260px;
+        width: 40%;
         max-height: none;
         transform: translateX(100%);
         box-shadow: -2px 0 10px rgba(0, 0, 0, 0.5);
+        padding-right: env(safe-area-inset-right, 10px);
+        padding-bottom: env(safe-area-inset-bottom, 10px);
       }
 
       body.mobile.landscape .sidebar.expanded {
@@ -538,9 +670,9 @@
       body.mobile.landscape .sidebar-toggle {
         bottom: max(10px, env(safe-area-inset-bottom));
         right: max(10px, env(safe-area-inset-right));
-        width: 36px;
-        height: 36px;
-        font-size: 14px;
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
       }
 
       body.mobile.landscape .status {
@@ -589,6 +721,14 @@
           display: block;
         }
       }
+      /* Simple, focused styling with progressive zen enhancement */
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          animation-duration: 0.001ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.001ms !important;
+        }
+      }
     </style>
   </head>
   <body>
@@ -606,7 +746,12 @@
         <canvas id="chart"></canvas>
         <div class="status" id="status">Connecting...</div>
       </div>
-      <div class="sidebar">
+      <div
+        class="sidebar"
+        role="complementary"
+        aria-label="Sensor readings"
+        id="sensor-sidebar"
+      >
         <div
           style="
             display: flex;
@@ -625,7 +770,11 @@
             </button>
           </div>
         </div>
-        <div id="latest-readings" style="flex: 1"></div>
+        <div
+          id="latest-readings"
+          style="flex: 1; overscroll-behavior: contain; scroll-behavior: smooth"
+          class="reading-container"
+        ></div>
         <div
           style="
             margin-top: 8px;
@@ -638,12 +787,13 @@
             id="admin-btn"
             class="btn"
             style="
-              padding: 3px 6px;
+              padding: 5px 8px;
               font-size: 11px;
-              opacity: 0.7;
+              opacity: 0.6;
               background: transparent;
               border-color: #444;
               width: 100%;
+              margin-top: 2px;
             "
           >
             ⚙️
@@ -654,27 +804,6 @@
     </div>
 
     <script type="module" src="/src/main.ts"></script>
-    <!-- ViewportManager will handle all responsive layout logic -->
-    <script>
-      // Mobile fixes - the DeviceHelper now handles most of these concerns
-      document.addEventListener(
-        "touchmove",
-        function (e) {
-          // Prevent scrolling except in the sensor list
-          if (!e.target.closest("#latest-readings")) {
-            e.preventDefault();
-          }
-        },
-        { passive: false },
-      );
-
-      // Force orientation change reflow
-      window.addEventListener("orientationchange", function () {
-        document.body.style.display = "none";
-        setTimeout(function () {
-          document.body.style.display = "";
-        }, 20);
-      });
-    </script>
+    <!-- ViewportManager and DeviceHelper handle all responsive layout and device-specific fixes -->
   </body>
 </html>
