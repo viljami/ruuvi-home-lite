@@ -104,12 +104,16 @@ export class SensorChart {
       const containerWidth = Math.floor(rect.width);
       const containerHeight = this.config.height || Math.floor(rect.height);
 
-      // Only update if dimensions actually changed
-      const sizeChanged = 
-        parseInt(this.canvas.style.width) !== containerWidth || 
+      // Force update on viewport height-based sizing to ensure accurate rendering
+      // Only check dimensions for non-vh units
+      const sizeChanged =
+        !container.style.height.includes("vh") ||
+        parseInt(this.canvas.style.width) !== containerWidth ||
         parseInt(this.canvas.style.height) !== containerHeight;
-        
+
       if (sizeChanged) {
+        console.log(`Canvas size update: ${containerWidth}x${containerHeight}`);
+
         // Set display size (css pixels)
         this.canvas.style.width = `${containerWidth}px`;
         this.canvas.style.height = `${containerHeight}px`;
@@ -409,6 +413,16 @@ export class SensorChart {
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
 
+    // Ensure we have proper dimensions
+    if (chartWidth <= 0 || chartHeight <= 0) {
+      console.warn(
+        "Invalid chart dimensions for grid:",
+        chartWidth,
+        chartHeight,
+      );
+      return;
+    }
+
     this.ctx.strokeStyle = "#333";
     this.ctx.lineWidth = 1;
     this.ctx.setLineDash([2, 2]);
@@ -450,6 +464,17 @@ export class SensorChart {
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
 
+    // Ensure we have proper dimensions
+    if (chartWidth <= 0 || chartHeight <= 0) {
+      console.warn(
+        "Invalid chart dimensions for labels:",
+        chartWidth,
+        chartHeight,
+      );
+      return;
+    }
+
+    // Set label text size based on chart height
     this.ctx.fillStyle = "#aaa";
     this.ctx.font = "12px monospace";
     this.ctx.textBaseline = "middle";
@@ -525,6 +550,16 @@ export class SensorChart {
     const { padding, width, height } = this.config;
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
+
+    // Safety check for invalid dimensions
+    if (chartWidth <= 0 || chartHeight <= 0) {
+      console.warn(
+        "Invalid chart dimensions for temperature line:",
+        chartWidth,
+        chartHeight,
+      );
+      return;
+    }
 
     const sensorMac = tempPoints[0]!.sensorMac;
     const isActive = this.activeSensors.has(sensorMac);
@@ -892,11 +927,11 @@ export class SensorChart {
     if (this.isResizing) {
       return;
     }
-    
+
     try {
       // Set resize lock
       this.isResizing = true;
-      
+
       // First reset all transformations to identity matrix
       this.ctx.setTransform(1, 0, 0, 1, 0, 0);
 
@@ -911,11 +946,21 @@ export class SensorChart {
 
       // Redraw the chart with the new dimensions
       this.render();
+
+      // Add a second render pass after a slight delay to ensure everything is properly sized
+      // This helps with viewport-based sizing which can take time to stabilize
+      setTimeout(() => {
+        if (this.canvas.parentElement) {
+          this.calculateBounds();
+          this.setupCanvas();
+          this.render();
+        }
+      }, 50);
     } finally {
       // Always release the resize lock, even if an error occurs
       setTimeout(() => {
         this.isResizing = false;
-      }, 100); // Small delay to prevent rapid consecutive resizes
+      }, 150); // Small delay to prevent rapid consecutive resizes
     }
   }
 

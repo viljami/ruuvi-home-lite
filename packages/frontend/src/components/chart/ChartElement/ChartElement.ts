@@ -130,6 +130,13 @@ export class ChartElement extends HTMLElement {
       const timeRange = this.getAttribute("time-range") as TimeRange;
       this.chart.setTimeRange(timeRange);
     }
+    
+    // Force initial resize to ensure proper rendering
+    setTimeout(() => {
+      if (this.chart) {
+        this.chart.resize();
+      }
+    }, 50);
   }
 
   /**
@@ -146,10 +153,15 @@ export class ChartElement extends HTMLElement {
       this.clearButton.addEventListener("click", this.handleClearClick);
     }
 
-    // Set up resize observation
+    // Set up resize observation for both the canvas and its parent
     if (this.canvas) {
       this.resizeObserver = new ResizeObserver(this.handleResize);
       this.resizeObserver.observe(this.canvas);
+      
+      // Also observe the parent element for container-based resizing
+      if (this.canvas.parentElement) {
+        this.resizeObserver.observe(this.canvas.parentElement);
+      }
     }
 
     // Listen for window resize as a backup
@@ -159,6 +171,9 @@ export class ChartElement extends HTMLElement {
     window.addEventListener("orientationchange", () => {
       // Delay resize to let orientation change complete
       setTimeout(this.handleResize, 300);
+      
+      // Add an additional delayed resize to handle viewport stabilization
+      setTimeout(this.handleResize, 600);
     });
   }
 
@@ -233,6 +248,13 @@ export class ChartElement extends HTMLElement {
     this.resizeTimeout = window.setTimeout(() => {
       if (this.chart) {
         this.chart.resize();
+        
+        // Add a second resize after a delay to handle any viewport size stabilization
+        setTimeout(() => {
+          if (this.chart) {
+            this.chart.resize();
+          }
+        }, 250);
       }
       this.resizeTimeout = null;
     }, 150);
@@ -344,7 +366,16 @@ export class ChartElement extends HTMLElement {
   resize(): void {
     if (!this.chart) return;
 
+    // Initial resize
     this.chart.resize();
+    
+    // Secondary resize after a delay to ensure proper rendering
+    // This helps with viewport-based sizing which can take time to stabilize
+    setTimeout(() => {
+      if (this.chart) {
+        this.chart.resize();
+      }
+    }, 200);
   }
 
   /**
