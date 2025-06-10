@@ -6,7 +6,7 @@
  */
 
 import { DeviceHelper } from "../../utils/device/DeviceHelper.js";
-import './Sidebar.css';
+import "./Sidebar.css";
 
 export interface SidebarOptions {
   /** Selector for the sidebar element */
@@ -78,12 +78,39 @@ export class Sidebar {
   private setupEventListeners(): void {
     if (!this.sidebar || !this.toggleButton) return;
 
-    // Toggle button click
-    this.toggleButton.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      this.toggle();
-    });
+    // Toggle button click - enhanced for iOS compatibility
+    this.toggleButton.addEventListener(
+      "click",
+      (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.toggle();
+      },
+      { passive: false },
+    );
+
+    // Add explicit touch events for iOS devices
+    this.toggleButton.addEventListener(
+      "touchstart",
+      (e) => {
+        e.stopPropagation();
+        // Add visible feedback class
+        this.toggleButton?.classList.add("touch-active");
+      },
+      { passive: false },
+    );
+
+    this.toggleButton.addEventListener(
+      "touchend",
+      (e) => {
+        e.stopPropagation();
+        // Remove feedback class after delay
+        setTimeout(() => {
+          this.toggleButton?.classList.remove("touch-active");
+        }, 150);
+      },
+      { passive: false },
+    );
 
     // Media query change
     this.permanentMediaQuery.addEventListener("change", (e) => {
@@ -141,14 +168,20 @@ export class Sidebar {
       (e) => {
         // Prevent propagation to avoid triggering document click handler
         e.stopPropagation();
+        if (DeviceHelper.isIOS) {
+          // Prevent any default iOS behaviors
+          e.preventDefault();
+        }
       },
-      { passive: true },
+      // Use non-passive for iOS to allow preventDefault
+      { passive: !DeviceHelper.isIOS },
     );
 
-    // Allow edge swiping to open sidebar
+    // Allow edge swiping to open sidebar - with iOS enhancements
     if (this.contentArea) {
       let startX = 0;
       let startTime = 0;
+      let isSwiping = false;
 
       this.contentArea.addEventListener(
         "touchstart",
@@ -157,33 +190,60 @@ export class Sidebar {
           if (touch?.clientX) {
             startX = touch.clientX;
             startTime = Date.now();
+
+            // Only track swipes starting from the right edge (for our right-side sidebar)
+            isSwiping = startX > window.innerWidth - 30;
           }
         },
         { passive: true },
       );
 
+      // Add touchmove handler to improve iOS gesture detection
+      this.contentArea.addEventListener(
+        "touchmove",
+        (e) => {
+          if (isSwiping && DeviceHelper.isIOS) {
+            const [touch] = e.touches;
+            if (touch?.clientX) {
+              const deltaX = startX - touch.clientX;
+              // If clearly a horizontal swipe, prevent scrolling
+              if (Math.abs(deltaX) > 10) {
+                e.preventDefault();
+              }
+            }
+          }
+        },
+        { passive: !DeviceHelper.isIOS }, // non-passive for iOS
+      );
+
       this.contentArea.addEventListener(
         "touchend",
         (e) => {
+          if (!isSwiping) return;
+
           const [touch] = e.changedTouches;
           if (touch?.clientX) {
             const endX = touch.clientX;
-            const deltaX = endX - startX;
+            const deltaX = startX - endX; // Reversed for right side
             const deltaTime = Date.now() - startTime;
 
-            // Only handle edge swipes (starting from left edge)
+            // Handle edge swipes from right edge
             if (
-              startX < 30 &&
-              deltaX > 70 &&
-              deltaTime < 300 &&
+              startX > window.innerWidth - 30 && // Right edge
+              deltaX > 70 && // Swiped left enough
+              deltaTime < 300 && // Fast enough
               !this.isExpanded() &&
               !this.isPermanentlyVisible
             ) {
               this.expand();
+              e.preventDefault(); // Prevent any default behavior
             }
           }
+
+          // Reset swipe tracking
+          isSwiping = false;
         },
-        { passive: true },
+        { passive: !DeviceHelper.isIOS }, // non-passive for iOS
       );
     }
   }
@@ -198,6 +258,15 @@ export class Sidebar {
     this.toggleButton.style.display = this.isPermanentlyVisible
       ? "none"
       : "flex";
+
+    // Add iOS-specific attributes for better touch handling
+    if (DeviceHelper.isIOS) {
+      this.toggleButton.setAttribute("role", "button");
+      this.toggleButton.setAttribute("aria-label", "Toggle sidebar");
+
+      // Force hardware acceleration for better performance
+      this.toggleButton.style.transform = "translateZ(0)";
+    }
 
     // Always expand sidebar when permanently visible
     if (this.isPermanentlyVisible) {

@@ -1,6 +1,6 @@
 import type { SensorReadingWithAge } from "../../types/index.js";
 import { TimeFormatter } from "../../utils/TimeFormatter.js";
-import './SensorCard.css';
+import "./SensorCard.css";
 
 export interface SensorCardConfig {
   reading: SensorReadingWithAge;
@@ -76,7 +76,7 @@ export class SensorCard extends HTMLElement {
         <div class="sensor-temp">${this.config.reading.temperature.toFixed(1)}°C</div>
         ${this.config.reading.humidity !== null ? `<div class="sensor-humidity">${this.config.reading.humidity.toFixed(1)}%</div>` : ""}
         <div class="sensor-mac" ${this.config.isAdmin ? 'style="cursor: pointer; text-decoration: underline;"' : ""}>${this.displayName}</div>
-        <div class="sensor-age">${ageText}</div>
+        ${secondsAgo > 300 ? `<div class="sensor-age">${ageText}</div>` : ""}
       </div>
     `;
   }
@@ -240,7 +240,7 @@ export class SensorCard extends HTMLElement {
     this.removeEventListener("touchend", () => {});
     this.removeEventListener("touchcancel", () => {});
   }
-  
+
   /**
    * Add attribute change handler for better component reactivity
    */

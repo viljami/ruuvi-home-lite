@@ -1,10 +1,10 @@
+import "./styles/app.css";
 import { WebSocketManager } from "./managers/WebSocketManager.js";
 import { SensorCard } from "./components/SensorCard/SensorCard.js";
 import { SensorChart } from "./components/chart/SensorChart.js";
 import { Utils } from "./utils/Utils.js";
 import { DeviceHelper } from "./utils/device/DeviceHelper.js";
 import { Sidebar } from "./components/Sidebar/Sidebar.js";
-import "./styles/app.css";
 
 import type {
   ServerMessage,
