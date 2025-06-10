@@ -4,6 +4,8 @@
  * Simple utility for device detection and applying mobile-friendly optimizations
  */
 
+import { Utils } from "../Utils";
+
 export class DeviceHelper {
   // Device detection (calculated once on first access)
   private static _isIOS: boolean | null = null;
@@ -73,27 +75,27 @@ export class DeviceHelper {
 
     // Add touch feedback for interactive elements
     if (
-      element.tagName === "BUTTON" || 
+      element.tagName === "BUTTON" ||
       element.tagName === "A" ||
-      element.classList.contains("btn") || 
+      element.classList.contains("btn") ||
       element.hasAttribute("data-clickable")
     ) {
       element.addEventListener(
         "touchstart",
         () => element.classList.add("touch-active"),
-        { passive: true }
+        { passive: true },
       );
 
       element.addEventListener(
         "touchend",
         () => setTimeout(() => element.classList.remove("touch-active"), 150),
-        { passive: true }
+        { passive: true },
       );
 
       element.addEventListener(
         "touchcancel",
         () => element.classList.remove("touch-active"),
-        { passive: true }
+        { passive: true },
       );
     }
   }
@@ -103,13 +105,13 @@ export class DeviceHelper {
    */
   static fixAllTouchEvents(
     container: HTMLElement = document.body,
-    selector: string = "button, a, .btn, [data-clickable], sensor-card"
+    selector: string = "button, a, .btn, [data-clickable], sensor-card",
   ): void {
     if (container.matches(selector)) {
       this.fixTouchEvents(container);
     }
 
-    container.querySelectorAll<HTMLElement>(selector).forEach(el => {
+    container.querySelectorAll<HTMLElement>(selector).forEach((el) => {
       this.fixTouchEvents(el);
     });
   }
@@ -125,19 +127,20 @@ export class DeviceHelper {
     document.body.classList.toggle("pwa-mode", this.isPWA);
 
     // Set initial orientation class
-    const orientation = 
+    const orientation =
       window.innerHeight > window.innerWidth ? "portrait" : "landscape";
     document.body.classList.add(orientation);
 
     // Update orientation class when device orientation changes
-    window.addEventListener("orientationchange", () => {
-      setTimeout(() => {
+    window.addEventListener(
+      "orientationchange",
+      Utils.debounce(() => {
         document.body.classList.remove("portrait", "landscape");
         document.body.classList.add(
-          window.innerHeight > window.innerWidth ? "portrait" : "landscape"
+          window.innerHeight > window.innerWidth ? "portrait" : "landscape",
         );
-      }, 200);
-    });
+      }, 200),
+    );
 
     // Apply iOS PWA fixes if needed
     if (this.isIOS && this.isPWA) {
