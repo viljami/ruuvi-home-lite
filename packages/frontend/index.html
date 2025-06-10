@@ -2,9 +2,15 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no"
+    />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
     <meta name="theme-color" content="#1a1a1a" />
     <title>Ruuvi Home</title>
     <link rel="manifest" href="manifest.json" />
@@ -106,19 +112,20 @@
         overflow: hidden;
         box-sizing: border-box;
       }
-      .sensor-item:hover {
+      /* Combined hover and touch states */
+      .sensor-item:hover,
+      .sensor-item.touch-active {
         background: #404040;
         transform: translateX(2px);
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
         z-index: 2;
       }
 
-      /* When any item is hovered, dim the others unless they're active */
-      .sidebar:has(.sensor-item:hover)
-        .sensor-item:not(:hover):not(.sensor-active) {
+      /* When any item is interactive, dim the others unless they're active */
+      .sidebar:has(.sensor-item:hover, .sensor-item.touch-active)
+        .sensor-item:not(:hover):not(.touch-active):not(.sensor-active) {
         opacity: 0.5;
         transform: translateX(0);
-        transition: all 0.2s ease;
       }
       .sensor-left {
         display: flex;
@@ -184,17 +191,21 @@
         color: white;
       }
 
-      /* Make hover effect stronger with brighter text */
-      .sensor-item:hover .sensor-temp {
+      /* Interactive states for sensor items - consolidated */
+      .sensor-item:hover .sensor-temp,
+      .sensor-item.touch-active .sensor-temp {
         color: white;
       }
 
-      .sensor-item:hover .sensor-humidity {
+      .sensor-item:hover .sensor-humidity,
+      .sensor-item.touch-active .sensor-humidity {
         color: #ff8c8c;
       }
 
       .sensor-item:hover .sensor-mac,
-      .sensor-item:hover .sensor-age {
+      .sensor-item:hover .sensor-age,
+      .sensor-item.touch-active .sensor-mac,
+      .sensor-item.touch-active .sensor-age {
         color: #aaa;
       }
       .status {
@@ -266,7 +277,7 @@
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
       }
 
-      /* Base transitions for smooth changes */
+      /* Transitions and interactive elements */
       .main-content {
         transition:
           flex-direction 0.3s ease,
@@ -277,6 +288,7 @@
           transform 0.3s ease,
           width 0.3s ease,
           max-height 0.3s ease;
+        -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
       }
       .chart-container {
         transition:
@@ -287,6 +299,18 @@
         transition:
           padding 0.3s ease,
           min-height 0.3s ease;
+      }
+
+      /* Button states */
+      .btn {
+        -webkit-tap-highlight-color: transparent;
+      }
+      .btn:active {
+        background: #444;
+        transform: translateY(1px);
+      }
+      .btn.active:active {
+        background: #3a8eea;
       }
 
       /* ViewportManager responsive styles - based on body classes */
@@ -351,12 +375,26 @@
         height: 100%;
       }
 
-      /* Mobile (small) styles */
+      /* iOS-specific fixes */
+      @supports (-webkit-touch-callout: none) {
+        body {
+          height: -webkit-fill-available; /* iOS height fix */
+        }
+        .btn {
+          padding-top: 6px;
+          padding-bottom: 4px; /* Fix iOS button text alignment */
+        }
+      }
+
+      /* Mobile styles */
       body.mobile {
         height: 100%;
         position: fixed;
         width: 100%;
         overflow: hidden;
+        /* Support for notched devices */
+        padding: env(safe-area-inset-top) env(safe-area-inset-right)
+          env(safe-area-inset-bottom) env(safe-area-inset-left);
       }
 
       body.mobile .header {
@@ -426,6 +464,22 @@
         overflow: hidden;
       }
 
+      /* Orientation change helpers */
+      @media screen and (orientation: landscape) {
+        body.mobile:not(.landscape) {
+          min-height: 100vw; /* Force landscape mode immediately */
+        }
+        body.mobile:not(.landscape) .main-content {
+          flex-direction: row;
+        }
+      }
+
+      @media screen and (orientation: portrait) {
+        body.mobile:not(.portrait) {
+          min-height: 100vh; /* Force portrait mode immediately */
+        }
+      }
+
       /* Desktop specific styles to ensure sidebar visibility */
       @media (min-width: 992px) {
         .sidebar {
@@ -480,9 +534,10 @@
         height: calc(100vh - 28px);
       }
 
+      /* Mobile landscape controls */
       body.mobile.landscape .sidebar-toggle {
-        bottom: 10px;
-        right: 10px;
+        bottom: max(10px, env(safe-area-inset-bottom));
+        right: max(10px, env(safe-area-inset-right));
         width: 36px;
         height: 36px;
         font-size: 14px;
@@ -490,7 +545,7 @@
 
       body.mobile.landscape .status {
         top: 10px;
-        right: 10px;
+        right: max(10px, env(safe-area-inset-right));
         font-size: 9px;
         padding: 2px 6px;
       }
@@ -600,5 +655,26 @@
 
     <script type="module" src="/src/main.ts"></script>
     <!-- ViewportManager will handle all responsive layout logic -->
+    <script>
+      // Mobile fixes - the DeviceHelper now handles most of these concerns
+      document.addEventListener(
+        "touchmove",
+        function (e) {
+          // Prevent scrolling except in the sensor list
+          if (!e.target.closest("#latest-readings")) {
+            e.preventDefault();
+          }
+        },
+        { passive: false },
+      );
+
+      // Force orientation change reflow
+      window.addEventListener("orientationchange", function () {
+        document.body.style.display = "none";
+        setTimeout(function () {
+          document.body.style.display = "";
+        }, 20);
+      });
+    </script>
   </body>
 </html>

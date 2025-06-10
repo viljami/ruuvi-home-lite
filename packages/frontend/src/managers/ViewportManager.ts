@@ -9,6 +9,7 @@
  */
 
 import { Utils } from "../utils/Utils.js";
+import { DeviceHelper } from "../utils/device/DeviceHelper.js";
 
 export type ViewportSize = "small" | "medium" | "large";
 export type Orientation = "portrait" | "landscape";
@@ -50,7 +51,7 @@ export class ViewportManager {
   private state: ViewportState;
   private previousState: ViewportState;
   private callbacks: Set<ViewportCallback> = new Set();
-  private debouncedViewportChange: (...args: any[]) => void;
+  private debouncedViewportChange: () => void;
   private sidebarElement: HTMLElement | null = null;
   private sidebarToggleElement: HTMLElement | null = null;
 
@@ -62,10 +63,18 @@ export class ViewportManager {
     debounceTime: 100,
   };
 
+  // Flag to track orientation changes in progress
+  private isOrientationChanging = false;
+
   constructor(options?: ViewportManagerOptions) {
     // Merge default options with provided options
     if (options) {
       this.options = { ...this.options, ...options };
+    }
+
+    // Adjust debounce time for iOS devices which need more time
+    if (DeviceHelper.isIOS) {
+      this.options.debounceTime = Math.max(150, this.options.debounceTime);
     }
 
     // Initialize state
@@ -86,6 +95,10 @@ export class ViewportManager {
 
     // Apply initial state to DOM
     this.applyStateToDom(this.state);
+
+    // Force an additional update after a short delay to handle
+    // iOS PWA and other delayed initialization scenarios
+    setTimeout(() => this.forceUpdate(), 300);
   }
 
   /**
@@ -126,21 +139,64 @@ export class ViewportManager {
   private setupEventListeners(): void {
     // Handle resize events with debounce
     window.addEventListener("resize", () => {
+      // Workaround for iOS Safari which fires resize events repeatedly during scroll
+      if (DeviceHelper.isIOS && !this.isOrientationChanging) {
+        // Only process significant size changes on iOS when not changing orientation
+        const currentWidth = window.innerWidth;
+        const currentHeight = window.innerHeight;
+        const widthDiff = Math.abs(currentWidth - this.state.width);
+        const heightDiff = Math.abs(currentHeight - this.state.height);
+
+        if (widthDiff < 5 && heightDiff < 50) {
+          return; // Ignore small changes that happen during iOS scroll
+        }
+      }
+
       this.debouncedViewportChange();
     });
 
     // Handle orientation change events
     window.addEventListener("orientationchange", () => {
-      // Just use the debounced function - browser will settle dimensions
-      this.debouncedViewportChange();
+      this.isOrientationChanging = true;
+
+      // Apply immediate class changes for smoother transitions
+      document.body.classList.remove("portrait", "landscape");
+      document.body.classList.add(
+        window.innerHeight > window.innerWidth ? "portrait" : "landscape",
+      );
+
+      // Use appropriate debounce time based on device
+      const debounceTime = DeviceHelper.isIOS ? 300 : 150;
+
+      // Force reflow on iOS to prevent visual glitches
+      if (DeviceHelper.isIOS) {
+        void document.body.offsetHeight;
+      }
+
+      // Clear the flag and update after appropriate delay
+      setTimeout(() => {
+        this.isOrientationChanging = false;
+        this.handleViewportChange();
+      }, debounceTime);
     });
 
-    // Also listen for display-mode changes (for PWA)
+    // Listen for display-mode changes (for PWA)
     window
       .matchMedia("(display-mode: standalone)")
       .addEventListener("change", () => {
-        this.debouncedViewportChange();
+        setTimeout(() => this.debouncedViewportChange(), 200);
       });
+
+    // Add iOS-specific handlers for PWA mode
+    if (DeviceHelper.isIOS && DeviceHelper.isPWA) {
+      // Handle virtual keyboard showing/hiding
+      window.addEventListener("focusin", () =>
+        setTimeout(() => this.debouncedViewportChange(), 50),
+      );
+      window.addEventListener("focusout", () =>
+        setTimeout(() => this.debouncedViewportChange(), 50),
+      );
+    }
   }
 
   /**
@@ -197,6 +253,12 @@ export class ViewportManager {
       this.previousState.width !== this.state.width ||
       this.previousState.height !== this.state.height;
 
+    // Safety check for zero dimensions which can happen during orientation changes
+    if (this.state.width <= 0 || this.state.height <= 0) {
+      setTimeout(() => this.forceUpdate(), 100);
+      return;
+    }
+
     // Apply state to DOM
     this.applyStateToDom(this.state);
 
@@ -218,6 +280,19 @@ export class ViewportManager {
 
       // Force a reflow to ensure transitions work properly
       void document.body.offsetHeight;
+
+      // Extra handling for iOS which needs help with orientation changes
+      if (DeviceHelper.isIOS) {
+        setTimeout(() => {
+          const currentState = this.getViewportState();
+          if (
+            currentState.width !== this.state.width ||
+            currentState.height !== this.state.height
+          ) {
+            this.forceUpdate();
+          }
+        }, 300);
+      }
     }
 
     // Create event object
@@ -255,6 +330,8 @@ export class ViewportManager {
     if (state.isTablet) document.body.classList.add("tablet");
     if (state.isDesktop) document.body.classList.add("desktop");
 
+    // DeviceHelper already adds these classes
+
     // Handle initial sidebar display after class changes
     if (
       state.isDesktop ||
@@ -262,7 +339,12 @@ export class ViewportManager {
     ) {
       // Desktop and tablet landscape should always show sidebar
       if (this.sidebarElement) {
+        // Use transform to ensure hardware acceleration
         this.sidebarElement.style.transform = "translateX(0)";
+        // For iOS sometimes we need to force reflow
+        if (DeviceHelper.isIOS) {
+          void this.sidebarElement.offsetHeight;
+        }
       }
     }
 
@@ -389,7 +471,24 @@ export class ViewportManager {
    * Force a viewport state update
    */
   public forceUpdate(): void {
-    // Just use the standard debounced function
-    this.debouncedViewportChange();
+    // Bypass debouncing for immediate update
+    this.handleViewportChange();
+  }
+
+  /**
+   * Reset viewport manager to handle potential device issues
+   */
+  public reset(): void {
+    this.previousState = { ...this.state };
+    this.isOrientationChanging = false;
+
+    // Reset any inline styles
+    if (this.sidebarElement) {
+      this.sidebarElement.style.transform = "";
+    }
+
+    // Force immediate update and another after a delay
+    this.forceUpdate();
+    setTimeout(() => this.forceUpdate(), 100);
   }
 }

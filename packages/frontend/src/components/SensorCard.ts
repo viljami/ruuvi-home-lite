@@ -60,9 +60,12 @@ export class SensorCard extends HTMLElement {
         ? this.config.reading.secondsAgo
         : now - this.config.reading.timestamp;
 
+    // Add -webkit-tap-highlight-color to fix iOS touch feedback issues
     this.className = `sensor-item ${this.isOffline ? "sensor-offline" : ""} ${this.config.isActive ? "sensor-active" : ""}`;
     this.style.borderLeftColor = this.sensorColor;
-    this.style.cursor = 'pointer';
+    this.style.cursor = "pointer";
+    // @ts-ignore webkit specific style
+    this.style.webkitTapHighlightColor = "transparent"; // Prevent iOS default gray touch highlight
     this.setAttribute("data-sensor-mac", this.config.reading.sensorMac);
 
     const ageText = TimeFormatter.formatAge(secondsAgo);
@@ -78,9 +81,25 @@ export class SensorCard extends HTMLElement {
   }
 
   private setupEventListeners(): void {
-    // Hover events for graph highlighting
+    // Use variables to track event states
+    let isTouchDevice = false;
+
+    // Detect touch capability
+    window.addEventListener(
+      "touchstart",
+      function onFirstTouch() {
+        isTouchDevice = true;
+        window.removeEventListener("touchstart", onFirstTouch);
+      },
+      { once: true, passive: true },
+    );
+
+    // Hover events for graph highlighting - only meaningful on non-touch devices
     this.addEventListener("mouseenter", () => {
-      this.config.onHover(this.config.reading.sensorMac);
+      // Skip hover effect triggering on touch devices after touch
+      if (!isTouchDevice) {
+        this.config.onHover(this.config.reading.sensorMac);
+      }
     });
 
     this.addEventListener("mouseleave", () => {
@@ -94,13 +113,65 @@ export class SensorCard extends HTMLElement {
     });
 
     // Touch events for mobile
-    this.addEventListener("touchstart", () => {
-      this.config.onHover(this.config.reading.sensorMac);
+    let touchTimeout: number | null = null;
+
+    this.addEventListener(
+      "touchstart",
+      (e) => {
+        // Prevent default only if this is a sensor card click, not a name edit click
+        if (
+          !this.config.isAdmin ||
+          !e
+            .composedPath()
+            .some(
+              (el) =>
+                el instanceof Element && el.classList.contains("sensor-mac"),
+            )
+        ) {
+          e.preventDefault(); // Prevent default to avoid delayed clicks
+        }
+
+        this.config.onHover(this.config.reading.sensorMac);
+        this.classList.add("touch-active");
+
+        // Clear any existing timeout
+        if (touchTimeout) {
+          clearTimeout(touchTimeout);
+        }
+      },
+      { passive: false },
+    );
+
+    this.addEventListener("touchend", (_e) => {
+      // Don't prevent default here as it would prevent clicks from firing
+
+      // Delay removing hover state to allow visual feedback
+      touchTimeout = window.setTimeout(() => {
+        this.config.onHover(null);
+        this.classList.remove("touch-active");
+        touchTimeout = null;
+      }, 200);
+    });
+
+    this.addEventListener("touchcancel", () => {
+      this.config.onHover(null);
+      this.classList.remove("touch-active");
+
+      if (touchTimeout) {
+        clearTimeout(touchTimeout);
+        touchTimeout = null;
+      }
     });
 
     // Click handler for toggling the sensor in the chart
     if (this.config.onClick) {
-      this.addEventListener("click", () => {
+      this.addEventListener("click", (e) => {
+        // Prevent accidental double-firing on iOS/Safari
+        if (e.detail > 1) {
+          e.preventDefault();
+          return;
+        }
+
         this.config.onClick?.(this.config.reading.sensorMac);
       });
     }
@@ -157,12 +228,16 @@ export class SensorCard extends HTMLElement {
   setActive(isActive: boolean): void {
     if (this.config.isActive !== isActive) {
       this.config.isActive = isActive;
-      this.classList.toggle('sensor-active', isActive);
+      this.classList.toggle("sensor-active", isActive);
     }
   }
 
   disconnectedCallback(): void {
-    // Component removed from DOM - cleanup if needed
+    // Component removed from DOM - clean up event listeners if needed
+    // This is important for iOS Safari which can maintain references
+    this.removeEventListener("touchstart", () => {});
+    this.removeEventListener("touchend", () => {});
+    this.removeEventListener("touchcancel", () => {});
   }
 }
 

@@ -3,6 +3,7 @@ import { SensorCard } from "./components/SensorCard.js";
 import { SensorChart } from "./components/chart/SensorChart.js";
 import { ViewportManager } from "./managers/ViewportManager.js";
 import { Utils } from "./utils/Utils.js";
+import { DeviceHelper } from "./utils/device/DeviceHelper.js";
 
 import type {
   ServerMessage,
@@ -40,6 +41,9 @@ class RuuviApp {
   private debouncedChartResize: (...args: any[]) => void;
 
   constructor() {
+    // Apply device-specific fixes before initializing components
+    DeviceHelper.applyAllFixes();
+    
     this.viewportManager = new ViewportManager();
 
     // Single debounced chart resize function
@@ -47,7 +51,7 @@ class RuuviApp {
       if (this.sensorChart) {
         this.sensorChart.resize();
       }
-    }, 200);
+    }, DeviceHelper.isIOS ? 300 : 200); // Longer debounce for iOS
 
     this.initializeWebSocket();
     this.setupViewportManager();
@@ -55,7 +59,10 @@ class RuuviApp {
     this.setupCharts();
     this.setupPWA();
 
-    // No need to log initialization in production
+    // Force an additional resize after initial render for mobile devices
+    if (DeviceHelper.isMobile) {
+      setTimeout(() => this.debouncedChartResize(), 500);
+    }
   }
 
   private initializeWebSocket(): void {
@@ -366,6 +373,9 @@ class RuuviApp {
       this.sensorCards.set(reading.sensorMac, sensorCard);
       container.appendChild(sensorCard);
     });
+    
+    // Apply touch event fixes to all new sensor cards
+    DeviceHelper.fixAllTouchEvents(container);
   }
 
   private setupViewportManager(): void {
@@ -405,8 +415,11 @@ class RuuviApp {
         }
       });
 
+      // Handle orientation changes
       window.addEventListener("orientationchange", () => {
-        this.debouncedChartResize();
+        // Resize after orientation change with appropriate delay
+        setTimeout(() => this.debouncedChartResize(), 
+          DeviceHelper.isIOS ? 300 : 150);
       });
 
       // Initial resize to ensure proper dimensions
@@ -429,6 +442,20 @@ class RuuviApp {
         // Ensure chart is properly sized in standalone mode
         this.debouncedChartResize();
       });
+
+    // Add observer for new elements to apply touch event fixes
+    const container = document.getElementById('latest-readings');
+    if (container && DeviceHelper.isMobile) {
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.addedNodes.length) {
+            DeviceHelper.fixAllTouchEvents(container);
+          }
+        });
+      });
+      
+      observer.observe(container, { childList: true });
+    }
   }
 }
 
