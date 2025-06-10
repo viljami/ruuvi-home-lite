@@ -1,0 +1,227 @@
+/**
+ * Sidebar Component Styles
+ * 
+ * Responsive sidebar that appears on the right side of the screen on tablet/desktop
+ * and floats over content on mobile. Designed to be as compact as possible to
+ * prioritize chart visibility.
+ */
+
+/* ======= Sidebar Base Styles ======= */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-background-alt, #f8f9fa);
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  transition: transform 250ms ease, box-shadow 250ms ease;
+  z-index: var(--z-index-sidebar, 100);
+  width: 240px; /* Compact width */
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+}
+
+/* Sidebar header with title */
+.sidebar-header {
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--color-border, #dee2e6);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 32px;
+}
+
+.sidebar-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: var(--color-text, #212529);
+}
+
+/* Toggle button for showing/hiding sidebar */
+.sidebar-toggle {
+  position: fixed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background-color: var(--color-background, #ffffff);
+  border: 1px solid var(--color-border, #dee2e6);
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: var(--z-index-sidebar, 100);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ======= Sensor list container ======= */
+#latest-readings {
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 4px; /* Space for scrollbar */
+}
+
+/* Scrollbar styling */
+#latest-readings::-webkit-scrollbar {
+  width: 4px;
+}
+
+#latest-readings::-webkit-scrollbar-track {
+  background-color: var(--color-background-alt, #f8f9fa);
+}
+
+#latest-readings::-webkit-scrollbar-thumb {
+  background-color: var(--color-border, #dee2e6);
+  border-radius: 2px;
+}
+
+/* ======= Mobile Layout (sidebar on the right as an overlay) ======= */
+@media (max-width: 767px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    transform: translateX(100%);
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+    width: 80%; /* Use percentage for better responsiveness */
+    max-width: 280px;
+    padding-top: var(--header-height, 60px);
+  }
+  
+  .sidebar.expanded {
+    transform: translateX(0);
+  }
+  
+  /* Position toggle button on the right side */
+  .sidebar-toggle {
+    top: 12px;
+    right: 12px;
+  }
+  
+  /* When sidebar is expanded, add overlay to main content */
+  .sidebar.expanded ~ .main-content::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 90; /* Just below sidebar */
+    animation: fade-in 150ms ease;
+  }
+  
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+}
+
+/* ======= Tablet Layout (sidebar on right, permanent in landscape) ======= */
+@media (min-width: 768px) and (max-width: 991px) {
+  /* Portrait - collapsible sidebar */
+  @media (orientation: portrait) {
+    .sidebar {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      transform: translateX(100%);
+      width: 260px;
+      box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+      padding-top: var(--header-height, 60px);
+    }
+    
+    .sidebar.expanded {
+      transform: translateX(0);
+    }
+    
+    /* Position toggle button in the top right */
+    .sidebar-toggle {
+      top: 12px;
+      right: 12px;
+    }
+    
+    /* Overlay for expanded sidebar */
+    .sidebar.expanded ~ .main-content::before {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.3);
+      z-index: 90;
+    }
+  }
+  
+  /* Landscape - permanent sidebar */
+  @media (orientation: landscape) {
+    body {
+      grid-template-columns: 1fr 220px; /* Chart first, sidebar second */
+      grid-template-areas:
+        "header header"
+        "main sidebar"
+        "footer footer";
+    }
+    
+    .sidebar {
+      position: relative;
+      transform: translateX(0);
+      width: 220px;
+      grid-area: sidebar;
+      border-left: 1px solid var(--color-border, #dee2e6);
+    }
+    
+    .sidebar-toggle {
+      display: none;
+    }
+    
+    /* Compact sensor list for better usage of space */
+    #latest-readings {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+  }
+}
+
+/* ======= Desktop Layout (sidebar on right, permanent) ======= */
+@media (min-width: 992px) {
+  body {
+    grid-template-columns: 1fr 240px; /* Chart first, sidebar second */
+    grid-template-areas:
+      "header header"
+      "main sidebar"
+      "footer footer";
+  }
+  
+  .sidebar {
+    position: relative;
+    transform: translateX(0);
+    grid-area: sidebar;
+    border-left: 1px solid var(--color-border, #dee2e6);
+  }
+  
+  .sidebar-toggle {
+    display: none;
+  }
+  
+  /* Larger screens get slightly more padding */
+  @media (min-width: 1200px) {
+    .sidebar {
+      padding: 16px;
+    }
+  }
+}
+
+/* ======= Accessibility ======= */
+@media (prefers-reduced-motion: reduce) {
+  .sidebar {
+    transition: none;
+  }
+}

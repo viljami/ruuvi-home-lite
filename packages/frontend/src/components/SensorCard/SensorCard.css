@@ -1,0 +1,146 @@
+/**
+ * SensorCard Component Styles
+ * 
+ * Component-specific styling for sensor cards with responsive design
+ * focusing on minimal, compact presentation.
+ */
+
+/* ======= SensorCard Base Styles ======= */
+sensor-card {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  background-color: var(--color-background, #ffffff);
+  border-radius: 6px;
+  border-left: 3px solid; /* Color is set programmatically */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  transition: 
+    transform 150ms ease,
+    box-shadow 150ms ease,
+    opacity 150ms ease;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  width: 100%;
+  min-height: 56px; /* Minimum touch target size */
+}
+
+/* ======= Content Layout ======= */
+.sensor-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+}
+
+/* ======= Sensor Values ======= */
+.sensor-temp {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text, #212529);
+}
+
+.sensor-humidity {
+  font-size: 14px;
+  color: var(--color-text-light, #6c757d);
+}
+
+.sensor-mac {
+  font-size: 12px;
+  color: var(--color-text, #212529);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.sensor-age {
+  font-size: 10px;
+  color: var(--color-text-light, #6c757d);
+}
+
+/* ======= Card States ======= */
+/* Active state (selected in chart) */
+sensor-card.sensor-active {
+  background-color: rgba(74, 158, 255, 0.05);
+  box-shadow: 0 1px 4px rgba(74, 158, 255, 0.2);
+}
+
+/* Offline state */
+sensor-card.sensor-offline {
+  opacity: 0.7;
+}
+
+sensor-card.sensor-offline .sensor-temp,
+sensor-card.sensor-offline .sensor-humidity {
+  color: var(--color-text-light, #6c757d);
+}
+
+/* Hover state */
+@media (hover: hover) {
+  sensor-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  }
+}
+
+/* Touch feedback */
+sensor-card.touch-active {
+  transform: scale(0.98);
+  opacity: 0.8;
+}
+
+/* ======= Editable name in admin mode ======= */
+.sensor-mac[style*="cursor: pointer"] {
+  position: relative;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 2px;
+}
+
+.sensor-mac[style*="cursor: pointer"]::after {
+  content: "✏️";
+  font-size: 9px;
+  margin-left: 4px;
+  opacity: 0.7;
+}
+
+/* ======= Responsive Adjustments ======= */
+/* Compact mode for very small screens */
+@media (max-width: 360px) {
+  sensor-card {
+    padding: 6px 8px;
+    min-height: 48px;
+  }
+  
+  .sensor-temp {
+    font-size: 14px;
+  }
+  
+  .sensor-humidity {
+    font-size: 12px;
+  }
+}
+
+/* Tablet grid layout */
+@media (min-width: 768px) and (max-width: 991px) {
+  sensor-card {
+    margin-bottom: 0;
+    height: 100%;
+  }
+}
+
+/* Desktop enhancements */
+@media (min-width: 992px) {
+  sensor-card {
+    transition: 
+      transform 200ms ease,
+      box-shadow 200ms ease,
+      opacity 200ms ease;
+  }
+  
+  sensor-card:hover .sensor-temp {
+    color: var(--color-primary, #4a9eff);
+  }
+}

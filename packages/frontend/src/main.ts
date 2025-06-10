@@ -1,9 +1,10 @@
 import { WebSocketManager } from "./managers/WebSocketManager.js";
-import { SensorCard } from "./components/SensorCard.js";
+import { SensorCard } from "./components/SensorCard/SensorCard.js";
 import { SensorChart } from "./components/chart/SensorChart.js";
 import { Utils } from "./utils/Utils.js";
 import { DeviceHelper } from "./utils/device/DeviceHelper.js";
-import { SidebarManager } from "./utils/SidebarManager.js";
+import { Sidebar } from "./components/Sidebar/Sidebar.js";
+import "./styles/app.css";
 
 import type {
   ServerMessage,
@@ -37,18 +38,20 @@ class RuuviApp {
 
   private isAdmin = false;
   private adminToken: string | null = null;
-  private sidebarManager: SidebarManager;
+  private sidebar: Sidebar;
   private debouncedChartResize: (...args: any[]) => void;
 
   constructor() {
     // Apply device-specific fixes before initializing components
     DeviceHelper.applyAllFixes();
     
-    // Create sidebar manager with CSS-first approach
-    this.sidebarManager = new SidebarManager({
+    // Create sidebar component with CSS-first approach
+    this.sidebar = new Sidebar({
       sidebarSelector: '.sidebar',
       toggleSelector: '.sidebar-toggle',
-      contentSelector: '.main-content'
+      contentSelector: '.main-content',
+      permanentMediaQuery: '(min-width: 768px) and (orientation: landscape)',
+      expandedClass: 'expanded'
     });
 
     // Single debounced chart resize function
@@ -59,7 +62,7 @@ class RuuviApp {
     }, DeviceHelper.isIOS ? 300 : 200); // Longer debounce for iOS
 
     this.initializeWebSocket();
-    this.setupSidebarManager();
+    this.setupSidebarEvents();
     this.setupControls();
     this.setupCharts();
     this.setupPWA();
@@ -82,10 +85,13 @@ class RuuviApp {
   }
 
   private updateConnectionStatus(status: string): void {
-    const statusElement = document.getElementById("status");
+    const statusElement = document.getElementById("status-indicator");
 
     if (statusElement) {
-      statusElement.textContent = status === "connected" ? "real time" : status;
+      statusElement.textContent = status === "connected" ? "Connected" : status;
+      
+      // Update status class for styling
+      statusElement.className = `status status-${status}`;
     }
   }
 
@@ -342,7 +348,7 @@ class RuuviApp {
 
     if (this.latestReadings.size === 0) {
       container.innerHTML =
-        '<div style="color: #666; text-align: center; padding: 20px;">No sensor data</div>';
+        '<div style="color: var(--color-text-light); text-align: center; padding: 12px;">No sensor data</div>';
       return;
     }
 
@@ -383,7 +389,7 @@ class RuuviApp {
     DeviceHelper.fixAllTouchEvents(container);
   }
 
-  private setupSidebarManager(): void {
+  private setupSidebarEvents(): void {
     // Listen for sidebar events that might affect layout
     document.addEventListener('sidebar-expanded', () => {
       // Resize the chart when sidebar expands
@@ -401,6 +407,14 @@ class RuuviApp {
       // Delay resize slightly to allow orientation to complete
       setTimeout(this.debouncedChartResize, DeviceHelper.isIOS ? 300 : 150);
     });
+    
+    // Handle toggle button click event
+    const toggleButton = document.querySelector('.sidebar-toggle');
+    if (toggleButton) {
+      toggleButton.addEventListener('click', () => {
+        this.sidebar.toggle();
+      });
+    }
   }
 
   private setupCharts(): void {
@@ -444,7 +458,7 @@ class RuuviApp {
       .matchMedia("(display-mode: standalone)")
       .addEventListener("change", () => {
         // Refresh sidebar when switching to/from standalone mode
-        this.sidebarManager.refresh();
+        this.sidebar.refresh();
         // Ensure chart is properly sized in standalone mode
         this.debouncedChartResize();
       });

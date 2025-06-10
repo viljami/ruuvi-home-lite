@@ -17,11 +17,10 @@
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
     <link rel="apple-touch-icon" href="favicon.svg" />
-    <link rel="stylesheet" href="src/styles/main.css" />
-    <!-- Legacy styles removed in favor of modular CSS -->
+    <link rel="stylesheet" href="src/styles/app.css" />
+    <!-- No embedded styles - all moved to component-based CSS files -->
     <style>
-          /* Only keeping minimal styles needed for initial render */
-      /* Only keeping minimal styles needed for initial render */
+      /* Only critical styles needed before JS loads */
       * {
         margin: 0;
         padding: 0;
@@ -747,9 +746,15 @@
     </div>
     <div class="main-content">
       <div class="chart-container">
+        <div class="chart-controls">
+          <button id="clear-selection-btn" class="btn btn-secondary">Clear</button>
+        </div>
         <canvas id="chart"></canvas>
-        <div class="status" id="status">Connecting...</div>
+        <div class="chart-status">
+          <span id="status-indicator"></span>
+        </div>
       </div>
+    </div>
       <div
         class="sidebar"
         role="complementary"

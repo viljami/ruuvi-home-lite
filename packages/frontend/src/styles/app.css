@@ -1,0 +1,321 @@
+/**
+ * Ruuvi Home Lite - App Layout Styles
+ *
+ * This file defines the main application layout and structure.
+ * It coordinates how components fit together and defines the overall
+ * grid system and responsive behavior at the application level.
+ */
+
+/* ======= Root Variables ======= */
+:root {
+  /* Layout dimensions */
+  --header-height: 60px;
+  --footer-height: 40px;
+  
+  /* Colors */
+  --color-primary: #4a9eff;
+  --color-secondary: #ff6b6b;
+  --color-success: #4ecdc4;
+  --color-warning: #ff9f40;
+  --color-danger: #ff6b6b;
+  
+  --color-background: #ffffff;
+  --color-background-alt: #f8f9fa;
+  --color-text: #212529;
+  --color-text-light: #6c757d;
+  --color-border: #dee2e6;
+  
+  /* Z-index layers */
+  --z-index-base: 1;
+  --z-index-sidebar: 100;
+  --z-index-header: 90;
+  --z-index-modal: 1000;
+  
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+}
+
+/* ======= CSS Reset & Base Styles ======= */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, 
+               "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--color-text);
+  background-color: var(--color-background);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Apply safe area insets for notched devices */
+.ios-device body {
+  padding-top: env(safe-area-inset-top, 0);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  padding-left: env(safe-area-inset-left, 0);
+  padding-right: env(safe-area-inset-right, 0);
+}
+
+/* ======= App Layout Grid ======= */
+body {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto 1fr auto;
+  grid-template-areas:
+    "header"
+    "main"
+    "footer";
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Header */
+.header {
+  grid-area: header;
+  height: var(--header-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-md);
+  background-color: var(--color-background);
+  border-bottom: 1px solid var(--color-border);
+  z-index: var(--z-index-header);
+}
+
+.header-title {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.header-controls {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+/* Main content */
+.main-content {
+  grid-area: main;
+  overflow-y: auto;
+  padding: var(--space-md);
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Footer */
+.footer {
+  grid-area: footer;
+  height: var(--footer-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-md);
+  border-top: 1px solid var(--color-border);
+  font-size: 14px;
+  color: var(--color-text-light);
+}
+
+/* ======= Button Styles ======= */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+  cursor: pointer;
+  transition: 
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  border: 1px solid transparent;
+  min-height: 36px;
+}
+
+.btn-primary {
+  background-color: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+.btn-secondary {
+  background-color: transparent;
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.btn.active {
+  background-color: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+/* ======= Status Indicator ======= */
+.status {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  color: var(--color-text-light);
+}
+
+.status::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  background-color: var(--color-success);
+}
+
+.status.status-disconnected::before {
+  background-color: var(--color-danger);
+}
+
+.status.status-reconnecting::before {
+  background-color: var(--color-warning);
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.5; }
+  50% { opacity: 1; }
+  100% { opacity: 0.5; }
+}
+
+/* ======= Admin Button ======= */
+#admin-btn {
+  background-color: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  opacity: 0.7;
+  transition: all 250ms ease;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#admin-btn.active {
+  background-color: var(--color-secondary);
+  border-color: var(--color-secondary);
+  opacity: 1;
+  box-shadow: 0 0 5px rgba(255, 107, 107, 0.5);
+}
+
+/* ======= Mobile Layout (default) ======= */
+/* Layout adjustments already covered by component-specific CSS */
+
+/* ======= Tablet Layout ======= */
+@media (min-width: 768px) and (max-width: 991px) {
+  /* Landscape - sidebar on right */
+  @media (orientation: landscape) {
+    body {
+      grid-template-columns: 1fr auto;
+      grid-template-areas:
+        "header header"
+        "main sidebar"
+        "footer footer";
+    }
+    
+    .main-content {
+      padding: var(--space-lg);
+    }
+  }
+  
+  /* Portrait - standard mobile layout */
+  @media (orientation: portrait) {
+    .main-content {
+      padding: var(--space-lg);
+    }
+  }
+}
+
+/* ======= Desktop Layout ======= */
+@media (min-width: 992px) {
+  body {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "header header"
+      "main sidebar"
+      "footer footer";
+  }
+  
+  .main-content {
+    padding: var(--space-xl);
+  }
+  
+  .header {
+    padding: 0 var(--space-xl);
+  }
+  
+  .footer {
+    padding: 0 var(--space-xl);
+  }
+}
+
+/* ======= Large Desktop Layout ======= */
+@media (min-width: 1400px) {
+  .main-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+  }
+}
+
+/* ======= Dark Mode Support ======= */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: #121212;
+    --color-background-alt: #1e1e1e;
+    --color-text: #e0e0e0;
+    --color-text-light: #a0a0a0;
+    --color-border: #2c2c2c;
+  }
+}
+
+/* ======= PWA Optimizations ======= */
+@media (display-mode: standalone) {
+  body {
+    /* Ensure full height in PWA mode */
+    height: 100vh;
+    height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  }
+  
+  /* Adjust header for notched devices */
+  .header {
+    padding-top: env(safe-area-inset-top);
+    height: calc(var(--header-height) + env(safe-area-inset-top));
+  }
+  
+  /* Adjust footer for home indicator */
+  .footer {
+    padding-bottom: env(safe-area-inset-bottom);
+    height: calc(var(--footer-height) + env(safe-area-inset-bottom));
+  }
+}
+
+/* ======= Accessibility ======= */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
