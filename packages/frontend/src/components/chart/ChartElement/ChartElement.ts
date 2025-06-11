@@ -100,7 +100,7 @@ export class ChartElement extends HTMLElement {
 
     // Set up event listeners
     this.setupEventListeners();
-    
+
     // Make sure clear button is properly initialized
     this.updateClearButtonVisibility();
   }
@@ -308,7 +308,7 @@ export class ChartElement extends HTMLElement {
       this.clearButton = document.getElementById(
         "clear-selection-btn",
       ) as HTMLButtonElement;
-      
+
       if (!this.clearButton) return;
     }
 
@@ -931,7 +931,7 @@ export class ChartElement extends HTMLElement {
         padding.top + humidityGridHeight * (gridLines.horizontal - 2);
       const humidityLines = Math.min(3, gridLines.horizontal);
 
-      for (let i = 0; i <= humidityLines; i++) {
+      for (let i = 0; i < humidityLines; i++) {
         const y = humidityPaddingTop + i * humidityGridHeight;
         const value =
           this.humidityBounds.maxY -
