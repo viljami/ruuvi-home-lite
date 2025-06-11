@@ -5,6 +5,8 @@
  * focusing on minimal, compact presentation.
  */
 
+@import "../../styles/variables.css";
+
 /* ======= SensorCard Base Styles ======= */
 sensor-card {
   display: flex;
@@ -65,7 +67,9 @@ sensor-card:hover::before {
 
 .sensor-humidity {
   font-size: var(--font-size-sm);
-  color: var(--color-humidity); /* More muted gold that's less distracting but still accessible */
+  color: var(
+    --color-humidity
+  ); /* More muted gold that's less distracting but still accessible */
   flex-shrink: 0;
   opacity: var(--opacity-high); /* Slightly dimmer to be less prominent */
 }
@@ -79,7 +83,9 @@ sensor-card:hover::before {
   flex-grow: 1;
   flex-basis: 60%;
   min-width: 0; /* Required for text-overflow to work */
-  opacity: var(--opacity-high); /* Slightly dimmer for better contrast with values */
+  opacity: var(
+    --opacity-high
+  ); /* Slightly dimmer for better contrast with values */
 }
 
 .sensor-age {

@@ -6,6 +6,8 @@
  * Desktop: Fixed sidebar
  */
 
+@import "../../../styles/variables.css";
+
 /* ======= Base Styles ======= */
 sidebar-element {
   /* Core layout */
@@ -26,7 +28,8 @@ sidebar-element {
   background-color: transparent;
 
   /* Transitions */
-  transition: transform var(--transition-slow, 280ms) cubic-bezier(0.19, 1, 0.22, 1);
+  transition: transform var(--transition-slow, 280ms)
+    cubic-bezier(0.19, 1, 0.22, 1);
 
   /* z-index for stacking context */
   z-index: var(--z-index-sidebar, 100);
@@ -117,13 +120,20 @@ sidebar-element > *:last-child {
     max-width: var(--sidebar-width, 260px);
     padding-top: var(--header-height, 60px);
     background-color: var(--color-background, #ffffff);
-    box-shadow: var(--shadow-medium, -5px 0 15px rgba(0, 0, 0, 0.15)); /* Enhanced shadow for better visual separation */
-    z-index: var(--z-index-sidebar, 100); /* Ensure sidebar appears above overlay */
+    box-shadow: var(
+      --shadow-medium,
+      -5px 0 15px rgba(0, 0, 0, 0.15)
+    ); /* Enhanced shadow for better visual separation */
+    z-index: var(
+      --z-index-sidebar,
+      100
+    ); /* Ensure sidebar appears above overlay */
   }
 
   sidebar-element.expanded {
     transform: translateX(0);
-    transition: transform var(--transition-slow, 280ms) cubic-bezier(0.175, 0.885, 0.32, 1.1); /* Slightly bouncy effect */
+    transition: transform var(--transition-slow, 280ms)
+      cubic-bezier(0.175, 0.885, 0.32, 1.1); /* Slightly bouncy effect */
   }
 }
 

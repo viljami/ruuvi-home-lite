@@ -6,6 +6,8 @@
  * prioritize chart visibility.
  */
 
+@import "../../styles/variables.css";
+
 /* ======= Sidebar Base Styles ======= */
 .sidebar {
   display: flex;
@@ -209,7 +211,9 @@
       grid-area: sidebar;
       margin-left: var(--space-md);
       height: 100%; /* Full height */
-      max-height: calc(100vh - var(--header-height) - var(--footer-height)); /* Account for header and footer */
+      max-height: calc(
+        100vh - var(--header-height) - var(--footer-height)
+      ); /* Account for header and footer */
     }
 
     .sidebar-toggle {
@@ -244,7 +248,9 @@
     grid-area: sidebar;
     margin-left: var(--space-md);
     height: 100%; /* Full height */
-    max-height: calc(100vh - var(--header-height) - var(--footer-height)); /* Account for header and footer */
+    max-height: calc(
+      100vh - var(--header-height) - var(--footer-height)
+    ); /* Account for header and footer */
   }
 
   .sidebar-toggle {

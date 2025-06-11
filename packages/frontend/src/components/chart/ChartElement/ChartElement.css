@@ -4,13 +4,16 @@
  * Consolidated styles for chart components with responsive design.
  */
 
+@import "../../../styles/variables.css";
+
 /* ======= Chart Container ======= */
 chart-element,
 sensor-chart {
   width: 100%;
   height: 100%;
   background-color: var(--color-background, #ffffff);
-  padding: var(--space-md, 16px) var(--space-sm, 8px) var(--space-sm, 8px) var(--space-sm, 8px);
+  padding: var(--space-md, 16px) var(--space-sm, 8px) var(--space-sm, 8px)
+    var(--space-sm, 8px);
   display: flex;
   flex-direction: column;
   position: relative;

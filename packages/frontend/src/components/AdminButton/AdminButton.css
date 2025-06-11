@@ -4,6 +4,8 @@
  * Component-specific styling for the admin settings button.
  */
 
+@import "../../styles/variables.css";
+
 .admin-button {
   /* Base styling */
   display: flex;
