@@ -9,20 +9,20 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: var(--touch-target-size-sm);
+  height: var(--touch-target-size-sm);
   background-color: transparent;
-  color: var(--color-text, #212529);
-  opacity: 0.7;
-  border-radius: 4px;
+  color: var(--color-text);
+  opacity: var(--opacity-high);
+  border-radius: var(--border-radius-md);
   cursor: pointer;
   padding: 0;
 
   /* Transitions */
   transition:
-    background-color 200ms ease,
-    opacity 200ms ease,
-    border-color 200ms ease;
+    background-color var(--transition-base),
+    opacity var(--transition-base),
+    border-color var(--transition-base);
 
   /* Remove tap highlight on mobile */
   -webkit-tap-highlight-color: transparent;
@@ -31,32 +31,32 @@
 
 /* Active state (when authenticated as admin) */
 .admin-button.active {
-  background-color: var(--color-secondary, #ff6b6b);
+  background-color: var(--color-secondary);
   opacity: 1;
-  border-color: rgba(255, 107, 107, 0.3);
+  border-color: var(--color-secondary-border);
 }
 
 /* Hover state (desktop only) */
 @media (hover: hover) {
   .admin-button:hover:not(:active) {
-    opacity: 0.9;
+    opacity: var(--opacity-high);
   }
 }
 
 /* Active/pressed state */
 .admin-button:active {
-  opacity: 0.85;
+  opacity: var(--opacity-medium);
 }
 
 /* Touch feedback */
 .admin-button.touch-active {
-  opacity: 0.85;
+  opacity: var(--opacity-medium);
 }
 
 /* Accessibility - focus state */
 .admin-button:focus-visible {
-  outline: 2px solid var(--color-primary, #4a9eff);
-  outline-offset: 2px;
+  outline: var(--border-width-md) solid var(--color-primary);
+  outline-offset: var(--border-width-xs);
 }
 
 /* Reduced motion preference */

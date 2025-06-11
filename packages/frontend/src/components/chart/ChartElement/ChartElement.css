@@ -10,119 +10,119 @@ sensor-chart {
   width: 100%;
   height: 100%;
   background-color: var(--color-background, #ffffff);
-  padding: 16px 8px 8px 8px;
+  padding: var(--space-md, 16px) var(--space-sm, 8px) var(--space-sm, 8px) var(--space-sm, 8px);
   display: flex;
   flex-direction: column;
   position: relative;
-  border-radius: 6px;
+  border-radius: var(--border-radius-md, 6px);
 }
 
 /* Canvas sizing with proper aspect ratio */
 #chart {
   width: 100%;
   height: 100%;
-  margin: 12px 0 6px 0;
+  margin: var(--space-sm, 12px) 0 var(--space-xs, 6px) 0;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
-  border-radius: 4px;
+  border-radius: var(--border-radius-md, 4px);
 }
 
 /* Chart controls container */
 .chart-controls {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 4px;
+  gap: var(--space-xs, 6px);
+  margin-bottom: var(--space-xs, 4px);
   align-items: center;
   justify-content: flex-end;
   position: relative;
   z-index: 10;
-  opacity: 0.75;
-  transition: opacity 200ms ease;
-  padding: 4px 2px;
+  opacity: var(--opacity-high, 0.75);
+  transition: opacity var(--transition-base, 200ms) ease;
+  padding: var(--space-xs, 4px) var(--space-xxs, 2px);
 }
 
 /* Active sensor legend - added for visual consistency with sensor cards */
 .active-sensor-legend {
   position: absolute;
-  top: 8px;
-  left: 10px;
-  font-size: 11px;
+  top: var(--space-sm, 8px);
+  left: var(--space-sm, 10px);
+  font-size: var(--font-size-xs, 11px);
   color: var(--color-text-light);
   opacity: 0;
-  transition: opacity 200ms ease;
+  transition: opacity var(--transition-base, 200ms) ease;
   pointer-events: none;
 }
 
 .active-sensor-legend.visible {
-  opacity: 0.7;
+  opacity: var(--opacity-high, 0.7);
 }
 
 .chart-controls:hover {
-  opacity: 0.95;
+  opacity: var(--opacity-high, 0.95);
 }
 
 /* Time range buttons - subtle styling to let chart be the focus */
 .time-range-controls {
   display: flex;
   flex-wrap: wrap;
-  gap: 3px;
-  opacity: 0.7;
+  gap: var(--space-xxs, 3px);
+  opacity: var(--opacity-high, 0.7);
 }
 
 .time-range-controls:hover {
-  opacity: 0.9;
+  opacity: var(--opacity-high, 0.9);
 }
 
 .time-range-controls .btn {
   min-width: 40px;
-  padding: 4px 8px;
-  font-size: 13px;
+  padding: var(--space-xs, 4px) var(--space-sm, 8px);
+  font-size: var(--font-size-sm, 13px);
   border: none;
-  background-color: rgba(0, 0, 0, 0.02);
+  background-color: var(--color-button-subtle, rgba(0, 0, 0, 0.02));
   color: var(--color-text-light, #6c757d);
-  border-radius: 3px;
+  border-radius: var(--border-radius-sm, 3px);
   font-weight: normal;
   box-shadow: none;
-  opacity: 0.8;
+  opacity: var(--opacity-high, 0.8);
 }
 
 .time-range-controls .btn:hover {
-  background-color: rgba(0, 0, 0, 0.04);
+  background-color: var(--color-button-hover, rgba(0, 0, 0, 0.04));
   opacity: 1;
 }
 
 .time-range-controls .btn.active {
-  background-color: rgba(74, 158, 255, 0.08);
+  background-color: var(--color-primary-faint, rgba(74, 158, 255, 0.08));
   color: var(--color-primary, #4a9eff);
-  opacity: 0.9;
-  border-bottom: 1px solid rgba(74, 158, 255, 0.3);
+  opacity: var(--opacity-high, 0.9);
+  border-bottom: 1px solid var(--color-primary-border, rgba(74, 158, 255, 0.3));
   font-weight: normal;
 }
 
 .time-range-controls .btn.active:hover {
-  background-color: rgba(74, 158, 255, 0.12);
+  background-color: var(--color-primary-lighter, rgba(74, 158, 255, 0.12));
   opacity: 1;
 }
 
 /* Clear selection button */
 #clear-selection-btn {
-  font-size: 13px;
-  padding: 4px 8px;
-  background-color: rgba(74, 158, 255, 0.08);
+  font-size: var(--font-size-sm, 13px);
+  padding: var(--space-xs, 4px) var(--space-sm, 8px);
+  background-color: var(--color-primary-faint, rgba(74, 158, 255, 0.08));
   color: var(--color-text-light, #6c757d);
   border: none;
-  border-radius: 3px;
+  border-radius: var(--border-radius-sm, 3px);
   cursor: pointer;
   display: none; /* Hidden by default until sensors are selected */
   position: relative;
   z-index: 15;
-  opacity: 0.8;
-  margin-left: 4px;
+  opacity: var(--opacity-high, 0.8);
+  margin-left: var(--space-xs, 4px);
 }
 
 #clear-selection-btn:hover {
-  background-color: rgba(74, 158, 255, 0.15);
+  background-color: var(--color-primary-light, rgba(74, 158, 255, 0.15));
   color: var(--color-primary, #4a9eff);
   opacity: 1;
 }
@@ -133,11 +133,11 @@ sensor-chart {
 
 /* Chart status info */
 .chart-status {
-  font-size: 12px;
+  font-size: var(--font-size-xs, 12px);
   color: var(--color-text-light, #6c757d);
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: var(--space-sm, 10px);
+  right: var(--space-sm, 10px);
   text-align: right;
   z-index: 25;
   pointer-events: none;
@@ -146,21 +146,21 @@ sensor-chart {
 .status {
   display: inline-flex;
   align-items: center;
-  font-size: 12px;
-  opacity: 0.9;
+  font-size: var(--font-size-xs, 12px);
+  opacity: var(--opacity-high, 0.9);
   color: var(--color-primary, #4a9eff);
-  padding: 2px 6px;
-  border-radius: 3px;
+  padding: var(--space-xxs, 2px) var(--space-xs, 6px);
+  border-radius: var(--border-radius-sm, 3px);
   pointer-events: auto;
 }
 
 .status::before {
   content: "";
   display: inline-block;
-  width: 8px;
-  height: 8px;
+  width: var(--space-sm, 8px);
+  height: var(--space-sm, 8px);
   border-radius: 50%;
-  margin-right: 6px;
+  margin-right: var(--space-xs, 6px);
 }
 
 .status-connected::before {
@@ -169,7 +169,7 @@ sensor-chart {
 
 .status-disconnected::before {
   color: var(--color-danger, #ff6b6b);
-  opacity: 0.9;
+  opacity: var(--opacity-high, 0.9);
 }
 
 .status-reconnecting::before,
@@ -186,16 +186,16 @@ sensor-chart {
 /* Active sensor highlight effect */
 .sensor-highlight {
   position: absolute;
-  border-radius: 4px;
+  border-radius: var(--border-radius-md, 4px);
   pointer-events: none;
   z-index: 5;
-  background-color: rgba(74, 158, 255, 0.05);
-  border: 1px solid rgba(74, 158, 255, 0.2);
+  background-color: var(--color-primary-faint, rgba(74, 158, 255, 0.05));
+  border: 1px solid var(--color-primary-border, rgba(74, 158, 255, 0.2));
 }
 
 .status-reconnecting::before {
   background-color: var(--color-warning, #ff9f40);
-  opacity: 0.9;
+  opacity: var(--opacity-high, 0.9);
 }
 
 .status-connecting::before {
@@ -209,8 +209,8 @@ sensor-chart {
 .no-sensors-message {
   color: var(--color-text-light, #6c757d);
   text-align: center;
-  padding: 20px;
-  font-size: 14px;
+  padding: var(--space-lg, 20px);
+  font-size: var(--font-size-sm, 14px);
 }
 
 /* ======= Responsive Adjustments ======= */
@@ -219,19 +219,19 @@ sensor-chart {
 @media (max-width: 359px) {
   chart-element,
   sensor-chart {
-    padding: 6px 4px;
+    padding: var(--space-xs, 6px) var(--space-xs, 4px);
     box-shadow: none;
   }
 
   .time-range-controls .btn {
     min-width: 36px;
-    padding: 3px 6px;
-    font-size: 12px;
+    padding: var(--space-xxs, 3px) var(--space-xs, 6px);
+    font-size: var(--font-size-xs, 12px);
   }
 
   .chart-controls {
-    gap: 5px;
-    margin-bottom: 4px;
+    gap: var(--space-xs, 5px);
+    margin-bottom: var(--space-xs, 4px);
   }
 }
 
@@ -239,7 +239,7 @@ sensor-chart {
 @media (min-width: 768px) and (max-width: 991px) {
   chart-element,
   sensor-chart {
-    padding: 12px 10px;
+    padding: var(--space-sm, 12px) var(--space-sm, 10px);
   }
 
   /* Landscape - adjust for sidebar */
@@ -255,12 +255,12 @@ sensor-chart {
 @media (min-width: 992px) {
   chart-element,
   sensor-chart {
-    padding: 14px 12px;
+    padding: var(--space-md, 14px) var(--space-sm, 12px);
     margin-right: 0; /* No margin on right to accommodate sidebar */
   }
 
   .chart-controls {
-    gap: 12px;
+    gap: var(--space-sm, 12px);
   }
 }
 
@@ -268,8 +268,8 @@ sensor-chart {
 @media (min-width: 1200px) {
   chart-element,
   sensor-chart {
-    padding: 16px 14px;
-    border-radius: 8px;
+    padding: var(--space-md, 16px) var(--space-md, 14px);
+    border-radius: var(--border-radius-lg, 8px);
   }
 }
 

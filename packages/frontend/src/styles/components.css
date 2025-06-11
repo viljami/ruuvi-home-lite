@@ -16,7 +16,7 @@
   justify-content: center;
   min-height: var(--touch-target-size);
   padding: var(--space-sm) var(--space-md);
-  border-radius: 4px;
+  border-radius: var(--border-radius-md, 4px);
   font-size: var(--font-size-sm);
   text-align: center;
   cursor: pointer;
@@ -71,15 +71,15 @@
 
 /* Button states */
 .btn:hover:not(:disabled) {
-  opacity: 0.95;
+  opacity: var(--opacity-high, 0.95);
 }
 
 .btn:active:not(:disabled) {
-  opacity: 0.9;
+  opacity: var(--opacity-high, 0.9);
 }
 
 .btn:disabled {
-  opacity: 0.5;
+  opacity: var(--opacity-medium, 0.5);
   cursor: not-allowed;
 }
 
@@ -91,7 +91,7 @@
 
 /* Touch feedback for mobile */
 .touch-active {
-  opacity: var(--touch-feedback-opacity) !important;
+  opacity: var(--touch-feedback-opacity, var(--opacity-high, 0.7)) !important;
 }
 
 /* Time range selector buttons */
@@ -101,7 +101,7 @@
   gap: var(--space-xs);
   padding-left: var(--space-xs);
   flex-grow: 1;
-  max-width: calc(100% - 120px);
+  max-width: calc(100% - var(--sidebar-width-compact, 120px));
 }
 
 .time-range-controls .btn {
@@ -123,8 +123,8 @@
   padding: var(--space-md);
   margin-bottom: var(--space-sm);
   background-color: var(--color-background);
-  border-radius: 8px;
-  border-left: 4px solid var(--color-primary); /* Default color, will be overridden */
+  border-radius: var(--border-radius-lg, 8px);
+  border-left: var(--space-xs, 4px) solid var(--color-primary); /* Default color, will be overridden */
   transition:
     background-color var(--transition-fast),
     border-color var(--transition-fast),
@@ -138,8 +138,8 @@
 }
 
 .sensor-item:hover {
-  border-color: rgba(0, 0, 0, 0.15);
-  background-color: rgba(74, 158, 255, 0.03);
+  border-color: var(--color-border-light, rgba(0, 0, 0, 0.15));
+  background-color: var(--color-primary-faint, rgba(74, 158, 255, 0.03));
 }
 
 .sensor-left {
@@ -155,7 +155,7 @@
 
 .sensor-humidity {
   font-size: var(--font-size-lg);
-  color: var(--color-text-light);
+  color: var(--color-humidity, var(--color-text-light));
 }
 
 .sensor-mac {
@@ -171,13 +171,13 @@
 
 /* Active sensor (selected in chart) */
 .sensor-active {
-  background-color: rgba(74, 158, 255, 0.05);
-  border: 1px solid rgba(74, 158, 255, 0.2);
+  background-color: var(--color-primary-faint, rgba(74, 158, 255, 0.05));
+  border: var(--border-width-xs, 1px) solid var(--color-primary-border, rgba(74, 158, 255, 0.2));
 }
 
 /* Offline sensor */
 .sensor-offline {
-  opacity: 0.7;
+  opacity: var(--opacity-high, 0.7);
 }
 
 .sensor-offline .sensor-temp,
@@ -197,9 +197,9 @@
 
 .sensor-mac[style*="cursor: pointer"]::after {
   content: "✏️";
-  font-size: 10px;
+  font-size: var(--font-size-xxs, 10px);
   margin-left: var(--space-xs);
-  opacity: 0.6;
+  opacity: var(--opacity-medium, 0.6);
 }
 
 /* ======= Status Indicators ======= */
@@ -213,8 +213,8 @@
 .status-indicator::before {
   content: "";
   display: inline-block;
-  width: 8px;
-  height: 8px;
+  width: var(--space-sm, 8px);
+  height: var(--space-sm, 8px);
   border-radius: 50%;
   margin-right: var(--space-xs);
 }
@@ -234,13 +234,13 @@
 
 @keyframes pulse {
   0% {
-    opacity: 0.7;
+    opacity: var(--opacity-high, 0.7);
   }
   50% {
-    opacity: 0.9;
+    opacity: var(--opacity-high, 0.9);
   }
   100% {
-    opacity: 0.7;
+    opacity: var(--opacity-high, 0.7);
   }
 }
 
@@ -249,8 +249,8 @@
   display: inline-block;
   width: 24px;
   height: 24px;
-  border: 2px solid rgba(74, 158, 255, 0.3);
-  border-radius: 4px;
+  border: var(--border-width-xs, 2px) solid var(--color-primary-border, rgba(74, 158, 255, 0.3));
+  border-radius: var(--border-radius-md, 4px);
   border-top-color: var(--color-primary);
   animation: none;
 }
@@ -271,7 +271,7 @@
 #admin-btn {
   background-color: transparent;
   color: var(--color-text);
-  opacity: 0.7;
+  opacity: var(--opacity-high, 0.7);
   transition: all var(--transition-base);
   margin-right: var(--space-xs);
 }
@@ -308,7 +308,7 @@
 
   .time-range-controls .btn {
     padding: var(--space-xs) var(--space-xs);
-    min-width: 40px;
+    min-width: var(--touch-target-size-sm, 40px);
     font-size: calc(var(--font-size-sm) - 1px);
   }
 
@@ -330,7 +330,7 @@
   /* Grid layout for sensor cards on tablets */
   #latest-readings {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(var(--sidebar-width-compact, 280px), 1fr));
     gap: var(--space-sm);
   }
 

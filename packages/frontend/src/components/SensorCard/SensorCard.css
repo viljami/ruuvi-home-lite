@@ -9,12 +9,12 @@
 sensor-card {
   display: flex;
   align-items: center;
-  padding: 0 6px 2px 8px; /* Increased left padding for color indicator */
-  background-color: var(--color-background, #ffffff);
-  border-radius: 3px;
+  padding: 0 var(--space-xs) 2px 8px; /* Increased left padding for color indicator */
+  background-color: var(--color-background);
+  border-radius: var(--border-radius-sm);
   transition:
-    transform 150ms ease,
-    opacity 150ms ease;
+    transform var(--transition-fast) ease,
+    opacity var(--transition-fast) ease;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   width: 100%;
@@ -31,12 +31,12 @@ sensor-card::before {
   left: 0;
   top: 0;
   bottom: 0;
-  width: 3px;
-  background-color: var(--sensor-color, var(--color-primary, #4a9eff));
-  border-top-left-radius: 3px;
-  border-bottom-left-radius: 3px;
-  opacity: 0.7;
-  transition: opacity 150ms ease;
+  width: var(--border-width-lg);
+  background-color: var(--sensor-color, var(--color-primary));
+  border-top-left-radius: var(--border-radius-sm);
+  border-bottom-left-radius: var(--border-radius-sm);
+  opacity: var(--opacity-high);
+  transition: opacity var(--transition-fast) ease;
 }
 
 /* Brighten color indicator on hover */
@@ -49,7 +49,7 @@ sensor-card:hover::before {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-xs);
   width: 100%;
   white-space: nowrap;
   overflow: hidden;
@@ -57,34 +57,34 @@ sensor-card:hover::before {
 
 /* ======= Sensor Values ======= */
 .sensor-temp {
-  font-size: 14px;
-  color: var(--color-primary, #4a9eff);
+  font-size: var(--font-size-sm);
+  color: var(--color-primary);
   flex-shrink: 0;
-  transition: font-weight 150ms ease;
+  transition: font-weight var(--transition-fast) ease;
 }
 
 .sensor-humidity {
-  font-size: 14px;
-  color: #b4a149; /* More muted gold that's less distracting but still accessible */
+  font-size: var(--font-size-sm);
+  color: var(--color-humidity); /* More muted gold that's less distracting but still accessible */
   flex-shrink: 0;
-  opacity: 0.95; /* Slightly dimmer to be less prominent */
+  opacity: var(--opacity-high); /* Slightly dimmer to be less prominent */
 }
 
 .sensor-mac {
-  font-size: 14px;
-  color: var(--color-text-light, #6c757d);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-light);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   flex-grow: 1;
   flex-basis: 60%;
   min-width: 0; /* Required for text-overflow to work */
-  opacity: 0.95; /* Slightly dimmer for better contrast with values */
+  opacity: var(--opacity-high); /* Slightly dimmer for better contrast with values */
 }
 
 .sensor-age {
-  font-size: 12px;
-  color: var(--color-text-light, #6c757d);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-light);
   flex-shrink: 0;
   margin-left: auto;
 }
@@ -92,15 +92,15 @@ sensor-card:hover::before {
 /* ======= Card States ======= */
 /* Active state (selected in chart) */
 sensor-card.sensor-active {
-  background-color: rgba(74, 158, 255, 0.12);
-  border: 1px solid rgba(74, 158, 255, 0.3);
+  background-color: var(--color-primary-lighter);
+  border: var(--border-width-xs) solid var(--color-primary-border);
   transform: translateY(0);
   z-index: 5;
 }
 
 /* Make color indicator more prominent when active */
 sensor-card.sensor-active::before {
-  width: 4px;
+  width: var(--space-xs);
   opacity: 1;
 }
 
@@ -112,39 +112,39 @@ sensor-card.sensor-active::after {
   top: 0;
   bottom: 0;
   width: 0px;
-  background-color: var(--sensor-color, var(--color-primary, #4a9eff));
-  opacity: 0.7;
+  background-color: var(--sensor-color, var(--color-primary));
+  opacity: var(--opacity-high);
 }
 
 /* Offline state */
 sensor-card.sensor-offline {
-  opacity: 0.7;
+  opacity: var(--opacity-high);
 }
 
 /* Dim the color indicator for offline sensors */
 sensor-card.sensor-offline::before {
-  opacity: 0.4;
+  opacity: var(--opacity-medium);
 }
 
 sensor-card.sensor-offline .sensor-temp,
 sensor-card.sensor-offline .sensor-humidity,
 sensor-card.sensor-offline .sensor-mac {
-  color: var(--color-text-light, #6c757d);
-  opacity: 0.6;
+  color: var(--color-text-light);
+  opacity: var(--opacity-medium);
 }
 
 /* Hover state */
 @media (hover: hover) {
   sensor-card:hover:not(.sensor-active) {
     transform: translateY(0);
-    border-color: rgba(0, 0, 0, 0.1);
-    background-color: rgba(74, 158, 255, 0.03);
+    border-color: var(--color-border-light);
+    background-color: var(--color-primary-faint);
   }
 
   /* Special hover state for active cards */
   sensor-card.sensor-active:hover {
-    border-color: rgba(74, 158, 255, 0.5);
-    background-color: rgba(74, 158, 255, 0.15);
+    border-color: var(--color-primary-medium);
+    background-color: var(--color-primary-light);
   }
 
   /* Make text bolder in active cards */
@@ -157,12 +157,12 @@ sensor-card.sensor-offline .sensor-mac {
 /* Touch feedback */
 sensor-card.touch-active:not(.sensor-active) {
   transform: scale(1);
-  opacity: 0.9;
+  opacity: var(--opacity-high);
 }
 
 sensor-card.sensor-active.touch-active {
   transform: scale(1);
-  opacity: 0.95;
+  opacity: var(--opacity-high);
 }
 
 /* ======= Editable name in admin mode ======= */
@@ -171,36 +171,36 @@ sensor-card.sensor-active.touch-active {
   text-decoration: underline;
   text-decoration-style: dotted;
   text-decoration-thickness: 1px;
-  text-underline-offset: 2px;
+  text-underline-offset: var(--border-width-xs);
 }
 
 .sensor-mac[style*="cursor: pointer"]::after {
   content: "✏️";
-  font-size: 9px;
-  margin-left: 4px;
-  opacity: 0.7;
+  font-size: var(--font-size-xxs);
+  margin-left: var(--space-xs);
+  opacity: var(--opacity-high);
 }
 
 /* ======= Responsive Adjustments ======= */
 /* Compact mode for very small screens */
 @media (max-width: 360px) {
   sensor-card {
-    padding: 0 6px 0 7px;
+    padding: 0 var(--space-xs) 0 7px;
     /* Height remains fixed at 25px */
   }
 
   .sensor-left {
-    gap: 4px; /* Tighter spacing on small screens */
+    gap: var(--space-xs); /* Tighter spacing on small screens */
   }
 
   .sensor-temp,
   .sensor-humidity,
   .sensor-mac {
-    font-size: 12px;
+    font-size: var(--font-size-xs);
   }
 
   .sensor-age {
-    font-size: 10px;
+    font-size: var(--font-size-xxs);
   }
 }
 
@@ -216,16 +216,16 @@ sensor-card.sensor-active.touch-active {
 @media (min-width: 992px) {
   sensor-card {
     transition:
-      transform 200ms ease,
-      box-shadow 200ms ease,
-      opacity 200ms ease;
+      transform var(--transition-base) ease,
+      box-shadow var(--transition-base) ease,
+      opacity var(--transition-base) ease;
   }
 
   sensor-card:hover .sensor-temp {
-    color: var(--color-primary, #4a9eff);
+    color: var(--color-primary);
   }
 
   sensor-card:hover .sensor-humidity {
-    color: #c9aa42; /* Match the regular state */
+    color: var(--color-humidity); /* Match the regular state */
   }
 }

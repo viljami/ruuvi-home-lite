@@ -8,9 +8,12 @@
 
 :root {
   /*
-   * Responsive Breakpoints
-   * These define the screen width thresholds for different device classes
+   * =========================================
+   * LAYOUT & RESPONSIVE BREAKPOINTS
+   * =========================================
    */
+  
+  /* Device class breakpoints */
   --breakpoint-xs: 360px; /* Small phones */
   --breakpoint-sm: 480px; /* Large phones */
   --breakpoint-md: 768px; /* Tablets */
@@ -18,31 +21,18 @@
   --breakpoint-xl: 1200px; /* Large desktops */
   --breakpoint-xxl: 1440px; /* Extra large screens */
 
-  /*
-   * Feature breakpoints
-   * These are used for specific layout features rather than device classes
-   */
+  /* Feature-specific breakpoints */
   --breakpoint-sidebar-fixed: 992px; /* Width at which sidebar becomes permanently visible */
   --breakpoint-chart-extended: 1100px; /* Width at which chart gets more horizontal space */
   --breakpoint-sidebar-compact: 600px; /* Width at which sidebar becomes more compact */
 
-  /*
-   * Layout & Spacing
-   */
+  /* Layout dimensions */
   --sidebar-width: 300px;
   --sidebar-width-compact: 240px;
   --content-max-width: 1200px;
   --header-height: 60px;
   --footer-height: 40px;
-
-  /* Standard spacing units for consistent margins/padding */
-  --space-xs: 4px;
-  --space-sm: 8px;
-  --space-md: 16px;
-  --space-lg: 24px;
-  --space-xl: 32px;
-  --space-xxl: 48px;
-
+  
   /* Z-index layers */
   --z-index-base: 1;
   --z-index-sidebar: 100;
@@ -51,70 +41,158 @@
   --z-index-tooltip: 2000;
 
   /*
-   * Colors & Theming
+   * =========================================
+   * SPACING SYSTEM
+   * =========================================
    */
+  --space-xxs: 2px;  /* Extra extra small: tiny details, borders */
+  --space-xs: 4px;   /* Extra small: tight spacing, icons */
+  --space-sm: 8px;   /* Small: compact components, buttons */
+  --space-md: 16px;  /* Medium: standard spacing, main padding */
+  --space-lg: 24px;  /* Large: section spacing */
+  --space-xl: 32px;  /* Extra large: major section dividers */
+  --space-xxl: 48px; /* Extra extra large: page sections */
+
+  /*
+   * =========================================
+   * COLORS & THEMING
+   * =========================================
+   */
+  
+  /* Brand colors - core palette */
   --color-primary: #4a9eee;
   --color-secondary: #ff6b6b;
   --color-success: #4ecdc4;
   --color-warning: #ff9f40;
   --color-danger: #ff6b6b;
   --color-info: #b48eff;
-
-  --color-background: #ffffff;
-  --color-background-alt: rgba(248, 249, 250, 0.3);
-  --color-text: #212529;
-  --color-text-light: #6c757d;
-  --color-border: rgba(222, 226, 230, 0.4);
+  
+  /* Primary color variations */
+  --color-primary-light: rgba(74, 158, 255, 0.2);  /* Lighter shade for active states */
+  --color-primary-lighter: rgba(74, 158, 255, 0.12); /* Very light shade for backgrounds */
+  --color-primary-faint: rgba(74, 158, 255, 0.08);  /* Subtle hint of primary color */
+  --color-primary-border: rgba(74, 158, 255, 0.3);  /* Border color related to primary */
+  --color-primary-medium: rgba(74, 158, 255, 0.5);  /* Medium opacity primary for buttons */
+  
+  /* Secondary color variations */
+  --color-secondary-border: rgba(255, 107, 107, 0.3);
+  
+  /* UI surface colors */
+  --color-background: #ffffff;  /* Main background */
+  --color-background-alt: rgba(248, 249, 250, 0.3); /* Alternative background */
+  --color-border: rgba(222, 226, 230, 0.4); /* Default border color */
+  --color-border-light: rgba(0, 0, 0, 0.1); /* Lighter border */
+  --color-overlay: rgba(0, 0, 0, 0.3); /* Overlay for modals/sidebars */
+  
+  /* Text colors */
+  --color-text: #212529; /* Primary text color */
+  --color-text-light: #6c757d; /* Secondary text color */
+  --color-text-on-primary: white; /* Text on primary color backgrounds */
+  
+  /* Component-specific colors */
+  --color-scrollbar-thumb: rgba(0, 0, 0, 0.1);
+  --color-button-subtle: rgba(0, 0, 0, 0.02);
+  --color-button-hover: rgba(0, 0, 0, 0.04);
+  --color-humidity: #b4a149; /* Specific color for humidity values */
+  
+  /* Chart specific colors */
+  --chart-grid-color: rgba(0, 0, 0, 0.06);
+  --chart-label-color: #6c757d;
 
   /*
-   * Typography
+   * =========================================
+   * TYPOGRAPHY
+   * =========================================
    */
   --font-family-base:
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
     Arial, sans-serif;
   --font-family-mono: SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  --font-size-xs: 12px;
-  --font-size-sm: 14px;
-  --font-size-md: 16px;
-  --font-size-lg: 18px;
-  --font-size-xl: 24px;
+  /* Font sizes - scalable system */
+  --font-size-xxs: 10px; /* Extra extra small: microcopy, superscript */
+  --font-size-xs: 12px;  /* Extra small: secondary information */
+  --font-size-sm: 14px;  /* Small: UI components, compact text */
+  --font-size-md: 16px;  /* Medium: body text (default) */
+  --font-size-lg: 18px;  /* Large: small headings, emphasized text */
+  --font-size-xl: 24px;  /* Extra large: headings */
 
-  --line-height-base: 1.5;
-  --line-height-heading: 1.2;
-
-  /*
-   * Animations & Transitions
-   */
-  --transition-fast: 150ms ease;
-  --transition-base: 250ms ease;
-  --transition-slow: 400ms ease;
+  /* Line heights */
+  --line-height-base: 1.5;    /* Standard for body text */
+  --line-height-heading: 1.2; /* Tighter for headings */
 
   /*
-   * Device-specific adjustments
-   * These variables can be overridden with device-specific selectors
+   * =========================================
+   * UI ELEMENT STYLING
+   * =========================================
    */
-  --touch-target-size: 44px; /* Minimum touch target size (iOS HIG) */
-  --safe-area-inset-top: 0px; /* For notched devices */
+  
+  /* Border radiuses */
+  --border-radius-xs: 2px;  /* Extra small: subtle rounding */
+  --border-radius-sm: 3px;  /* Small: buttons, inputs */
+  --border-radius-md: 4px;  /* Medium: cards, panels */
+  --border-radius-lg: 8px;  /* Large: prominent elements */
+  
+  /* Border widths */
+  --border-width-xs: 1px;   /* Standard border */
+  --border-width-md: 2px;   /* Medium border, focus states */
+  --border-width-lg: 4px;   /* Thick border, highlights */
+  
+  /* Opacity levels */
+  --opacity-subtle: 0.3;    /* Subtle elements, disabled state */
+  --opacity-medium: 0.6;    /* Medium emphasis */
+  --opacity-high: 0.8;      /* High emphasis */
+  
+  /* Shadows */
+  --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.1);   /* Subtle elevation */
+  --shadow-medium: 0 2px 6px rgba(0, 0, 0, 0.15);  /* Medium elevation */
+  --shadow-high: 0 4px 12px rgba(0, 0, 0, 0.2);    /* High elevation */
+
+  /*
+   * =========================================
+   * ANIMATIONS & TRANSITIONS
+   * =========================================
+   */
+  --transition-fast: 150ms ease;  /* Quick interactions */
+  --transition-base: 250ms ease;  /* Standard transitions */
+  --transition-slow: 400ms ease;  /* Slower, more noticeable transitions */
+
+  /*
+   * =========================================
+   * DEVICE-SPECIFIC ADJUSTMENTS
+   * =========================================
+   */
+  --touch-target-size: 44px;     /* Minimum touch target size (iOS HIG) */
+  --touch-target-size-sm: 36px;  /* Smaller touch target for compact UI */
+  --safe-area-inset-top: 0px;    /* For notched devices */
   --safe-area-inset-bottom: 0px; /* For home indicator on newer iOS */
   --safe-area-inset-left: 0px;
   --safe-area-inset-right: 0px;
 
   /*
-   * Chart specific settings
+   * =========================================
+   * CHART SPECIFIC SETTINGS
+   * =========================================
    */
   --chart-height-mobile: 200px;
   --chart-height-tablet: 300px;
   --chart-height-desktop: 400px;
-  --chart-grid-color: rgba(0, 0, 0, 0.06);
-  --chart-label-color: #6c757d;
 }
+
+/* 
+ * =========================================
+ * DEVICE-SPECIFIC OVERRIDES
+ * =========================================
+ */
 
 /* iOS-specific adjustments */
 .ios-device {
-  /* Adjust for iOS quirks */
+  /* Touch feedback for iOS */
   --touch-feedback-opacity: 0.7; /* iOS needs stronger visual feedback */
   --button-tap-highlight: rgba(0, 0, 0, 0);
+  
+  /* Better tap behavior for iOS */
+  --webkit-tap-highlight-color: transparent;
 
   /* Safe area insets for notched devices (iPhone X and newer) */
   /* These will be set dynamically by JS but default values help with initial render */
@@ -126,28 +204,79 @@
 
 /* Android-specific adjustments */
 .android-device {
-  /* Adjust for Android quirks */
-  --touch-feedback-opacity: 0.5; /* Android has built-in feedback */
+  /* Android has different feedback needs */
+  --touch-feedback-opacity: 0.5; /* Android has built-in ripple feedback */
   --button-tap-highlight: transparent;
+  
+  /* Adjust font rendering for Android */
+  --webkit-font-smoothing: auto;
 }
 
 /* PWA mode specific adjustments */
 .pwa-mode {
-  /* Full-height app experience */
+  /* Optimized for installed app experience */
   --header-height: 50px; /* Slightly smaller header in PWA mode */
+  --footer-height: 36px; /* Compact footer in PWA mode */
+  
+  /* PWA specific colors */
+  --color-background: #fafafa; /* Slightly off-white for better contrast */
 }
 
-/* Dark mode support - to be expanded later */
+/* 
+ * =========================================
+ * DARK MODE
+ * =========================================
+ */
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-background: #121212;
+    /* Brand colors - slightly adjusted for dark mode */
+    --color-primary: #4a9eee;      /* Keep primary color recognizable */
+    --color-secondary: #ff6b6b;    /* Keep secondary color recognizable */
+    --color-success: #4ecdc4;      /* Keep success color recognizable */
+    --color-warning: #ff9f40;      /* Keep warning color recognizable */
+    --color-danger: #ff6b6b;       /* Keep danger color recognizable */
+    --color-info: #b48eff;         /* Keep info color recognizable */
+    
+    /* Primary color variations - adjusted for dark backgrounds */
+    --color-primary-light: rgba(74, 158, 255, 0.25);
+    --color-primary-lighter: rgba(74, 158, 255, 0.15);
+    --color-primary-faint: rgba(74, 158, 255, 0.1);
+    --color-primary-border: rgba(74, 158, 255, 0.35);
+    --color-primary-medium: rgba(74, 158, 255, 0.6);
+    
+    /* Secondary color variations */
+    --color-secondary-border: rgba(255, 107, 107, 0.35);
+    
+    /* UI surface colors */
+    --color-background: #121212;    /* Material dark background */
     --color-background-alt: rgba(30, 30, 30, 0.3);
-    --color-text: #e0e0e0;
-    --color-text-light: #a0a0a0;
     --color-border: rgba(44, 44, 44, 0.4);
-
-    /* Adjust chart colors for dark mode */
+    --color-border-light: rgba(255, 255, 255, 0.1);
+    --color-overlay: rgba(0, 0, 0, 0.5);
+    
+    /* Text colors */
+    --color-text: #e0e0e0;          /* Light text for dark backgrounds */
+    --color-text-light: #a0a0a0;    /* Secondary text */
+    --color-text-on-primary: #ffffff;
+    
+    /* Component-specific colors */
+    --color-scrollbar-thumb: rgba(255, 255, 255, 0.1);
+    --color-button-subtle: rgba(255, 255, 255, 0.05);
+    --color-button-hover: rgba(255, 255, 255, 0.1);
+    --color-humidity: #d9c36b;      /* Adjusted for dark mode */
+    
+    /* Chart specific colors */
     --chart-grid-color: rgba(255, 255, 255, 0.1);
     --chart-label-color: #a0a0a0;
+    
+    /* Shadows - subtler in dark mode */
+    --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-medium: 0 2px 6px rgba(0, 0, 0, 0.4);
+    --shadow-high: 0 4px 12px rgba(0, 0, 0, 0.5);
+  }
+  
+  /* iOS dark mode specific adjustments */
+  .ios-device {
+    --button-tap-highlight: rgba(255, 255, 255, 0.05);
   }
 }
