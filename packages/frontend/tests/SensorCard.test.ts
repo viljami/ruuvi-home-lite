@@ -331,12 +331,6 @@ describe("SensorCard", () => {
       expect(mockOnHover).toHaveBeenCalledWith(null);
     });
 
-    it("should call onHover when touched", () => {
-      const touchStartEvent = new Event("touchstart");
-      card.dispatchEvent(touchStartEvent);
-      expect(mockOnHover).toHaveBeenCalledWith("AA:BB:CC:DD:EE:FF");
-    });
-
     it("should call onEditName when admin clicks MAC", () => {
       const macElement = card.querySelector(".sensor-mac") as HTMLElement;
       const clickEvent = new Event("click");

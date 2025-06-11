@@ -71,7 +71,7 @@ export class SensorCard extends HTMLElement {
 
     // Apply classes for state management
     this.className = `${this.isOffline ? "sensor-offline" : ""} ${this.config.isActive ? "sensor-active" : ""}`;
-    this.style.setProperty('--sensor-color', this.sensorColor);
+    this.style.setProperty("--sensor-color", this.sensorColor);
     this.style.cursor = "pointer";
     // @ts-ignore webkit specific style
     this.style.webkitTapHighlightColor = "transparent"; // Prevent iOS default gray touch highlight
@@ -209,17 +209,14 @@ export class SensorCard extends HTMLElement {
       e.preventDefault(); // Prevent default to avoid delayed clicks
     }
 
-    this.config.onHover(this.config.reading.sensorMac);
     this.classList.add("touch-active");
   };
 
   private handleTouchEnd = (_e: TouchEvent): void => {
-    this.config.onHover(null);
     this.classList.remove("touch-active");
   };
 
   private handleTouchCancel = (): void => {
-    this.config.onHover(null);
     this.classList.remove("touch-active");
   };
 
@@ -251,8 +248,10 @@ export class SensorCard extends HTMLElement {
     });
 
     // Hover events for graph highlighting - only meaningful on non-touch devices
-    this.addEventListener("mouseenter", this.handleMouseEnter);
-    this.addEventListener("mouseleave", this.handleMouseLeave);
+    if (!this.isTouchDevice) {
+      this.addEventListener("mouseenter", this.handleMouseEnter);
+      this.addEventListener("mouseleave", this.handleMouseLeave);
+    }
 
     // Touch events for mobile
     this.addEventListener("touchstart", this.handleTouchStart, {
