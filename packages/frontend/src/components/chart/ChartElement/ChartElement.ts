@@ -7,6 +7,8 @@
 
 import type { TimeRange, AggregatedSensorData } from "../../../types/index.js";
 import { TimeFormatter } from "../../../utils/TimeFormatter.js";
+import { CssUtils } from "../../../utils/CssUtils.js";
+import { ThemeService } from "../../../services/ThemeService.js";
 import "./ChartElement.css";
 
 export interface ChartElementConfig {
@@ -41,6 +43,7 @@ export class ChartElement extends HTMLElement {
   private activeSensors = new Set<string>();
   private devicePixelRatio: number = 1;
   private isResizing: boolean = false;
+  private themeService: ThemeService = ThemeService.getInstance();
 
   // Chart bounds
   private temperatureBounds = { minY: 0, maxY: 25 };
@@ -103,6 +106,11 @@ export class ChartElement extends HTMLElement {
 
     // Make sure clear button is properly initialized
     this.updateClearButtonVisibility();
+    
+    // Subscribe to theme changes
+    this.themeService.subscribe(() => {
+      this.drawChart();
+    });
   }
 
   /**
@@ -793,14 +801,23 @@ export class ChartElement extends HTMLElement {
     const width = this.chartConfig.width;
     const height = this.chartConfig.height;
 
-    this.ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+    // Use theme-appropriate text color
+    const textColor = CssUtils.getCssVariableAsColor(
+      'color-text-light', 
+      this.themeService.isDarkMode() ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)'
+    );
+    this.ctx.fillStyle = textColor;
     this.ctx.font = "14px sans-serif";
     this.ctx.textAlign = "center";
     this.ctx.textBaseline = "middle";
     this.ctx.fillText("Waiting for sensor data...", width / 2, height / 2);
 
     // Add borders to ensure chart area is visible
-    this.ctx.strokeStyle = "rgba(0, 0, 0, 0.1)";
+    const borderColor = CssUtils.getCssVariableAsColor(
+      'color-border', 
+      this.themeService.isDarkMode() ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+    );
+    this.ctx.strokeStyle = borderColor;
     this.ctx.lineWidth = 1;
     this.ctx.strokeRect(
       this.chartConfig.padding.left,
@@ -826,7 +843,12 @@ export class ChartElement extends HTMLElement {
     // Ensure we have proper dimensions
     if (chartWidth <= 0 || chartHeight <= 0) return;
 
-    this.ctx.strokeStyle = "#333";
+    // Get grid color from CSS variables based on theme
+    const gridColor = CssUtils.getCssVariableAsColor(
+      'chart-grid-color',
+      this.themeService.isDarkMode() ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.07)'
+    );
+    this.ctx.strokeStyle = gridColor;
     this.ctx.lineWidth = 1;
     this.ctx.setLineDash([2, 2]);
 
@@ -881,7 +903,12 @@ export class ChartElement extends HTMLElement {
     if (chartWidth <= 0 || chartHeight <= 0) return;
 
     // Set label text size based on chart height
-    this.ctx.fillStyle = "#aaa";
+    // Get label color from CSS variables based on theme
+    const labelColor = CssUtils.getCssVariableAsColor(
+      'chart-label-color',
+      this.themeService.isDarkMode() ? '#a0a0a0' : '#666666'
+    );
+    this.ctx.fillStyle = labelColor;
     this.ctx.font = "12px monospace";
     this.ctx.textBaseline = "middle";
 
@@ -923,7 +950,7 @@ export class ChartElement extends HTMLElement {
       this.ctx.textAlign = "left";
       this.ctx.textBaseline = "middle";
       // Use same color as temperature labels for consistency
-      this.ctx.fillStyle = "#999";
+      this.ctx.fillStyle = labelColor;
 
       // Only show humidity labels for a subset of lines to avoid clutter
       const humidityGridHeight = chartHeight / gridLines.horizontal;
@@ -1379,6 +1406,9 @@ export class ChartElement extends HTMLElement {
         this.handleClearClick.call(this, e as unknown as MouseEvent);
       });
     }
+
+    // Unsubscribe from theme changes
+    this.themeService.destroy();
 
     // Clear references
     this.hoveredSensor = null;

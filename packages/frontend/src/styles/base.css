@@ -139,6 +139,7 @@ select,
 textarea {
   margin: 0;
   border-radius: 4px;
+  border: none;
 }
 
 button,
@@ -149,7 +150,8 @@ input[type="submit"] {
   padding: 0.375rem 0.75rem;
   background-color: #4a9eff;
   color: white;
-  border: 1px solid #4a9eff;
+  border: none;
+  border-width: 0px;
   transition:
     background-color 0.15s ease-in-out,
     border-color 0.15s ease-in-out;

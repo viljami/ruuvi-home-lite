@@ -8,6 +8,7 @@ import {
 } from "./components/index.js";
 import { DeviceHelper } from "./utils/device/DeviceHelper.js";
 import { AdminButton } from "./components/AdminButton/AdminButton.js";
+import { ThemeService } from "./services/ThemeService.js";
 
 import type {
   ServerMessage,
@@ -43,14 +44,17 @@ class RuuviApp {
   private sidebar: SidebarElement | null = null;
   private chartElement: ChartElement | null = null;
   private viewportManager: ViewportManager;
+  private themeService: ThemeService;
   public unsubscribeResize: (() => void) | null = null;
+  public unsubscribeTheme: (() => void) | null = null;
 
   constructor() {
     // Apply device-specific fixes before initializing components
     DeviceHelper.applyAllFixes();
 
-    // Initialize ViewportManager first
+    // Initialize managers
     this.viewportManager = ViewportManager.getInstance();
+    this.themeService = ThemeService.getInstance();
 
     // Get references to custom elements
     this.sidebar = document.getElementById("sensor-sidebar") as SidebarElement;
@@ -63,6 +67,7 @@ class RuuviApp {
     this.setupControls();
     this.setupCustomElements();
     this.setupPWA();
+    this.setupThemeListener();
 
     // Initialize chart with default state before connecting
     if (this.chartElement) {
@@ -434,6 +439,17 @@ class RuuviApp {
       }
     });
   }
+
+  /**
+   * Set up theme service listener to handle theme changes
+   */
+  private setupThemeListener(): void {
+    this.unsubscribeTheme = this.themeService.subscribe((theme) => {
+      console.log(`Theme changed to: ${theme}`);
+      // The chart component has its own theme listener,
+      // but we could update other UI elements here if needed
+    });
+  }
 }
 
 // Create a global variable for the application instance
@@ -442,4 +458,5 @@ const app = new RuuviApp();
 // Initialize the application with cleanup on page unload
 window.addEventListener("beforeunload", () => {
   if (app.unsubscribeResize) app.unsubscribeResize();
+  if (app.unsubscribeTheme) app.unsubscribeTheme();
 });

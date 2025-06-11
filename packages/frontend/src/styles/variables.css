@@ -96,8 +96,8 @@
   --color-humidity: #b4a149; /* Specific color for humidity values */
   
   /* Chart specific colors */
-  --chart-grid-color: rgba(0, 0, 0, 0.06);
-  --chart-label-color: #6c757d;
+  --chart-grid-color: rgba(0, 0, 0, 0.07); /* Subtle grid lines for light mode */
+  --chart-label-color: #666666; /* Higher contrast for light mode */
 
   /*
    * =========================================
@@ -265,7 +265,7 @@
     --color-button-hover: rgba(255, 255, 255, 0.1);
     --color-humidity: #d9c36b;      /* Adjusted for dark mode */
     
-    /* Chart specific colors */
+    /* Chart specific colors - already good for dark mode, keep as is */
     --chart-grid-color: rgba(255, 255, 255, 0.1);
     --chart-label-color: #a0a0a0;
     
