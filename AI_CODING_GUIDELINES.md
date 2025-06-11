@@ -19,7 +19,7 @@ Build from components: Block vs Knitted Castle principle.
 ### Starting a new Project
 
 1. **Define Scope**: Clearly define project goals and requirements
-2. **Plan Architecture**: Design modular architecture with clear interfaces
+2. **Plan Architecture**: Design modular architecture with clear interfaces and Domain Driven Design
 
 - use libraries to share types between services and clients, applications and servers - never define twice!
 
