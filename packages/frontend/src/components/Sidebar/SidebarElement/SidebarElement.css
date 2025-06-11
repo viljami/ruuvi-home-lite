@@ -52,8 +52,8 @@ sidebar-element > *:last-child {
   border-radius: 50%;
   top: 12px;
   right: 12px;
-  background-color: rgba(74, 158, 255, 0.9);
-  color: white;
+  background-color: var(--color-background-alt, rgba(74, 158, 255, 0.9));
+  color: var(--color-text-light, white);
   border: none;
   z-index: calc(var(--z-index-sidebar, 100) + 10);
   cursor: pointer;

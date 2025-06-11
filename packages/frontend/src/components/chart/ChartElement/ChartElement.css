@@ -240,7 +240,6 @@ sensor-chart {
   chart-element,
   sensor-chart {
     padding: 12px 10px;
-    border: 1px solid rgba(0, 0, 0, 0.1);
   }
 
   /* Landscape - adjust for sidebar */

@@ -53,7 +53,7 @@
   /*
    * Colors & Theming
    */
-  --color-primary: #4a9eff;
+  --color-primary: #4a9eee;
   --color-secondary: #ff6b6b;
   --color-success: #4ecdc4;
   --color-warning: #ff9f40;
@@ -139,15 +139,15 @@
 
 /* Dark mode support - to be expanded later */
 @media (prefers-color-scheme: dark) {
-:root {
-  --color-background: #121212;
-  --color-background-alt: rgba(30, 30, 30, 0.3);
-  --color-text: #e0e0e0;
-  --color-text-light: #a0a0a0;
-  --color-border: rgba(44, 44, 44, 0.4);
+  :root {
+    --color-background: #121212;
+    --color-background-alt: rgba(30, 30, 30, 0.3);
+    --color-text: #e0e0e0;
+    --color-text-light: #a0a0a0;
+    --color-border: rgba(44, 44, 44, 0.4);
 
-  /* Adjust chart colors for dark mode */
-  --chart-grid-color: rgba(255, 255, 255, 0.1);
-  --chart-label-color: #a0a0a0;
-}
+    /* Adjust chart colors for dark mode */
+    --chart-grid-color: rgba(255, 255, 255, 0.1);
+    --chart-label-color: #a0a0a0;
+  }
 }

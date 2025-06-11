@@ -12,7 +12,6 @@ sensor-card {
   padding: 0 6px 2px 8px; /* Increased left padding for color indicator */
   background-color: var(--color-background, #ffffff);
   border-radius: 3px;
-  border: 1px solid rgba(0, 0, 0, 0.05);
   transition:
     transform 150ms ease,
     opacity 150ms ease;
@@ -68,7 +67,7 @@ sensor-card:hover::before {
   font-size: 14px;
   color: #b4a149; /* More muted gold that's less distracting but still accessible */
   flex-shrink: 0;
-  opacity: 0.85; /* Slightly dimmer to be less prominent */
+  opacity: 0.95; /* Slightly dimmer to be less prominent */
 }
 
 .sensor-mac {
@@ -80,7 +79,7 @@ sensor-card:hover::before {
   flex-grow: 1;
   flex-basis: 60%;
   min-width: 0; /* Required for text-overflow to work */
-  opacity: 0.85; /* Slightly dimmer for better contrast with values */
+  opacity: 0.95; /* Slightly dimmer for better contrast with values */
 }
 
 .sensor-age {

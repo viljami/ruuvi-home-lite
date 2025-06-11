@@ -125,7 +125,6 @@
   background-color: var(--color-background);
   border-radius: 8px;
   border-left: 4px solid var(--color-primary); /* Default color, will be overridden */
-  border: 1px solid rgba(0, 0, 0, 0.1);
   transition:
     background-color var(--transition-fast),
     border-color var(--transition-fast),
@@ -281,7 +280,6 @@
   background-color: var(--color-secondary);
   border-color: var(--color-secondary);
   opacity: 1;
-  border: 1px solid rgba(255, 107, 107, 0.3);
 }
 
 /* ======= Mobile Optimizations ======= */
@@ -313,13 +311,13 @@
     min-width: 40px;
     font-size: calc(var(--font-size-sm) - 1px);
   }
-  
+
   #clear-selection-btn {
     margin-right: var(--space-xxs);
     font-size: calc(var(--font-size-sm) - 1px);
     padding: var(--space-xs) var(--space-xs);
   }
-  
+
   #admin-btn {
     margin-right: 0;
     font-size: calc(var(--font-size-sm) - 1px);

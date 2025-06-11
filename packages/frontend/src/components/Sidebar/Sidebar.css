@@ -20,6 +20,8 @@
   box-sizing: border-box;
   padding: 16px 12px;
   background-color: transparent;
+  height: 100%; /* Ensure full height */
+  max-height: 100vh; /* Prevent overflow beyond viewport */
 }
 
 /* Sidebar header with title */
@@ -65,6 +67,10 @@
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   padding-right: 4px; /* Space for scrollbar */
+  flex: 1 1 auto; /* Grow and shrink as needed */
+  min-height: 0; /* Critical for flexbox scrolling */
+  display: flex;
+  flex-direction: column;
 }
 
 /* Scrollbar styling */
@@ -93,6 +99,9 @@
     width: 75%; /* Use percentage for better responsiveness */
     max-width: 260px;
     padding-top: var(--header-height, 60px);
+    height: 100%; /* Full height on mobile */
+    display: flex;
+    flex-direction: column;
   }
 
   .sidebar.expanded {
@@ -149,8 +158,10 @@
       bottom: 0;
       transform: translateX(100%);
       width: 260px;
-
+      height: 100%; /* Ensure full height */
       padding-top: var(--header-height, 60px);
+      display: flex;
+      flex-direction: column;
     }
 
     .sidebar.expanded {
@@ -200,6 +211,8 @@
       width: 220px;
       grid-area: sidebar;
       margin-left: 16px;
+      height: 100%; /* Full height */
+      max-height: calc(100vh - var(--header-height, 60px) - var(--footer-height, 0px)); /* Account for header and footer */
     }
 
     .sidebar-toggle {
@@ -211,6 +224,9 @@
       display: flex;
       flex-direction: column;
       gap: 6px;
+      flex: 1 1 auto; /* Fill available space */
+      min-height: 0; /* Enable scrolling in flex container */
+      overflow-y: auto;
     }
   }
 }
@@ -230,6 +246,8 @@
     transform: translateX(0);
     grid-area: sidebar;
     margin-left: 16px;
+    height: 100%; /* Full height */
+    max-height: calc(100vh - var(--header-height, 60px) - var(--footer-height, 0px)); /* Account for header and footer */
   }
 
   .sidebar-toggle {
