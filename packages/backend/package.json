@@ -19,28 +19,35 @@
   },
   "dependencies": {
     "@ruuvi-home/shared": "file:../shared",
-    "sqlite3": "^5.1.7",
     "cors": "^2.8.5",
     "express": "^4.18.2",
     "mqtt": "^5.3.4",
+    "sqlite3": "^5.1.7",
     "winston": "^3.11.0",
     "ws": "^8.16.0"
   },
   "devDependencies": {
-    "@types/sqlite3": "^3.1.11",
-    "@types/cors": "^2.8.17",
-    "@types/express": "^4.17.21",
-    "@types/node": "^20.10.0",
-    "@types/ws": "^8.5.10",
-    "nodemon": "^3.0.2",
-    "typescript": "^5.3.3",
-    "vitest": "^1.0.0"
+    "@ruuvi-home/shared": "file:../shared",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^4.17.23",
+    "@types/node": "^22.15.31",
+    "@types/sqlite3": "^5.1.0",
+    "@types/ws": "^8.18.1",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "mqtt": "^5.13.1",
+    "nodemon": "^3.1.10",
+    "sqlite3": "^5.1.7",
+    "typescript": "^5.8.3",
+    "vitest": "^1.0.0",
+    "winston": "^3.17.0",
+    "ws": "^8.18.2"
   },
   "files": [
     "dist"
   ],
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=22.0.0"
   },
   "private": true
 }

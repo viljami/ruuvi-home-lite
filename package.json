@@ -37,16 +37,19 @@
     "docker:run": "docker run -p 3001:3001 -p 3000:3000 ruuvi-home-lite"
   },
   "devDependencies": {
-    "@types/node": "^20.10.0",
-    "@typescript-eslint/eslint-plugin": "^6.17.0",
-    "@typescript-eslint/parser": "^6.17.0",
+    "@ruuvi-home/backend": "^1.0.0",
+    "@ruuvi-home/frontend": "^1.0.0",
+    "@ruuvi-home/shared": "^1.0.0",
+    "@types/node": "^22.15.31",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
     "concurrently": "^8.2.2",
-    "eslint": "^8.56.0",
-    "prettier": "^3.1.1",
-    "typescript": "^5.3.3"
+    "eslint": "^8.57.1",
+    "prettier": "^3.5.3",
+    "typescript": "^5.8.3"
   },
   "engines": {
-    "node": ">=18.0.0",
+    "node": ">=22.0.0",
     "npm": ">=9.0.0"
   },
   "repository": {
