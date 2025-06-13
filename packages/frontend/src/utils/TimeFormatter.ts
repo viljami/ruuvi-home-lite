@@ -26,7 +26,7 @@ export class TimeFormatter {
         return (
           date.toLocaleDateString("en-US", {
             weekday: "short",
-          }) + " 12:00"
+          }) + " 00:00"
         );
       case "month":
         // Format as Month Day for 5-day intervals
