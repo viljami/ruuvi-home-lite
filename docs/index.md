@@ -11,20 +11,6 @@ Minimal Ruuvi sensor data visualization with real-time graphs. A lightweight, se
 
 ![Ruuvi Home Lite Dashboard](assets/images/screenshot-dark.png)
 
-## Screenshots
-
-<div class="screenshot-gallery">
-  <a href="assets/images/screenshot-dark.png" target="_blank">
-    <img src="assets/images/screenshot-dark.png" alt="Dark Mode Dashboard" width="30%">
-  </a>
-  <a href="assets/images/screenshot-light.png" target="_blank">
-    <img src="assets/images/screenshot-light.png" alt="Light Mode Dashboard" width="30%">
-  </a>
-  <a href="assets/images/screenshot-dark-2x-selected-sensors.png" target="_blank">
-    <img src="assets/images/screenshot-dark-2x-selected-sensors.png" alt="Selected Sensors View" width="30%">
-  </a>
-</div>
-
 ## ✨ Features
 
 - 🔐 **Secure MQTT broker** with TLS 1.2+ encryption
@@ -65,4 +51,18 @@ make dev
 
 <div class="github-link">
   <a href="https://github.com/your-username/ruuvi-home-lite" class="btn">View on GitHub</a>
+</div>
+
+## Screenshots
+
+<div class="screenshot-gallery">
+  <a href="assets/images/screenshot-dark.png" target="_blank">
+    <img src="assets/images/screenshot-dark.png" alt="Dark Mode Dashboard" width="30%">
+  </a>
+  <a href="assets/images/screenshot-light.png" target="_blank">
+    <img src="assets/images/screenshot-light.png" alt="Light Mode Dashboard" width="30%">
+  </a>
+  <a href="assets/images/screenshot-dark-2x-selected-sensors.png" target="_blank">
+    <img src="assets/images/screenshot-dark-2x-selected-sensors.png" alt="Selected Sensors View" width="30%">
+  </a>
 </div>
