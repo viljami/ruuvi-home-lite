@@ -106,7 +106,7 @@ export class ChartElement extends HTMLElement {
 
     // Make sure clear button is properly initialized
     this.updateClearButtonVisibility();
-    
+
     // Subscribe to theme changes
     this.themeService.subscribe(() => {
       this.drawChart();
@@ -803,8 +803,10 @@ export class ChartElement extends HTMLElement {
 
     // Use theme-appropriate text color
     const textColor = CssUtils.getCssVariableAsColor(
-      'color-text-light', 
-      this.themeService.isDarkMode() ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)'
+      "color-text-light",
+      this.themeService.isDarkMode()
+        ? "rgba(255, 255, 255, 0.5)"
+        : "rgba(0, 0, 0, 0.5)",
     );
     this.ctx.fillStyle = textColor;
     this.ctx.font = "14px sans-serif";
@@ -814,8 +816,10 @@ export class ChartElement extends HTMLElement {
 
     // Add borders to ensure chart area is visible
     const borderColor = CssUtils.getCssVariableAsColor(
-      'color-border', 
-      this.themeService.isDarkMode() ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+      "color-border",
+      this.themeService.isDarkMode()
+        ? "rgba(255, 255, 255, 0.1)"
+        : "rgba(0, 0, 0, 0.1)",
     );
     this.ctx.strokeStyle = borderColor;
     this.ctx.lineWidth = 1;
@@ -845,8 +849,10 @@ export class ChartElement extends HTMLElement {
 
     // Get grid color from CSS variables based on theme
     const gridColor = CssUtils.getCssVariableAsColor(
-      'chart-grid-color',
-      this.themeService.isDarkMode() ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.07)'
+      "chart-grid-color",
+      this.themeService.isDarkMode()
+        ? "rgba(255, 255, 255, 0.1)"
+        : "rgba(0, 0, 0, 0.07)",
     );
     this.ctx.strokeStyle = gridColor;
     this.ctx.lineWidth = 1;
@@ -905,8 +911,8 @@ export class ChartElement extends HTMLElement {
     // Set label text size based on chart height
     // Get label color from CSS variables based on theme
     const labelColor = CssUtils.getCssVariableAsColor(
-      'chart-label-color',
-      this.themeService.isDarkMode() ? '#a0a0a0' : '#666666'
+      "chart-label-color",
+      this.themeService.isDarkMode() ? "#a0a0a0" : "#666666",
     );
     this.ctx.fillStyle = labelColor;
     this.ctx.font = "12px monospace";
@@ -1305,7 +1311,6 @@ export class ChartElement extends HTMLElement {
 
         // Find the noon timestamp for each day
         const dayStart = new Date(minTime * 1000);
-        dayStart.setHours(12, 0, 0, 0); // Set to noon
         startOffset = dayStart.getTime() / 1000 - minTime;
         break;
 

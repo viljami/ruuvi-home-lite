@@ -24,8 +24,6 @@ export class SensorCard extends HTMLElement {
   private macElement: HTMLDivElement | null = null;
   private ageElement: HTMLDivElement | null = null;
 
-  private isTouchDevice = false;
-
   constructor(config: SensorCardConfig) {
     super();
     this.config = config;
@@ -183,43 +181,6 @@ export class SensorCard extends HTMLElement {
     }
   }
 
-  // Event handlers as class methods
-  private handleMouseEnter = (): void => {
-    // Skip hover effect triggering on touch devices after touch
-    if (!this.isTouchDevice) {
-      this.config.onHover(this.config.reading.sensorMac);
-    }
-  };
-
-  private handleMouseLeave = (): void => {
-    this.config.onHover(null);
-    this.render();
-  };
-
-  private handleTouchStart = (e: TouchEvent): void => {
-    // Prevent default only if this is a sensor card click, not a name edit click
-    if (
-      !this.config.isAdmin ||
-      !e
-        .composedPath()
-        .some(
-          (el) => el instanceof Element && el.classList.contains("sensor-mac"),
-        )
-    ) {
-      e.preventDefault(); // Prevent default to avoid delayed clicks
-    }
-
-    this.classList.add("touch-active");
-  };
-
-  private handleTouchEnd = (_e: TouchEvent): void => {
-    this.classList.remove("touch-active");
-  };
-
-  private handleTouchCancel = (): void => {
-    this.classList.remove("touch-active");
-  };
-
   private handleClick = (e: MouseEvent): void => {
     // Prevent accidental double-firing on iOS/Safari
     if (e.detail > 1) {
@@ -235,31 +196,7 @@ export class SensorCard extends HTMLElement {
     this.config.onEditName(this.config.reading.sensorMac);
   };
 
-  private detectTouchCapability = (): void => {
-    this.isTouchDevice = true;
-    window.removeEventListener("touchstart", this.detectTouchCapability);
-  };
-
   private setupEventListeners(): void {
-    // Detect touch capability
-    window.addEventListener("touchstart", this.detectTouchCapability, {
-      once: true,
-      passive: true,
-    });
-
-    // Hover events for graph highlighting - only meaningful on non-touch devices
-    if (!this.isTouchDevice) {
-      this.addEventListener("mouseenter", this.handleMouseEnter);
-      this.addEventListener("mouseleave", this.handleMouseLeave);
-    }
-
-    // Touch events for mobile
-    this.addEventListener("touchstart", this.handleTouchStart, {
-      passive: false,
-    });
-    this.addEventListener("touchend", this.handleTouchEnd);
-    this.addEventListener("touchcancel", this.handleTouchCancel);
-
     // Click handler for toggling the sensor in the chart
     if (this.config.onClick) {
       this.addEventListener("click", this.handleClick);
@@ -315,15 +252,6 @@ export class SensorCard extends HTMLElement {
   }
 
   disconnectedCallback(): void {
-    // Component removed from DOM - clean up event listeners
-    // This is important for iOS Safari which can maintain references
-    window.removeEventListener("touchstart", this.detectTouchCapability);
-
-    this.removeEventListener("mouseenter", this.handleMouseEnter);
-    this.removeEventListener("mouseleave", this.handleMouseLeave);
-    this.removeEventListener("touchstart", this.handleTouchStart);
-    this.removeEventListener("touchend", this.handleTouchEnd);
-    this.removeEventListener("touchcancel", this.handleTouchCancel);
     this.removeEventListener("click", this.handleClick);
 
     // Clean up the MAC element click handler if it exists
