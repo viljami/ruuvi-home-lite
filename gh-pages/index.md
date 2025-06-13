@@ -1,3 +1,7 @@
+---
+layout: default
+---
+
 # Ruuvi Home Lite
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -5,13 +9,21 @@
 
 Minimal Ruuvi sensor data visualization with real-time graphs. A lightweight, self-hosted solution for monitoring RuuviTag sensors via Ruuvi Gateway with secure MQTT communication. AI co-coded for robust architecture and security.
 
-![Ruuvi Home Lite Dashboard](docs/screenshot-dark.png)
+![Ruuvi Home Lite Dashboard](assets/images/screenshot-dark.png)
 
-## ⚠️ Security Notice
+## Screenshots
 
-**This project is designed for local network deployment only. Never expose to the internet without proper security hardening.**
-
-See [`SECURITY.md`](SECURITY.md) for complete security documentation and best practices.
+<div class="screenshot-gallery">
+  <a href="assets/images/screenshot-dark.png" target="_blank">
+    <img src="assets/images/screenshot-dark.png" alt="Dark Mode Dashboard" width="30%">
+  </a>
+  <a href="assets/images/screenshot-light.png" target="_blank">
+    <img src="assets/images/screenshot-light.png" alt="Light Mode Dashboard" width="30%">
+  </a>
+  <a href="assets/images/screenshot-dark-2x-selected-sensors.png" target="_blank">
+    <img src="assets/images/screenshot-dark-2x-selected-sensors.png" alt="Selected Sensors View" width="30%">
+  </a>
+</div>
 
 ## ✨ Features
 
@@ -44,9 +56,6 @@ make setup-docker && make docker-secure
 
 # Development
 make dev
-
-# Set up Nginx subdomain (optional)
-cd nginx && sudo ./install-nginx.sh
 ```
 
 ## 🌐 Access Options
@@ -54,13 +63,6 @@ cd nginx && sudo ./install-nginx.sh
 - **Direct Access**: `http://your-host-ip:3000` or `https://your-host-ip:3000` (if TLS enabled)
 - **Subdomain Access**: Use the included Nginx configuration for `subdomain.local.network`
 
-## 🛠️ Available Commands
-
-- `make launcher` - Interactive menu with all options
-- `make help` - Show all available make targets
-- `make setup/setup-docker` - Environment setup
-- `make start/docker-secure` - Production deployment
-- `make dev` - Development mode
-- `make cleanup` - Interactive removal
-- `make docker-status` - Check Docker deployment
-- `scripts/troubleshoot-mosquitto.sh` - MQTT diagnostics
+<div class="github-link">
+  <a href="https://github.com/your-username/ruuvi-home-lite" class="btn">View on GitHub</a>
+</div>

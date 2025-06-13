@@ -1,0 +1,13 @@
+# GitHub Pages Configuration
+title: Ruuvi Home Lite
+description: Minimal Ruuvi sensor data visualization with real-time graphs
+theme: jekyll-theme-cayman
+
+# Site settings
+show_downloads: true
+google_analytics:
+
+# GitHub metadata
+github:
+  repository_url: https://github.com/your-username/ruuvi-home-lite
+  is_project_page: true
