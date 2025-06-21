@@ -1267,21 +1267,21 @@ export class ChartElement extends HTMLElement {
       case "hour":
         const intervalMinutes = 10;
         interval = intervalMinutes * 60; // 10 minutes in seconds
+        minDate.setUTCSeconds(0, 0);
         minDate.setUTCMinutes(
           intervalMinutes *
             (Math.floor(minDate.getUTCMinutes() / intervalMinutes) + 1),
         );
-        minDate.setUTCSeconds(0, 0);
         break;
 
       case "day":
         const intervalHours = 3;
         interval = intervalHours * 60 * 60; // 3 hours in seconds
-        minDate.setUTCMinutes(
+        minDate.setUTCMinutes(0, 0, 0);
+        minDate.setUTCHours(
           intervalHours *
             (Math.floor(minDate.getUTCHours() / intervalHours) + 1),
         );
-        minDate.setUTCMinutes(0, 0, 0);
         break;
 
       case "week":
@@ -1294,10 +1294,10 @@ export class ChartElement extends HTMLElement {
         // Every 5 days
         const intervalDays = 5;
         interval = intervalDays * 24 * 60 * 60; // 5 days in seconds
+        minDate.setUTCHours(0, 0, 0, 0);
         minDate.setUTCDate(
           intervalDays * (Math.floor(minDate.getUTCDate() / intervalDays) + 1),
         );
-        minDate.setUTCHours(0, 0, 0, 0);
         break;
 
       case "year":
