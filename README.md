@@ -5,7 +5,7 @@
 
 Minimal Ruuvi sensor data visualization with real-time graphs. A lightweight, self-hosted solution for monitoring RuuviTag sensors via Ruuvi Gateway with secure MQTT communication. AI co-coded for robust architecture and security.
 
-![Ruuvi Home Lite Dashboard](docs/screenshot-dark.png)
+![Ruuvi Home Lite Dashboard](docs/assets/images/screenshot-dark.png)
 
 ## ⚠️ Security Notice
 
