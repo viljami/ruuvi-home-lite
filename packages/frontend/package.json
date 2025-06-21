@@ -20,13 +20,13 @@
   },
   "devDependencies": {
     "@ruuvi-home/shared": "file:../shared",
-    "@testing-library/dom": "^9.3.4",
+    "@testing-library/dom": "^10.4.0",
     "@testing-library/user-event": "^14.6.1",
     "@types/node": "^22.15.31",
     "@vitest/coverage-v8": "^1.6.1",
     "@vitest/ui": "^1.0.0",
-    "happy-dom": "^12.10.3",
-    "jsdom": "^23.2.0",
+    "happy-dom": "^18.0.1",
+    "jsdom": "^26.1.0",
     "typescript": "^5.8.3",
     "vite": "^6.3.5",
     "vitest": "^1.0.0"

@@ -1,11 +1,11 @@
 /**
  * ThemeService
- * 
+ *
  * A service for detecting and responding to system theme preferences (light/dark mode).
  * Uses the MediaQueryList API to detect changes and notify subscribers.
  */
 
-export type Theme = 'light' | 'dark';
+export type Theme = "light" | "dark";
 export type ThemeChangeCallback = (theme: Theme) => void;
 
 export class ThemeService {
@@ -86,10 +86,10 @@ export class ThemeService {
    */
   public subscribe(callback: ThemeChangeCallback): () => void {
     this.subscribers.add(callback);
-    
+
     // Call the callback immediately with the current theme
     callback(this.currentTheme);
-    
+
     // Return unsubscribe function
     return () => {
       this.subscribers.delete(callback);
@@ -100,7 +100,7 @@ export class ThemeService {
    * Clean up service resources
    */
   public destroy(): void {
-    this.mediaQuery.removeEventListener('change', this.handleThemeChange);
+    this.mediaQuery.removeEventListener("change", this.handleThemeChange);
     this.subscribers.clear();
     ThemeService.instance = null;
   }

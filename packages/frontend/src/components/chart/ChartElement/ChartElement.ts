@@ -558,67 +558,37 @@ export class ChartElement extends HTMLElement {
    * Calculate chart data bounds
    */
   private calculateBounds(): void {
-    let minX = Infinity;
-    let maxX = -Infinity;
-    let minTempY = Infinity;
-    let maxTempY = -Infinity;
+    let minTime = Infinity;
+    let maxTime = -Infinity;
+    let minTemp = Infinity;
+    let maxTemp = -Infinity;
 
     this.data.forEach((points) => {
       points.forEach((point) => {
-        minX = Math.min(minX, point.timestamp);
-        maxX = Math.max(maxX, point.timestamp);
-
-        if (point.temperature !== undefined) {
-          minTempY = Math.min(minTempY, point.temperature);
-          maxTempY = Math.max(maxTempY, point.temperature);
+        if (point.temperature !== undefined && point.temperature !== null) {
+          minTemp = Math.min(minTemp, point.temperature);
+          maxTemp = Math.max(maxTemp, point.temperature);
         }
+
+        minTime = Math.min(minTime, point.timestamp);
+        maxTime = Math.max(maxTime, point.timestamp);
       });
     });
 
-    // Set current time range for X axis even when no data
-    const now = Date.now() / 1000;
-    let timeRangeSeconds: number;
-
-    switch (this.timeRange) {
-      case "hour":
-        timeRangeSeconds = 60 * 60;
-        break;
-      case "day":
-        timeRangeSeconds = 24 * 60 * 60;
-        break;
-      case "week":
-        timeRangeSeconds = 7 * 24 * 60 * 60;
-        break;
-      case "month":
-        timeRangeSeconds = 30 * 24 * 60 * 60;
-        break;
-      case "year":
-        timeRangeSeconds = 365 * 24 * 60 * 60;
-        break;
-      default:
-        timeRangeSeconds = 24 * 60 * 60; // Default to day
-    }
-
-    // Time bounds
     this.timeBounds = {
-      minX: minX === Infinity ? now - timeRangeSeconds : minX,
-      maxX: maxX === -Infinity ? now : maxX,
+      minX: minTime,
+      maxX: maxTime,
     };
 
     // Temperature bounds with padding
-    const tempPadding = (maxTempY - minTempY) * 0.1 || 1;
+    const tempPadding = (maxTemp - minTemp) * 0.1 || 1;
     this.temperatureBounds = {
       minY:
-        minTempY === Infinity
-          ? 0
-          : Math.floor((minTempY - tempPadding) / 5) * 5,
+        minTemp === Infinity ? 0 : Math.floor((minTemp - tempPadding) / 5) * 5,
       maxY:
-        maxTempY === -Infinity
-          ? 25
-          : Math.ceil((maxTempY + tempPadding) / 5) * 5,
+        maxTemp === -Infinity ? 25 : Math.ceil((maxTemp + tempPadding) / 5) * 5,
     };
 
-    // Humidity bounds (default 0-100% but can be narrowed if data allows)
     if (this.config.showHumidity) {
       this.humidityBounds = {
         minY: 0.0,
@@ -724,8 +694,9 @@ export class ChartElement extends HTMLElement {
     this.ctx.scale(dpr, dpr);
 
     // Always draw grid and labels, even if no data
-    this.drawGrid();
-    this.drawLabels();
+    const timeBoundaries = this.calculateTimeBoundaries();
+    this.drawGrid(timeBoundaries);
+    this.drawLabels(timeBoundaries);
 
     // If no data, stop here - we've drawn the grid and labels
     if (this.data.size === 0) {
@@ -834,7 +805,7 @@ export class ChartElement extends HTMLElement {
   /**
    * Draw the grid
    */
-  private drawGrid(): void {
+  private drawGrid(timeBoundaries: readonly number[]): void {
     if (!this.ctx || !this.chartConfig.width || !this.chartConfig.height)
       return;
 
@@ -867,9 +838,6 @@ export class ChartElement extends HTMLElement {
       this.ctx?.stroke();
     }
 
-    // Vertical grid lines - aligned with exact time intervals
-    const timeBoundaries = this.calculateTimeBoundaries();
-
     timeBoundaries.forEach((timestamp) => {
       // Calculate x position based on timestamp
       const x =
@@ -895,7 +863,7 @@ export class ChartElement extends HTMLElement {
   /**
    * Draw chart labels (axes, timestamps, values)
    */
-  private drawLabels(): void {
+  private drawLabels(timeBoundaries: readonly number[]): void {
     if (!this.ctx || !this.chartConfig.width || !this.chartConfig.height)
       return;
 
@@ -921,7 +889,6 @@ export class ChartElement extends HTMLElement {
     // X-axis labels (time) - aligned with exact time intervals
     this.ctx.textAlign = "center";
     this.ctx.textBaseline = "top";
-    const timeBoundaries = this.calculateTimeBoundaries();
 
     timeBoundaries.forEach((timestamp) => {
       // Calculate x position based on timestamp
@@ -1286,97 +1253,70 @@ export class ChartElement extends HTMLElement {
     const minTime = this.timeBounds.minX;
     const maxTime = this.timeBounds.maxX;
 
+    if (minTime === maxTime || minTime === -Infinity || maxTime === Infinity) {
+      return boundaries;
+    }
+
     let interval: number;
-    let roundTo: number;
-    let startOffset: number = 0;
+    const minDate = new Date(minTime * 1000);
+    const maxDate = new Date(maxTime * 1000);
 
     // Set interval based on time range
     switch (this.timeRange) {
+      default:
       case "hour":
-        // Every 10 minutes
-        interval = 10 * 60; // 10 minutes in seconds
-        roundTo = 60; // Round to nearest minute
+        const intervalMinutes = 10;
+        interval = intervalMinutes * 60; // 10 minutes in seconds
+        minDate.setUTCMinutes(
+          intervalMinutes *
+            (Math.floor(minDate.getUTCMinutes() / intervalMinutes) + 1),
+        );
+        minDate.setUTCSeconds(0, 0);
         break;
 
       case "day":
-        // Every 3 hours
-        interval = 3 * 60 * 60; // 3 hours in seconds
-        roundTo = 60 * 60; // Round to nearest hour
+        const intervalHours = 3;
+        interval = intervalHours * 60 * 60; // 3 hours in seconds
+        minDate.setUTCMinutes(
+          intervalHours *
+            (Math.floor(minDate.getUTCHours() / intervalHours) + 1),
+        );
+        minDate.setUTCMinutes(0, 0, 0);
         break;
 
       case "week":
-        // Noon each day
         interval = 24 * 60 * 60; // 24 hours in seconds
-        roundTo = 60 * 60; // Round to nearest hour
-
-        // Find the noon timestamp for each day
-        const dayStart = new Date(minTime * 1000);
-        startOffset = dayStart.getTime() / 1000 - minTime;
+        minDate.setUTCHours(0, 0, 0, 0);
+        minDate.setUTCDate(minDate.getUTCDate() + 1);
         break;
 
       case "month":
         // Every 5 days
-        interval = 5 * 24 * 60 * 60; // 5 days in seconds
-        roundTo = 24 * 60 * 60; // Round to nearest day
-
-        // Find the start of the day
-        const monthStart = new Date(minTime * 1000);
-        monthStart.setHours(0, 0, 0, 0);
-
-        // Get to a day divisible by 5
-        const dayOfMonth = monthStart.getDate();
-        const daysToAdd = 5 - (dayOfMonth % 5);
-        if (daysToAdd < 5) {
-          monthStart.setDate(dayOfMonth + daysToAdd);
-        }
-
-        startOffset = monthStart.getTime() / 1000 - minTime;
+        const intervalDays = 5;
+        interval = intervalDays * 24 * 60 * 60; // 5 days in seconds
+        minDate.setUTCDate(
+          intervalDays * (Math.floor(minDate.getUTCDate() / intervalDays) + 1),
+        );
+        minDate.setUTCHours(0, 0, 0, 0);
         break;
 
       case "year":
-        // First day of each month
         interval = 30 * 24 * 60 * 60; // ~30 days in seconds (approximate)
+        minDate.setUTCHours(0, 0, 0, 0);
+        minDate.setUTCDate(1);
+        minDate.setUTCMonth(minDate.getUTCMonth() + 1);
+        const rollingDate = new Date(minDate);
 
-        // Find the 1st of the next month
-        const yearStart = new Date(minTime * 1000);
-        yearStart.setDate(1); // Set to 1st of month
-        yearStart.setHours(0, 0, 0, 0);
-
-        // Move to next month if we're already past the 1st
-        if (yearStart.getTime() / 1000 < minTime) {
-          yearStart.setMonth(yearStart.getMonth() + 1);
-        }
-
-        startOffset = yearStart.getTime() / 1000 - minTime;
-
-        // For year view, we need to generate timestamps for the 1st of each month
-        const endDate = new Date(maxTime * 1000);
-        const currentDate = new Date(yearStart.getTime());
-
-        while (currentDate <= endDate) {
-          boundaries.push(currentDate.getTime() / 1000);
-          currentDate.setMonth(currentDate.getMonth() + 1);
+        while (rollingDate < maxDate) {
+          rollingDate.setMonth(rollingDate.getMonth() + 1);
+          boundaries.push(rollingDate.getTime() / 1000);
         }
 
         return boundaries; // Return early for year view
-
-      default:
-        interval = 60 * 60; // Default to hourly
-        roundTo = 60;
     }
 
-    // Calculate the start time rounded to the appropriate interval
-    let startTime: number;
+    const startTime = Math.floor(minDate.getTime() / 1000);
 
-    if (startOffset > 0) {
-      // If we have a specific offset (like noon for week view)
-      startTime = minTime + startOffset;
-    } else {
-      // Otherwise round to the nearest interval
-      startTime = Math.ceil(minTime / roundTo) * roundTo;
-    }
-
-    // Generate boundaries
     for (let t = startTime; t <= maxTime; t += interval) {
       boundaries.push(t);
     }
