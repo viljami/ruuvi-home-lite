@@ -1,311 +1,92 @@
-# AI Coding Guidelines (Generic)
+# ⚙️ Coding Guidelines V2
 
-## 🔥 SACRED PRINCIPLES: DRY & KISS
+> AI-friendly, human-readable.
+> Designed for clarity, modularity, security, and low cognitive load in modern development.
 
-**DRY (Don't Repeat Yourself)**: The highest pride for both human and AI programmers.
+## ✅ Core Principles
 
-**KISS (Keep it Simple Sweetheart)**: Simplicity is the ultimate sophistication.
+1. DRY – Don't Repeat Yourself
+   Avoid duplication in code, tests, and documentation. Reuse logic, patterns, and language.
 
-Do not leave commented code behind. Always remove unused code. Code is cheap - context (cognitive load) is expensive.
+2. KISS – Keep It Simple, Sweetheart
+   Favor clarity over cleverness. Code should be self-explanatory to both people and machines.
 
-Build from components: Block vs Knitted Castle principle.
+3. TDD – Test Driven Development
+   Write tests first. They guide implementation and support clean design.
 
-## 🔄 Development Cycle
+4. DDD – Domain Driven Design
+   Model code around real-world domains. Structure follows meaning.
 
-1. **Make It Work**: Solve core problem with minimal viable implementation
-2. **Make It Right**: Clean, maintainable, documented code
-3. **Make It Fast**: Optimize with measurable improvements
+5. CLAC – Concise Language Avoids Cost
+   Context is expensive: AI tokens, human attention, and cognitive overhead. Be direct.
 
-### Starting a new Project
+## 🧱 Modular Code
 
-1. **Define Scope**: Clearly define project goals and requirements
-2. **Plan Architecture**: Design modular architecture with clear interfaces and Domain Driven Design
+### Knitted vs. LEGO
 
-- use libraries to share types between services and clients, applications and servers - never define twice!
+- Knitted systems unravel with small changes.
+- LEGO systems enable safe, independent edits.
 
-3. **Set Up Environment**: Configure development environment and tools
-4. **MVP**: Minimum Viable Product: Start with a basic functional prototype that meets a core requirement across the entire stack to early identify potential issues and refine the design.
+Build like LEGO.
 
-- do the hard things first
+### Module Guidelines
 
-### Design
+- One or two responsibilities per module.
+- Unit tests required. Use `rstest` to keep tests DRY.
+- One module per file.
+- Functions count as modules.
+- Max 500 lines of implementation per file.
+  Tests can exceed this if well-structured.
+- Large modules must be split and follow the same rules.
 
-5. **Mobile first**: Start with mobile design and scale up to desktop
-6. **Responsive design**: Ensure consistent layout and functionality across different screen sizes and devices
-7. **Accessibility**: Design with accessibility in mind, it benefits everyone
-8. **Less is More**
+## 🤖 AI-Optimized Practices
 
-- No border lines, if white space can do
-- Calming, focus supporting aesthetics, simplicity
-- Use animation but be subtle, if an animation can be seen rather than felt it is too slow and needs to be made more subtle (fast and smooth)
+- Use descriptive names. AI tools rely on semantic cues.
+- Comment intent, not implementation.
+- Keep test cases clean and scenario-based.
+- Refactor early. Smaller components make AI assistance more effective.
+- Prefer small, focused files over monoliths.
 
-### Project structure
+## 🔐 Security Rules
 
-1. Associative grouping of files
+- No secrets in code or config.
+  Use `.env` or a secret manager. Never commit credentials or token files.
 
-- styles, functional code, structured documents should be in same folder as the component they Define
-- layout and application level brings components and containers together
+- Run secret scanners in CI
+  Use tools like `gitleaks` or GitHub secret scanning to catch issues early.
 
-## 🎯 Core Principles
+- Default deny, explicit allow
+  In permissions, deny by default and grant minimal access explicitly.
 
-**Explicitness**: Write code that can be understood by AI systems. No hidden dependencies
+- Validate and sanitize all input
+  Especially user input or external data sources.
 
-**Do NOT reinvent the wheel** Start by checking if there is a library that solves the problem at hand
+- Minimize permissions
+  Tokens and services should have only the access they need.
 
-**Modularity**: Keep files focused and reasonably sized. Single responsibility per component. No file should be longer than 500 lines.
+- Immutable infrastructure when possible
+  Prevent drift and ensure reproducible builds.
 
-**Reversibility**: All decisions must be easily undoable. Use feature flags, configuration, interfaces.
+## 📈 Observability Principles
 
-### Zero Tolerance for Redundancy
+- Logs must be structured, greppable, and meaningful.
+- Never log secrets, tokens, or PII.
+- Metrics should reflect user or system behavior, not internal trivia.
 
-**NEVER create duplicate information**:
+## 🔁 CI/CD Best Practices
 
-- Same validation commands in multiple files
-- Identical explanations across documents
-- Repeated code examples or instructions
-- Overlapping documentation sections
+- All code must pass tests before merging.
+- Enforce formatters and linters (`clippy`, `prettier`, etc.) in CI.
+- Keep branches short-lived and feedback loops tight.
 
-**MANDATORY before any addition**:
+## 🧭 When in Doubt
 
-1. Search existing files for similar content
-2. If ANY overlap exists, consolidate instead of duplicating
-3. If absolutely certain you need repetition: **ASK FOR EXPLICIT CONFIRMATION**
-4. Reviewer must approve repetition with clear justification - never repeat if it due to bad design or technical dept, rather cleanup as we go
+- Prioritize readability and simplicity.
+- Prefer composition over inheritance.
+- Document decisions where needed.
+  Local comments > scattered documentation.
 
-### Simplicity Requirements
+## 📌 Summary
 
-**Always choose the simpler option**:
-
-- One build target instead of multiple scripts
-- Concise documentation over verbose explanations
-- Single source of truth over distributed information
-- Essential content only - remove nice-to-have details
-
-**Review every addition**: Does this make the system simpler or more complex? If more complex, justify or remove.
-
-## 📋 Essential Workflow
-
-### Before Code Changes
-
-- [ ] Understand current project goals and milestones
-- [ ] Define task scope explicitly
-- [ ] Plan rollback strategy
-- [ ] Avoid verbose .md file generation
-
-## 🚨 CRITICAL: Code Quality Enforcement
-
-**NEVER use direct tool commands when project has standardized workflows:**
-
-```bash
-# ❌ AVOID (examples):
-cargo clippy          # If project uses make lint
-npm run lint          # If project uses make lint
-python -m flake8      # If project uses make lint
-```
-
-**ALWAYS use project's standardized targets:**
-
-```bash
-# ✅ REQUIRED (adapt to your project):
-make lint             # Project's linting workflow
-make test             # Project's testing workflow
-make dev              # Project's development workflow
-```
-
-**Why**: Local vs CI consistency. Direct tool commands may cause failures that only appear in CI/CD.
-
-## 🚨 CRITICAL: Source Code Repository Integrity
-
-**NEVER modify files inside the source repository:**
-
-```bash
-# ❌ FORBIDDEN:
-cat > "$PROJECT_DIR/scripts/deploy.sh" << EOF
-cat > "$PROJECT_DIR/src/generated.py" << EOF
-echo "data" > "$PROJECT_DIR/config/generated.conf"
-```
-
-**ONLY acceptable repository modifications:**
-
-```bash
-# ✅ ALLOWED:
-cat > "$PROJECT_DIR/.env" << EOF              # Environment files
-cat > "$PROJECT_DIR/.env.local" << EOF        # Local config files
-cat > "$PROJECT_DIR/config.local.json" << EOF # Local configuration
-```
-
-**Generated files MUST go to system or user locations:**
-
-```bash
-# ✅ REQUIRED:
-cat > "/etc/systemd/system/service.service" << EOF     # System services
-cat > "/opt/app-name/bin/app-script" << EOF            # App-specific scripts (secure)
-cat > "/home/$USER/.config/app/config" << EOF          # User config
-cat > "/var/lib/app/generated.conf" << EOF             # Application data
-cat > "/tmp/generated-script.sh" << EOF               # Temporary files
-```
-
-**Security Note**: Never use `/usr/local/bin/` for application scripts - it exposes them globally.
-Use `/opt/app-name/bin/` with proper ownership (`app-user:app-user`) for security isolation.
-
-**Why**: Scripts that modify the source repository:
-
-- Create dirty git state and conflicts
-- Overwrite source code and cause data loss
-- Make the repository unreproducible
-- Break CI/CD pipelines
-- Violate the principle of immutable source code
-
-**Detection**: Any `cat >`, `echo >`, or redirection to `$PROJECT_DIR/**` (except local config files) is **FORBIDDEN**.
-
-## 🎨 Automatic Code Formatting
-
-**MANDATORY**: All code must be automatically formatted before commit.
-
-**One-time setup** (adapt to your project):
-
-```bash
-# Examples - adapt to your project's setup script:
-./scripts/setup-dev.sh
-./setup.py install --dev
-npm run setup
-```
-
-**Pre-commit hooks automatically**:
-
-- Format all code on every commit
-- Run linting checks
-- Validate file structure
-- Sort imports
-- Fix trailing whitespace
-
-**Manual formatting** (adapt to your project):
-
-```bash
-# Examples - use your project's commands:
-make fmt                    # Project-wide formatting
-npm run format             # JavaScript/TypeScript
-black .                    # Python
-cargo fmt                  # Rust
-go fmt ./...               # Go
-
-# Or run pre-commit manually:
-pre-commit run --all-files
-```
-
-**NEVER skip formatting**: Pre-commit hooks prevent commits with formatting issues. This ensures zero formatting conflicts in CI.
-
-### Language-Specific Validation
-
-Adapt these examples to your project's structure and tools:
-
-```bash
-# Backend (adapt language and tools):
-make lint && make test
-
-# Frontend (adapt framework):
-npm run lint && npm test
-
-# Scripts/Tools (adapt language):
-flake8 . && pytest
-```
-
-### After Every Code Edit
-
-- [ ] **Syntax**: Language-specific check (compile, type check, etc.)
-- [ ] **Linting**: Zero warnings using project's lint target
-- [ ] **Tests**: Relevant test suites pass
-- [ ] **Build**: Successful compilation/build
-
-## 🧪 Testing Strategy
-
-**Unit Tests**: Isolated component testing. Fast feedback.
-
-**Integration Tests**: Component interaction testing. Realistic scenarios.
-
-**End-to-End Tests**: Full system testing. Critical user journey validation.
-
-**Error Handling**: Application code must handle errors properly (avoid panic/crash patterns). Test code can fail fast for debugging.
-
-## 🚫 Anti-Patterns
-
-**Avoid**:
-
-- Global state and hidden dependencies
-- Copy-paste code (abstract immediately)
-- Magic numbers and strings
-- Tight coupling between components
-- Inconsistent naming conventions
-
-**Detection Signals**:
-
-- Hard to test in isolation
-- Changes require modifying multiple files
-- Difficult to explain component purpose in one sentence
-
-## 🔧 Configuration & Tooling
-
-**Environment Variables**: Use for runtime configuration, never secrets in code.
-
-**Dependency Management**: Explicit version pinning, regular security updates.
-
-**IDE Integration**: Configure tools to use project standards (project lint targets, not direct tool commands).
-
-## 📊 Logging Standards
-
-**Levels**: ERROR (failures), WARN (degraded), INFO (significant events), DEBUG (troubleshooting).
-
-**Context**: Always include request ID, user ID, operation name, and relevant identifiers.
-
-## 🎯 Decision Framework
-
-**Refactor When**: Code becomes hard to understand, test, or modify. Technical debt accumulates.
-
-**Rewrite When**: Fundamental architecture no longer serves requirements. Refactoring cost exceeds rewrite cost.
-
-## ✅ Validation Checklist
-
-### Code Quality
-
-- [ ] Linting passes with zero warnings
-- [ ] Code formatting is consistent
-- [ ] Tests cover new functionality
-- [ ] Documentation updated
-- [ ] Error handling implemented
-
-### Integration
-
-- [ ] Shared type libraries between services and clients, applications and servers
-- [ ] Builds successfully
-- [ ] Integration tests pass
-- [ ] API contracts maintained
-- [ ] Performance acceptable
-- [ ] Security reviewed
-
-### Deployment
-
-- [ ] Environment compatibility verified
-- [ ] Migration scripts tested
-- [ ] Rollback plan prepared
-- [ ] Monitoring configured
-
-## 🚀 Emergency Protocols
-
-**Build Failures**: Revert immediately if fix not obvious within 15 minutes.
-
-**Test Failures**: Investigate, fix, or disable failing tests with issue tracking.
-
-**Production Issues**: Immediate rollback, then investigate and fix forward.
-
-**Always**: Prioritize system stability over feature delivery.
-
-## 🛠️ Tool Preferences
-
-When available, prefer faster modern alternatives:
-
-- `ripgrep` (`rg`) over `grep` - significantly faster
-- `fd` over `find` - faster file searching
-- `bat` over `cat` - syntax highlighting
-- `exa` over `ls` - better formatting
-
-Adapt tool preferences based on your team's standards and available tooling.
+Modular. Tested. Secure. Concise. Clear.
+Built for humans and machines alike.
