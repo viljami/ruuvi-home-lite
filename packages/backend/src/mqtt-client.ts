@@ -82,7 +82,6 @@ export class MQTTClient extends EventEmitter {
         //  "coords":""
         // }
         const gatewayData = JSON.parse(messageStr);
-        console.log(messageStr);
         // Security: Validate gateway data structure
         if (!gatewayData || typeof gatewayData !== "object") {
           console.warn("Invalid gateway data format");
