@@ -439,7 +439,6 @@ export class ChartElement extends HTMLElement {
     humidityMin?: number | null,
     humidityMax?: number | null,
   ): void {
-    const points = this.data.get(sensorMac);
     const point: ChartDataPoint = { sensorMac, timestamp };
 
     if (temperature !== undefined && temperature !== null) {
@@ -452,55 +451,80 @@ export class ChartElement extends HTMLElement {
       point.humidityMin = humidity;
       point.humidityMax = humidity;
     }
-    if (temperatureMin !== undefined && temperatureMin !== null)
+    if (temperatureMin !== undefined && temperatureMin !== null) {
       point.temperatureMin = temperatureMin;
-    if (temperatureMax !== undefined && temperatureMax !== null)
+    }
+    if (temperatureMax !== undefined && temperatureMax !== null) {
       point.temperatureMax = temperatureMax;
-    if (humidityMin !== undefined && humidityMin !== null)
+    }
+    if (humidityMin !== undefined && humidityMin !== null) {
       point.humidityMin = humidityMin;
-    if (humidityMax !== undefined && humidityMax !== null)
+    }
+    if (humidityMax !== undefined && humidityMax !== null) {
       point.humidityMax = humidityMax;
+    }
 
-    if (points) {
-      // Find existing point at same timestamp or add new one
-      const lastTimestamp = points[points.length - 1]?.timestamp;
-      const secondLastTimestamp = points[points.length - 2]?.timestamp;
-      const bucketSize =
-        lastTimestamp === undefined || secondLastTimestamp === undefined
-          ? 30
-          : lastTimestamp - secondLastTimestamp;
-      const existingIndex = points.findIndex(
-        (p) => timestamp - p.timestamp < bucketSize,
-      );
-      if (existingIndex >= 0 && points[existingIndex]) {
-        if (temperature !== undefined && temperature !== null) {
-          points[existingIndex].temperature = temperature;
-        }
+    const points = this.data.get(sensorMac);
 
-        if (humidity !== undefined && humidity !== null) {
-          points[existingIndex].humidity = humidity;
-        }
+    if (points === undefined) {
+      this.data.set(sensorMac, [point]);
+      return;
+    }
 
-        if (point.humidityMin !== undefined && point.humidityMin !== null) {
-          points[existingIndex].humidityMin =
-            points[existingIndex].humidityMin !== undefined
-              ? Math.min(points[existingIndex].humidityMin!, point.humidityMin)
-              : point.humidityMin;
-        }
+    if (!points[0] || points.length < 2) {
+      points.push(point);
+      return;
+    }
 
-        if (point.humidityMax !== undefined && point.humidityMax !== null) {
-          points[existingIndex].humidityMax =
-            points[existingIndex].humidityMax !== undefined
-              ? Math.max(points[existingIndex].humidityMax!, point.humidityMax)
-              : point.humidityMax;
-        }
-      } else {
-        points.push(point);
-        points.sort((a, b) => a.timestamp - b.timestamp);
+    let bucketSize = (points[1]?.timestamp ?? 0) - (points[0]?.timestamp ?? 0);
+
+    if (bucketSize < 60) {
+      bucketSize = 60;
+    }
+
+    const lastPoint = points[points.length - 1];
+
+    if (lastPoint === undefined) {
+      points.push(point);
+      return;
+    }
+
+    const lastTimestamp = lastPoint?.timestamp;
+    const secondLastTimestamp = points[points.length - 2]?.timestamp;
+    const d =
+      !lastTimestamp || !secondLastTimestamp
+        ? 30
+        : lastTimestamp - secondLastTimestamp;
+
+    if (d < bucketSize) {
+      lastPoint.timestamp = point.timestamp;
+
+      if (temperature !== undefined && temperature !== null) {
+        lastPoint.temperature = temperature;
+      }
+
+      if (humidity !== undefined && humidity !== null) {
+        lastPoint.humidity = humidity;
+      }
+
+      if (point.humidityMin !== undefined && point.humidityMin !== null) {
+        lastPoint.humidityMin =
+          lastPoint.humidityMin !== undefined
+            ? Math.min(lastPoint.humidityMin!, point.humidityMin)
+            : point.humidityMin;
+      }
+
+      if (point.humidityMax !== undefined && point.humidityMax !== null) {
+        lastPoint.humidityMax =
+          lastPoint.humidityMax !== undefined
+            ? Math.max(lastPoint.humidityMax!, point.humidityMax)
+            : point.humidityMax;
       }
     } else {
-      this.data.set(sensorMac, [point]);
+      points.push(point);
     }
+
+    points.sort((a, b) => a.timestamp - b.timestamp);
 
     // Just call drawChart - bounds will be calculated within it
     this.drawChart();

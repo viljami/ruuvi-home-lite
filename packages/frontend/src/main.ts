@@ -156,7 +156,7 @@ class RuuviApp {
         normalizedMac,
         message.data.timestamp,
         message.data.temperature,
-        message.data.humidity || undefined,
+        message.data.humidity,
       );
     }
   }
@@ -174,7 +174,6 @@ class RuuviApp {
   }
 
   private handleBucketUpdate(): void {
-    // Quietly process bucket updates without logging
     // For now, re-request full data to get updated chart
     // In a more optimized version, we would update just the affected bucket
     this.wsManager.send({ type: "getData", timeRange: this.currentTimeRange });
